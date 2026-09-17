@@ -1,5 +1,5 @@
 import { apiError, readJson } from "@/lib/api";
-import { getContentById, updateContent } from "@/lib/data";
+import { deleteContent, getContentById, updateContent } from "@/lib/data";
 import { requireApiSession } from "@/lib/session";
 import { hasValidationErrors, validateContentInput } from "@/lib/validation";
 
@@ -44,5 +44,21 @@ export async function PATCH(request, { params }) {
     }
 
     return apiError(error, "Unable to update content.");
+  }
+}
+
+export async function DELETE(_request, { params }) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
+  try {
+    const { id } = await params;
+    const content = await deleteContent(id);
+
+    return content
+      ? Response.json({ content })
+      : Response.json({ error: "Content not found." }, { status: 404 });
+  } catch (error) {
+    return apiError(error, "Unable to delete content.");
   }
 }

@@ -141,6 +141,7 @@ export default function MasterContentForm({ clients, content = null }) {
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const isEditing = Boolean(content?._id);
 
   const defaultMediaOptions = useMemo(
@@ -335,6 +336,37 @@ export default function MasterContentForm({ clients, content = null }) {
       setMessage(requestError.message);
     } finally {
       setPending(false);
+    }
+  }
+
+  async function deleteMasterContent() {
+    if (!isEditing) return;
+
+    const confirmed = window.confirm(
+      `Delete "${content.internalTitle}"?\n\nThis permanently deletes the Master Content package. Uploaded media remains stored privately and is not deleted.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setMessage("");
+    setErrors({});
+
+    try {
+      const response = await fetch(`/api/content/${content._id}`, { method: "DELETE" });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to delete the content package.");
+      }
+
+      router.push("/content");
+      router.refresh();
+    } catch (requestError) {
+      setErrors({ delete: requestError.message });
+      setMessage(requestError.message);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -619,6 +651,25 @@ export default function MasterContentForm({ clients, content = null }) {
           {pending ? "Saving" : isEditing ? "Save Changes" : "Save Master Content"}
         </button>
       </div>
+      {isEditing ? (
+        <section className={styles.dangerZone}>
+          <div>
+            <strong>Delete Master Content</strong>
+            <p>
+              Permanently deletes this Content package. Uploaded media remains in
+              private storage so files are never silently removed.
+            </p>
+          </div>
+          <button
+            className={styles.buttonDangerStrong}
+            type="button"
+            onClick={deleteMasterContent}
+            disabled={pending || uploading || deleting}
+          >
+            {deleting ? "Deleting Content" : "Delete Content"}
+          </button>
+        </section>
+      ) : null}
     </form>
   );
 }

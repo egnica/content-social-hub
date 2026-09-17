@@ -28,6 +28,7 @@ export default function ClientForm({ client = null }) {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -60,6 +61,37 @@ export default function ClientForm({ client = null }) {
       setMessage(requestError.message);
     } finally {
       setPending(false);
+    }
+  }
+
+  async function deleteClient() {
+    if (!client) return;
+
+    const confirmed = window.confirm(
+      `Delete "${client.name}"?\n\nThis permanently deletes the client record. It will be blocked if the client has saved Content.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setMessage("");
+    setErrors({});
+
+    try {
+      const response = await fetch(`/api/clients/${client._id}`, { method: "DELETE" });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to delete the client.");
+      }
+
+      router.push("/clients");
+      router.refresh();
+    } catch (requestError) {
+      setErrors({ delete: requestError.message });
+      setMessage(requestError.message);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -145,6 +177,25 @@ export default function ClientForm({ client = null }) {
           {pending ? "Saving client" : client ? "Save Changes" : "Add Client"}
         </button>
       </div>
+      {client ? (
+        <section className={styles.dangerZone}>
+          <div>
+            <strong>Delete client</strong>
+            <p>
+              Permanently deletes this client only when it has no saved Content. Use
+              Inactive status to archive a client and preserve its history.
+            </p>
+          </div>
+          <button
+            className={styles.buttonDangerStrong}
+            type="button"
+            onClick={deleteClient}
+            disabled={pending || deleting}
+          >
+            {deleting ? "Deleting Client" : "Delete Client"}
+          </button>
+        </section>
+      ) : null}
     </form>
   );
 }

@@ -32,6 +32,7 @@ Implemented:
 - browser-detected media dimensions, duration, aspect ratio, and orientation
 - reorderable attached media and a default primary-media choice
 - Save for Reuse
+- guarded client deletion and Master Content deletion
 - placeholder screens that clearly identify later implementation levels
 
 Deployment checkpoint passed on September 17, 2026:
@@ -164,6 +165,13 @@ The Approval / Report Email is used for:
 - client approval requests
 - reapproval requests
 - on-demand report delivery
+
+### Client lifecycle and deletion
+
+- setting a client to `Inactive` is the normal archive path and preserves its Content and history
+- permanent client deletion is allowed only when the client has zero saved Master Content packages
+- if Content exists, deletion is blocked and the operator must archive the client or delete its Content first
+- the application never silently orphans Content by removing its client
 
 ### Not part of initial client creation
 
@@ -474,6 +482,13 @@ The internal title is not necessarily published. It identifies the package in:
 - Analytics
 - Reports
 - Search
+
+### Deleting Master Content
+
+- deletion requires an explicit confirmation
+- deleting Master Content removes the package from MongoDB
+- attached S3 media is preserved and is never silently deleted
+- deleting a record from this application does not delete an already-published remote social post
 
 ### Source combinations
 
@@ -1281,6 +1296,7 @@ Build:
 - media metadata / intelligence
 - internal title
 - Save for reuse
+- guarded client and Master Content deletion
 
 Credential / infrastructure checkpoint:
 
@@ -1616,6 +1632,8 @@ social_connections:
     - API Error
 
 content_and_publishing:
+  client_delete_with_saved_content: blocked
+  master_content_delete_preserves_s3_media: true
   workflow_status_manual: false
   status_is_derived: true
   approval_scope: destination_revision

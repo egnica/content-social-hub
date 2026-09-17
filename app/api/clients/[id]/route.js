@@ -1,5 +1,9 @@
 import { apiError, readJson } from "@/lib/api";
-import { getClientById, updateClient } from "@/lib/data";
+import {
+  deleteClientIfEmpty,
+  getClientById,
+  updateClient,
+} from "@/lib/data";
 import { requireApiSession } from "@/lib/session";
 import { hasValidationErrors, validateClientInput } from "@/lib/validation";
 
@@ -44,5 +48,34 @@ export async function PATCH(request, { params }) {
     }
 
     return apiError(error, "Unable to update the client.");
+  }
+}
+
+export async function DELETE(_request, { params }) {
+  const unauthorized = await requireApiSession();
+  if (unauthorized) return unauthorized;
+
+  try {
+    const { id } = await params;
+    const result = await deleteClientIfEmpty(id);
+
+    if (result.status === "not_found") {
+      return Response.json({ error: "Client not found." }, { status: 404 });
+    }
+
+    if (result.status === "has_content") {
+      const label = result.contentCount === 1 ? "package" : "packages";
+      return Response.json(
+        {
+          error: `This client has ${result.contentCount} saved Content ${label}. Archive the client or delete its Content first.`,
+          contentCount: result.contentCount,
+        },
+        { status: 409 },
+      );
+    }
+
+    return Response.json({ client: result.client });
+  } catch (error) {
+    return apiError(error, "Unable to delete the client.");
   }
 }
