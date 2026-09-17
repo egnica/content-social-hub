@@ -18,7 +18,7 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 ## Implementation Status
 
-Levels 0 and 1 are implemented in the application code and are awaiting the deployed infrastructure checkpoint.
+Levels 0 and 1 are implemented, deployed, and verified in the live application.
 
 Implemented:
 
@@ -34,7 +34,7 @@ Implemented:
 - Save for Reuse
 - placeholder screens that clearly identify later implementation levels
 
-Pending checkpoint:
+Deployment checkpoint passed on September 17, 2026:
 
 ```text
 Deploy
@@ -46,6 +46,17 @@ Deploy
 -> save
 -> close and reopen successfully
 ```
+
+Verified in the deployed application:
+
+- MongoDB health, reads, and writes
+- client creation, editing, filtering, and client separation
+- Master Content creation, editing, saving, reopening, and Save for Reuse
+- private image and video uploads to S3
+- multiple media attachments, ordering, and default primary-media selection
+- browser-detected media metadata and persistence after reopening
+- Amplify SSR compute-role access to the private media bucket
+- S3 CORS for secure browser uploads from the Amplify application
 
 Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
 
@@ -1471,7 +1482,7 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_0_1_implemented_pending_deployment_checkpoint
+  status: level_0_1_deployed_and_verified
   source_of_truth: README.md
 
 current_infrastructure:
@@ -1659,8 +1670,7 @@ implementation:
   configure_all_social_apis_up_front: false
   add_social_networks_one_at_a_time: true
   current_next_stage:
-    - deploy_and_verify_level_0
-    - deploy_and_verify_level_1
+    - level_2_first_social_connection
   first_major_end_to_end_milestone:
     - create_client
     - create_master_content
@@ -1698,13 +1708,13 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Deploy and pass the Level 0 and Level 1 checkpoint
+  goal: Implement and verify Level 2 with one social network only
   do_not_jump_ahead_to:
     - multiple social-provider integrations
-    - scheduling infrastructure before foundation is proven
+    - scheduling infrastructure before the first publisher is proven
     - analytics before publishing pipeline exists
     - optional AI
-  first_checkpoint: deployed app reliably reads/writes MongoDB data and can create/reopen a client and Master Content package with private S3 media upload
+  first_checkpoint: connect one real destination account and persist the correct account under the correct client
 ```
 
 ### Instructions for the next work session
@@ -1719,4 +1729,4 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected implementation work:** deploy and verify Level 0 / Level 1. Do not jump ahead to OAuth, scheduled publishing, analytics, multiple networks, or optional AI until the foundation and Client + Content checkpoint are working end to end.
+**Next expected implementation work:** begin Level 2 with one social network only. Implement and verify its OAuth connection, Connect and Request Connection paths, secure expiring setup page, Resend delivery, account picker, saved connection, and initial Account Health before beginning Level 3 publishing.
