@@ -41,6 +41,33 @@ The app should automate administrative steps whenever the next action can be det
 
 This is one application with two data contexts, not two separate dashboards.
 
+### Top-level navigation
+
+The working top-level navigation is:
+
+```text
+Dashboard
+Content
+Calendar
+Approvals
+Reports
+Clients
+Analytics
+```
+
+A prominent action such as:
+
+```text
+[ + Create Content ]
+```
+
+starts a new Master Content workflow.
+
+**Content** and **Create Content** are intentionally different concepts:
+
+- **Content** = the library / operational view of existing Master Content packages
+- **Create Content** = the action that starts a new Master Content package
+
 ### All Clients View
 
 Shows activity across every client.
@@ -51,6 +78,9 @@ Examples:
 - all scheduled posts
 - all approvals
 - account-health issues
+- publishing failures
+- new comments
+- audience growth
 - aggregate analytics
 
 ### Selected Client View
@@ -65,9 +95,9 @@ A client selector changes the entire app context.
   Nicholas Egner
 ```
 
-When a client is selected, Content, Calendar, Analytics, Social Accounts, and related screens show only that client's data.
+When a client is selected, Dashboard, Content, Calendar, Approvals, Reports, Analytics, Social Accounts, and related screens show only that client's data.
 
-Future client users can be restricted to their own client context and never see `All Clients`.
+Client login accounts are not part of V1. Clients interact through secure limited-purpose connection and approval links.
 
 ---
 
@@ -89,7 +119,7 @@ The Approval / Report Email is used for:
 - social-account connection requests
 - client approval requests
 - reapproval requests
-- automated monthly reports
+- on-demand report delivery
 
 ### Not part of initial client creation
 
@@ -213,9 +243,134 @@ Full health details may include:
 
 ---
 
+## Dashboard
+
+The Dashboard is an operational command center rather than a large generic analytics page.
+
+It should answer four questions quickly:
+
+1. What broke?
+2. What changed?
+3. What is going out today?
+4. What needs attention next?
+
+### Global summary
+
+The All Clients dashboard can show compact summary counts such as:
+
+```text
+4 Needs Attention
+11 New Comments
++47 Followers / Subscribers
+8 Scheduled
+3 Awaiting Approval
+```
+
+### All Clients client rows
+
+The main body of the All Clients dashboard should contain one row for every client added to the application.
+
+Example columns:
+
+| Client | Needs Attention | New Comments | Audience Growth | Upcoming | Approvals | Recent Publish |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Davis Defense | 1 | 4 | +21 | 3 | 1 waiting | 2 today |
+| Garden Club | — | 2 | +8 | 1 | Changes requested | Yesterday |
+| Counterpoint Law | — | — | +3 | 2 | — | Sep 15 |
+
+Meaningful counts should be actionable where practical. Examples:
+
+- click `4 new comments` to open the related published items
+- click a failed-post count to open Needs Attention for that client
+- click a client row to enter that client's dashboard context
+
+### Selected-client dashboard sections
+
+A selected-client dashboard can include:
+
+- Needs Attention
+- New Comments
+- Audience Growth
+- Today's / Upcoming Schedule
+- Approvals
+- Account Health problems
+- Recent Activity
+- lightweight analytics snapshot
+
+### Needs Attention
+
+High-priority examples:
+
+- post failed to publish
+- approval changes requested
+- missed schedule
+- expired or disconnected account
+- permission problem
+- required publishing field missing
+
+### Recent Activity
+
+Routine successes should remain visible without generating unnecessary alerts.
+
+Examples:
+
+- published successfully
+- approved
+- social connection completed
+- scheduled
+- report sent
+
+---
+
+## Notifications
+
+Notifications should be useful without becoming noisy.
+
+### Notification surfaces
+
+- **Dashboard alert** for items requiring action
+- **In-app notification center** for recent changes and history
+- **Resend email** for higher-value events where an active notification is useful
+
+Events that may justify active notification include:
+
+- post failed to publish
+- client requested edits
+- client approval completed when useful
+- social account requires reconnection
+- scheduled post missed its release time
+- connection request completed
+- report delivery failed
+
+Routine successful publishes generally belong in Recent Activity rather than generating an email for every post.
+
+Notifications should link directly to the relevant Master Content, destination version, connection, report, or error whenever possible.
+
+### Email / notification log
+
+Keep a lightweight record of outbound application emails and important notifications.
+
+Example:
+
+```text
+Sep 16  8:42 PM
+Approval request
+Davis Defense
+Delivered
+
+Sep 17  9:15 AM
+Revision ready
+Davis Defense
+Delivered
+```
+
+---
+
 ## Content
 
 The top-level **Content** area is the operational home for saved Master Content packages.
+
+`Create Content` is a separate prominent action that starts a new package.
 
 Views should include at least:
 
@@ -240,6 +395,15 @@ The application should derive workflow status automatically rather than relying 
 ## Master Content
 
 Master Content is the central post package.
+
+### Creation entry points
+
+A new package can start from:
+
+- Paste URL
+- Upload Image
+- Upload Video
+- Start With Text
 
 ### Core fields and controls
 
@@ -614,7 +778,10 @@ Publish Now
 - show per-destination progress
 - retry only failed destinations
 - never repost successful destinations during a retry
-- capture post IDs and live URLs when available
+- capture post IDs and live URLs automatically when available
+- when an API returns only an ID, the platform adapter may construct or retrieve the canonical live-post URL when supported
+- show a `View Post` action that opens the exact remote post
+- the user should not need to manually paste the final social-post URL into the app
 - keep an audit record of who triggered the publish, when, and which revision went live
 - once the remote network accepts the content, cancellation is no longer treated as a scheduling action
 
@@ -685,6 +852,67 @@ Clicking an event opens its Master Content item, focused on the relevant destina
 A mature React calendar library may provide the visual mechanics; application data and scheduling logic remain ours.
 
 Optional future Google Calendar / iCal sync can be added as a convenience view only, never as the publishing trigger.
+
+---
+
+## Engagement Alerts
+
+V1 does **not** include a full Social Inbox.
+
+Instead, the app uses lightweight engagement alerts to surface activity that may need attention without trying to replace the social platforms themselves.
+
+### Initial V1 behavior
+
+- detect / retrieve new comment counts where platform APIs permit
+- show a `New Comments` count or tag on published content
+- surface unreviewed new comments on the Dashboard
+- provide `View Post` to open the exact remote social post
+- provide `Mark Reviewed` so old engagement does not remain permanently flagged
+
+Example:
+
+```text
+Davis Defense
+First DWI in Minnesota
+Facebook
+3 new comments
+
+[ View Post ] [ Mark Reviewed ]
+```
+
+The app does not need to reply to comments in V1.
+
+### Explicitly out of scope for V1 engagement
+
+- replying to comments inside the app
+- direct messages
+- unified conversation threads
+- full customer-service inbox
+
+Webhooks may be used where supported. Polling or periodic API checks may be used where that is the appropriate provider capability.
+
+---
+
+## Audience Growth
+
+The top-level dashboard should show follower / subscriber growth by client and platform where provider APIs expose the necessary data.
+
+The core requirement is **audience count change**, not the identity of every new follower.
+
+Example:
+
+```text
+Last 7 days
+Instagram      +18 followers
+Facebook        +7 followers
+LinkedIn        +5 followers
+YouTube         +3 subscribers
+Total          +33
+```
+
+Audience Growth should also contribute to the one-row-per-client summary on the All Clients dashboard.
+
+When each social adapter is added, follower / subscriber analytics becomes part of that adapter's analytics checklist.
 
 ---
 
@@ -782,41 +1010,91 @@ Platform-native metrics must remain stored under their original definitions. The
 
 ---
 
-## Dashboard and Automated Reports
+## Reports / Report Hub
 
-Analytics can be shown in both:
+Reports are generated on demand in V1. Automatic monthly report scheduling is not required initially.
 
-- selected-client dashboards
-- All Clients summaries
+The top-level **Reports** area should provide a reusable Report Hub built from the same stored analytics used by dashboards.
 
-Possible client metrics:
+### Report controls
+
+- select Client
+- platform filters such as Facebook, Instagram, LinkedIn, YouTube
+- preset date ranges:
+  - 7 Days
+  - 30 Days
+  - 60 Days
+  - 90 Days
+- custom `From` / `To` date range
+- custom range overrides a preset when used
+- `Reset` returns to the default range, expected to be 30 days initially
+
+### Possible report content
 
 - posts published
-- video views
-- impressions / reach where available
+- platform-native views / impressions / reach where available
 - engagements
 - link clicks
-- website visits attributed to social
-- tracked website conversion / form events where available
+- website visits attributed through UTM data
+- tracked leads / GA4 key events where available
+- audience growth
+- top content
 
-Monthly reports should be generated automatically and delivered through Resend to the client's Approval / Report Email.
+### Report actions
 
-Reports should be based on the same stored analytics used by the dashboard.
+```text
+[ Download PDF ]
+[ Send Report ]
+```
+
+`Send Report` uses Resend and defaults to the client's Approval / Report Email.
+
+Use a consistent default report layout in V1 rather than building a complex report-template system.
 
 ---
 
 ## Resend
 
-Resend is the application's outbound email layer for:
+Resend is the application's single outbound email delivery layer.
+
+Our application determines **what happened, who should be notified, and whether an email is appropriate**. Resend performs the email delivery.
+
+Resend is used for:
 
 - account-connection requests
 - reconnect requests
 - approval requests
 - revision / reapproval notifications
-- monthly reports
-- important account-health or publishing alerts where appropriate
+- important publishing-failure alerts
+- missed-schedule alerts
+- important account-health / reconnection alerts
+- on-demand report delivery
 
 Connection and approval emails should link back to secure, limited-purpose application pages rather than directly exposing privileged application routes.
+
+Where useful, the application should also track outbound email status through Resend webhooks and maintain the Email / Notification Log described above.
+
+Routine successful social publishes do not need to generate email noise.
+
+---
+
+## Team Roles and Permissions
+
+A full team-role and permissions system is explicitly **not part of V1**.
+
+V1 model:
+
+```text
+Operator / Owner
+-> authenticated
+-> full application access
+
+Client
+-> no application account required
+-> secure connection and approval links only
+```
+
+The data model should avoid choices that make future role-based access impossible, but no client-login, staff-role, or permissions-management UI needs to be built initially.
 
 ---
 
@@ -856,13 +1134,17 @@ The following are not part of the initial product unless real usage proves they 
 - Content categories / pillars
 - automatic evergreen recycling queues
 - separate Content Hub integration
-- social inbox / unified messaging
+- full social inbox / unified messaging
+- replying to comments inside the app
+- direct-message management
 - social listening
 - competitor monitoring
 - paid-ad management
 - built-in graphic editor
 - link-in-bio product
+- client login accounts
 - complex team-role permission matrix
+- automatic scheduled monthly reports
 - mandatory AI features
 
 ---
@@ -872,8 +1154,10 @@ The following are not part of the initial product unless real usage proves they 
 ```text
 Next.js / Amplify
   -> application UI and server routes
+  -> OAuth callbacks and normal application actions
 
 MongoDB
+  -> system of record for application data
   -> clients
   -> Master Content
   -> platform versions
@@ -881,9 +1165,11 @@ MongoDB
   -> schedules
   -> connections
   -> publishing results
+  -> notifications
   -> analytics
 
 S3
+  -> media only
   -> original media
   -> thumbnails
   -> future derivatives
@@ -901,7 +1187,14 @@ Resend
   -> connection, approval, reapproval, report, and alert email
 ```
 
-Do not add DynamoDB merely because the project is hosted on AWS unless a concrete need appears later.
+Additional architecture rules:
+
+- MongoDB is the source of truth for application state
+- S3 stores large media objects while MongoDB stores their keys and metadata
+- scheduled publishing must continue independently of the user's browser or computer
+- long-lived social credentials and provider secrets remain server-side and protected
+- Resend is a delivery layer; application logic decides when email should be sent
+- do not add DynamoDB merely because the project is hosted on AWS unless a concrete need appears later
 
 ---
 
@@ -909,28 +1202,61 @@ Do not add DynamoDB merely because the project is hosted on AWS unless a concret
 
 The application must be built incrementally. Every phase should leave a working product that can be tested before the next phase begins.
 
+Do not configure every social API up front. Add credentials only when the implementation reaches the feature that needs them.
+
 ### Level 0 — Foundation
+
+Build:
 
 - application shell
 - auth
 - MongoDB connection
 - deployment stability
+- environment-variable structure
+
+Credential / infrastructure checkpoint:
+
+- MongoDB connection
+
+Pass condition:
+
+- deployed application reliably reads and writes application data
 
 ### Level 1 — Client + Content Foundation
 
+Build:
+
 - lightweight clients
+- top-level navigation
 - Content area
+- `+ Create Content` workflow entry
 - Master Content
-- local upload to S3
+- upload to private S3 bucket
 - multiple images
 - video upload
 - media metadata / intelligence
 - internal title
 - Save for reuse
 
+Credential / infrastructure checkpoint:
+
+- S3 / Amplify permissions for `content-social-hub-media`
+
+Pass condition:
+
+```text
+Create client
+-> Create Content
+-> upload media
+-> save
+-> reopen successfully
+```
+
 ### Level 2 — First Social Connection
 
-- one network OAuth flow
+Build:
+
+- one network OAuth flow only
 - Connect path
 - Request Connection path
 - secure expiring setup page
@@ -939,40 +1265,99 @@ The application must be built incrementally. Every phase should leave a working 
 - saved connection
 - initial Account Health
 
+Credential checkpoint:
+
+- add only the first social network's API credentials / OAuth configuration
+- add Resend configuration needed for application mail
+
+Pass condition:
+
+- connect a real destination account and persist the correct account under the correct client
+
 ### Level 3 — First Publisher
+
+Build:
 
 - first platform-specific editor
 - live validation
 - live preview
 - Publish Now
-- duplicate protection
+- duplicate protection / idempotency
 - result logging
 - retry handling
+- automatic capture of remote post ID / URL
+- `View Post`
+
+Pass condition:
+
+```text
+Create Master Content
+-> select connected destination
+-> edit platform version
+-> validate
+-> Publish Now
+-> save remote post ID / URL
+-> View Post opens exact live post
+```
+
+This is the first major end-to-end milestone.
 
 ### Level 4 — Scheduling
 
+Build:
+
 - default Master schedule
 - per-platform overrides
-- EventBridge/Lambda background publishing
-- reliable retries
+- EventBridge / Lambda background publishing
+- SQS where useful for reliable queued execution / retries
 - missed-schedule behavior
+
+Credential / infrastructure checkpoint:
+
+- configure AWS permissions and environment values required for EventBridge, Lambda, and SQS
+
+Pass condition:
+
+- schedule a real post, close the browser, and verify background publishing occurs correctly
 
 ### Level 5 — Multi-Platform
 
-- additional platform adapters
-- platform-specific forms
-- URL metadata preview
-- media/thumbnail overrides
-- destination-account selection
+Add social networks one at a time.
+
+For each new adapter:
+
+- OAuth / account selection
+- platform-specific form
+- URL / media behavior
+- validation rules
+- publishing
+- remote ID / URL capture
+- Account Health
+- analytics permissions where appropriate
+- follower / subscriber metrics where supported
+
+Credential checkpoint:
+
+- add that provider's credentials only when its adapter is being implemented
+
+Pass condition:
+
+- each network must connect and publish independently before another adapter is treated as complete
 
 ### Level 6 — Workflow + Calendar
+
+Build:
 
 - automated content status
 - visual calendar
 - Content filters/views
 - Needs Attention
+- Dashboard operational summaries
+- All Clients row-per-client dashboard
 
 ### Level 7 — Client Approval
+
+Build:
 
 - secure approval page
 - per-platform approval
@@ -980,23 +1365,39 @@ The application must be built incrementally. Every phase should leave a working 
 - revisions
 - automatic reapproval emails
 - approval audit history
+- dashboard approval changes / alerts
 
-### Level 8 — Analytics + Attribution
+### Level 8 — Engagement + Analytics + Attribution
+
+Build:
 
 - native platform metrics
+- audience growth
+- new-comment engagement alerts where supported
+- `Mark Reviewed`
 - UTM generation
 - GA4 integration
-- client dashboard
+- selected-client analytics
+- All Clients summaries
 
 ### Level 9 — Reporting
 
-- monthly client reports
-- automatic Resend delivery
+Build:
+
+- Report Hub
+- 7 / 30 / 60 / 90-day presets
+- custom From / To range
+- platform filters
+- PDF export
+- on-demand Resend delivery
 
 ### Level 10 — Optional Intelligence / Expansion
 
 - optional provider-agnostic AI assistance
 - additional networks
+- team / client user roles if real usage requires them
+- more advanced engagement capabilities only if needed
+- automatic recurring reports only if they become useful
 - only add larger advanced features after real usage proves the need
 
 ---
@@ -1005,17 +1406,23 @@ The application must be built incrementally. Every phase should leave a working 
 
 1. **Master Content is the core object.** Social posts are platform-specific distributions of that package.
 2. **One app, two contexts.** `All Clients` and `Selected Client` are views of the same system.
-3. **Client creation stays lightweight.** Do not turn this into another CRM.
-4. **Connections persist.** OAuth connections are saved to the correct client/destination until revoked or reauthorization is required.
-5. **Clients never give us social passwords.** Authentication happens on the provider's OAuth page.
-6. **Resend automates client communication.** Connection, approval, revision, and reporting loops should require as little manual follow-up as possible.
-7. **Master defaults, platform overrides.** Platform-specific work is protected from accidental Master overwrites.
-8. **Validation is live.** No separate required Preflight button.
-9. **Statuses are automated.** The system reflects observable state rather than relying on manual workflow maintenance.
-10. **Approval belongs to a revision.** Edited approved content must be reapproved.
-11. **Publishing is destination-specific.** One platform failure must not duplicate or block successful destinations.
-12. **MongoDB is the application system of record.** S3 stores media; AWS background services handle timed work.
-13. **The native calendar is authoritative.** External calendar sync, if added, is only a convenience view.
-14. **Reusable content stays lightweight.** Save for reuse and create a fresh version; no automatic recycling engine in V1.
-15. **AI is optional.** The app must remain fully functional without it.
-16. **Build in testable slices.** Do not attempt the complete product in one implementation pass.
+3. **Content is the library; Create Content is the action.** Keep the management area separate from the creation trigger.
+4. **Client creation stays lightweight.** Do not turn this into another CRM.
+5. **Connections persist.** OAuth connections are saved to the correct client/destination until revoked or reauthorization is required.
+6. **Clients never give us social passwords.** Authentication happens on the provider's OAuth page.
+7. **Resend automates important communication without creating noise.** Connection, approval, revision, alert, and report loops should require as little manual follow-up as possible.
+8. **The Dashboard is operational.** Problems, changes, upcoming work, comments, audience growth, and client-by-client status should be visible quickly.
+9. **Master defaults, platform overrides.** Platform-specific work is protected from accidental Master overwrites.
+10. **Validation is live.** No separate required Preflight button.
+11. **Statuses are automated.** The system reflects observable state rather than relying on manual workflow maintenance.
+12. **Approval belongs to a revision.** Edited approved content must be reapproved.
+13. **Publishing is destination-specific.** One platform failure must not duplicate or block successful destinations.
+14. **Remote post references are captured automatically.** Successful publishing should provide `View Post` without manual URL entry.
+15. **MongoDB is the application system of record.** S3 stores media; AWS background services handle timed work.
+16. **The native calendar is authoritative.** External calendar sync, if added, is only a convenience view.
+17. **Engagement alerts stay lightweight in V1.** Surface new comments and link to the live post rather than building a full social inbox.
+18. **Reusable content stays lightweight.** Save for reuse and create a fresh version; no automatic recycling engine in V1.
+19. **Reports are on demand in V1.** Preset and custom date ranges matter more than automatic monthly delivery initially.
+20. **Team roles are not a V1 requirement.** The operator has full access; clients use secure limited-purpose links.
+21. **AI is optional.** The app must remain fully functional without it.
+22. **Build in testable slices.** Do not attempt the complete product in one implementation pass, and add social-network credentials only as each adapter is reached.
