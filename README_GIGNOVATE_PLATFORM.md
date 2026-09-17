@@ -172,40 +172,179 @@ Where supported, a more automated domain connection flow can be added later.
 
 ## Physical Mail
 
-Lob can provide the direct-mail layer.
+Physical mail should be treated as a **channel inside a campaign**, not as a Lob-specific feature.
 
-Possible products:
+There are two distinct direct-mail modes GIGNovate should support:
 
-- letters
-- postcards
-- other supported mail formats
+### 1. Addressed Direct Mail
 
-The GIGNovate user should not need to understand Lob.
+Use when GIGNovate knows the recipient or has a mailing list.
+
+Examples:
+
+- customer letters
+- prospect letters
+- postcards to known contacts
+- personalized lifecycle mail
+- follow-up after an inquiry
+- targeted acquisition lists
+
+The CRM supplies the recipient data, and the campaign determines the creative, schedule, and tracking.
+
+### 2. Neighborhood / Saturation Mail
+
+Use when the business wants to reach an area rather than a known list.
+
+The important USPS model is **Every Door Direct Mail (EDDM)**. A business selects USPS carrier routes and reaches every deliverable household on those routes without needing an individual address list.
+
+This is especially relevant for local businesses such as:
+
+- cleaning companies
+- restaurants
+- landscapers
+- home-service companies
+- real-estate businesses
+- local retail
+- neighborhood events
+
+Example:
+
+```text
+Campaign: Spring Cleaning — Bloomington
+
+Audience
+  -> Existing customers by email
+  -> Existing customers by postcard
+  -> New households in selected Bloomington carrier routes
+
+Content
+  -> Blog post
+  -> Email campaign
+  -> Addressed postcard
+  -> EDDM neighborhood postcard
+  -> Facebook / Instagram / LinkedIn posts
+
+Schedule
+  -> Blog publishes Monday
+  -> Email sends Tuesday
+  -> Neighborhood mail launches Tuesday
+  -> Social posts run throughout the following week
+```
+
+### Mail-provider strategy
+
+GIGNovate should **not** hard-code the product around Lob.
+
+Lob can remain useful for the current CRM and addressed-mail workflows, but the long-term GIGNovate architecture should use a provider-neutral mail layer.
 
 Conceptually:
 
 ```text
 GIGNovate Campaign
-  -> choose audience
-  -> choose letter / postcard
-  -> preview
-  -> approve
-  -> GIGNovate submits through Lob
-  -> status returns to GIGNovate
+  -> Mail Service
+      -> Addressed Mail Provider
+      -> EDDM / Neighborhood Mail Provider
 ```
+
+or, when one provider supports both:
+
+```text
+GIGNovate Campaign
+  -> Mail Provider
+      -> Addressed Direct Mail
+      -> EDDM
+```
+
+That keeps the GIGNovate user experience stable even if the fulfillment vendor changes.
+
+### Providers to evaluate
+
+#### Oppizi
+
+Oppizi is currently a strong candidate for the broader GIGNovate direction because its current developer platform explicitly supports both:
+
+- **ADM** — addressed direct mail to a customer/address list
+- **EDDM** — USPS carrier-route saturation without an address list
+
+Its EDDM workflow can programmatically:
+
+- create a draft campaign
+- select a city
+- select USPS carrier routes
+- attach a design
+- select the mail format
+- set a launch date
+- calculate an estimated price
+- submit the campaign for review
+
+Oppizi's model is especially interesting because it already thinks in terms of **campaigns, targeting, creative, cost, launch date, and performance**, which maps closely to the GIGNovate campaign model.
+
+#### PostGrid
+
+PostGrid is another serious candidate. Its Print & Mail API supports letters, postcards, campaigns, address verification, tracking, and a USPS EDDM mailing class.
+
+PostGrid may be particularly useful if GIGNovate needs a broader transactional-mail and address-verification layer in addition to marketing campaigns.
+
+#### Lob
+
+Lob remains a good addressed-mail provider and can continue powering the existing CRM implementation.
+
+The architectural decision should be:
+
+> **Keep Lob where it already works, but do not make Lob a permanent dependency of the GIGNovate product model.**
+
+Before the larger platform is implemented, compare Oppizi, PostGrid, and Lob on:
+
+- addressed-mail capabilities
+- EDDM / carrier-route targeting
+- API quality
+- test / sandbox support
+- pricing
+- letters vs postcards
+- address verification
+- tracking
+- webhooks
+- campaign analytics
+- multi-tenant / SaaS suitability
+- billing and funding requirements
+
+### Mail billing / credits
+
+The customer-facing balance should belong to GIGNovate, not to the mail vendor.
+
+Possible flow:
+
+```text
+Customer pays GIGNovate through Stripe
+  -> GIGNovate records available mail balance / usage credit
+  -> campaign estimates cost
+  -> customer approves campaign
+  -> GIGNovate submits to selected mail provider
+  -> actual provider cost is recorded
+  -> GIGNovate decrements the customer's balance
+```
+
+Stripe does not need to directly pay Lob, Oppizi, or PostGrid for each customer transaction.
+
+GIGNovate can keep customer billing and provider funding as separate accounting layers. This also makes it possible to change mail providers without changing the customer's payment workflow.
 
 GIGNovate should track:
 
-- recipient
+- recipient or target area
+- carrier routes where applicable
 - campaign
 - mail type
+- provider
 - submission date
+- launch / send date
 - expected delivery
-- Lob status
-- failures / returned mail where available
-- cost / credits
-
-A future billing model could let GIGNovate charge the customer for mail usage while Lob remains the backend fulfillment provider.
+- delivery / campaign status
+- failures / returns where available
+- estimated cost
+- actual cost
+- customer charge
+- provider reference ID
+- campaign performance where available
 
 ---
 
@@ -426,24 +565,30 @@ Potential integrations include:
 ### Current / likely early integrations
 
 - Resend — transactional and campaign email
-- Lob — letters and postcards
+- Mail provider abstraction
+  - Lob — existing addressed-mail implementation
+  - Oppizi — candidate for addressed mail + EDDM / neighborhood campaigns
+  - PostGrid — candidate for addressed mail + EDDM + address verification
 - Meta — Facebook / Instagram
 - LinkedIn
 - YouTube
 - website/blog APIs
 - AWS S3 — media storage
+- Stripe — subscription billing, usage billing, and prepaid campaign balances
 
 ### Possible later integrations
 
 - Google Business Profile
 - Google Analytics
 - Google Search Console
-- Stripe — GIGNovate subscription and usage billing
 - domain/DNS connection services
 - additional social networks
 - additional email providers if needed
+- additional print / mail fulfillment providers
 
-Third-party products should generally be invisible infrastructure. The user should think in terms of **Send Email**, **Mail Postcard**, **Publish Blog**, and **Schedule Post**, not Resend API, Lob API, OAuth scopes, or DNS records.
+Third-party products should generally be invisible infrastructure. The user should think in terms of **Send Email**, **Mail Postcard**, **Reach a Neighborhood**, **Publish Blog**, and **Schedule Post**, not Resend API, Lob API, carrier-route APIs, OAuth scopes, or DNS records.
+
+The integration architecture should favor adapters around third-party services so GIGNovate owns the workflow while vendors remain replaceable infrastructure.
 
 ---
 
