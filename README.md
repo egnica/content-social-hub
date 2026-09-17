@@ -16,6 +16,39 @@ This README is the current product source of truth. It captures the decisions lo
 
 No secrets, credentials, OAuth tokens, API keys, or other sensitive values should be committed to this repository.
 
+## Implementation Status
+
+Levels 0 and 1 are implemented in the application code and are awaiting the deployed infrastructure checkpoint.
+
+Implemented:
+
+- owner-only sign-in with a signed HTTP-only session cookie
+- pooled MongoDB connection and public deployment health check
+- protected application shell and working top-level navigation
+- lightweight client creation, editing, and listing
+- Master Content creation, editing, listing, filtering, and reopening
+- immediate private S3 upload using short-lived presigned URLs
+- multiple image and video uploads
+- browser-detected media dimensions, duration, aspect ratio, and orientation
+- reorderable attached media and a default primary-media choice
+- Save for Reuse
+- placeholder screens that clearly identify later implementation levels
+
+Pending checkpoint:
+
+```text
+Deploy
+-> sign in
+-> verify MongoDB health
+-> create client
+-> create Master Content
+-> upload private media
+-> save
+-> close and reopen successfully
+```
+
+Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
+
 ---
 
 ## Product Goal
@@ -1438,7 +1471,7 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: planning_complete_ready_for_implementation
+  status: level_0_1_implemented_pending_deployment_checkpoint
   source_of_truth: README.md
 
 current_infrastructure:
@@ -1626,8 +1659,8 @@ implementation:
   configure_all_social_apis_up_front: false
   add_social_networks_one_at_a_time: true
   current_next_stage:
-    - Level 0 Foundation
-    - Level 1 Client + Content Foundation
+    - deploy_and_verify_level_0
+    - deploy_and_verify_level_1
   first_major_end_to_end_milestone:
     - create_client
     - create_master_content
@@ -1665,7 +1698,7 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Begin Level 0 and Level 1 implementation
+  goal: Deploy and pass the Level 0 and Level 1 checkpoint
   do_not_jump_ahead_to:
     - multiple social-provider integrations
     - scheduling infrastructure before foundation is proven
@@ -1686,4 +1719,4 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected implementation work:** begin Level 0 / Level 1. Do not jump ahead to OAuth, scheduled publishing, analytics, multiple networks, or optional AI until the foundation and Client + Content checkpoint are working.
+**Next expected implementation work:** deploy and verify Level 0 / Level 1. Do not jump ahead to OAuth, scheduled publishing, analytics, multiple networks, or optional AI until the foundation and Client + Content checkpoint are working end to end.
