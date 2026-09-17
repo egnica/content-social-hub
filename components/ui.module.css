@@ -239,6 +239,7 @@
 .button:disabled,
 .buttonSecondary:disabled,
 .buttonGhost:disabled,
+.buttonDanger:disabled,
 .buttonDangerStrong:disabled {
   cursor: not-allowed;
   opacity: 0.58;
@@ -922,5 +923,216 @@
   .formActions {
     align-items: stretch;
     flex-direction: column-reverse;
+  }
+}
+
+.connectionLayout {
+  display: grid;
+  gap: 18px;
+}
+
+.connectionLayout .panelHeader .select {
+  width: min(100%, 340px);
+}
+
+.connectionProviderCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.providerMark {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 14px;
+  color: white;
+  background: #1877f2;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.connectionProviderBody strong {
+  display: block;
+  font-size: 15px;
+}
+
+.connectionProviderBody p {
+  max-width: 660px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.connectionActions {
+  display: flex;
+  gap: 9px;
+}
+
+.connectionList,
+.requestList,
+.accountPickerList {
+  display: grid;
+  gap: 10px;
+}
+
+.connectionItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+
+.connectionAvatar {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background-color: var(--brand);
+  background-position: center;
+  background-size: cover;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.connectionIdentity strong {
+  display: block;
+  font-size: 14px;
+}
+
+.connectionIdentity span,
+.connectionHealth > span:last-child {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.connectionIdentity p {
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.connectionHealth {
+  min-width: 138px;
+  text-align: right;
+}
+
+.connectionItemActions {
+  display: flex;
+  gap: 5px;
+}
+
+.requestItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+
+.requestItem strong {
+  font-size: 13px;
+}
+
+.requestItem p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.connectionExpiration {
+  margin-top: 18px !important;
+  font-size: 12px !important;
+}
+
+.accountPickerList {
+  margin: 18px 0;
+}
+
+.accountPickerItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  cursor: pointer;
+  background: var(--surface-soft);
+}
+
+.accountPickerItem:has(input:checked) {
+  border-color: #8eb69c;
+  background: var(--brand-soft);
+}
+
+.accountPickerItem input {
+  accent-color: var(--brand);
+}
+
+.accountPickerItem strong,
+.accountPickerItem small {
+  display: block;
+}
+
+.accountPickerItem strong {
+  font-size: 14px;
+}
+
+.accountPickerItem small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 820px) {
+  .connectionProviderCard,
+  .connectionItem {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .connectionActions,
+  .connectionHealth,
+  .connectionItemActions {
+    grid-column: 1 / -1;
+  }
+
+  .connectionHealth {
+    text-align: left;
+  }
+}
+
+@media (max-width: 560px) {
+  .connectionProviderCard {
+    grid-template-columns: 1fr;
+  }
+
+  .connectionActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .requestItem {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

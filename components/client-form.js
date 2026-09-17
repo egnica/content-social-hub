@@ -68,7 +68,7 @@ export default function ClientForm({ client = null }) {
     if (!client) return;
 
     const confirmed = window.confirm(
-      `Delete "${client.name}"?\n\nThis permanently deletes the client record. It will be blocked if the client has saved Content.`,
+      `Delete "${client.name}"?\n\nThis permanently deletes the client record. It will be blocked if the client has saved Content or connected social accounts.`,
     );
 
     if (!confirmed) return;
@@ -182,8 +182,9 @@ export default function ClientForm({ client = null }) {
           <div>
             <strong>Delete client</strong>
             <p>
-              Permanently deletes this client only when it has no saved Content. Use
-              Inactive status to archive a client and preserve its history.
+              Permanently deletes this client only when it has no saved Content or
+              connected social accounts. Use Inactive status to archive a client
+              and preserve its history.
             </p>
           </div>
           <button

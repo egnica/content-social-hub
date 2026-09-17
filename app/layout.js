@@ -17,6 +17,7 @@ export const metadata = {
     template: "%s | Content Social Hub",
   },
   description: "Multi-client content management and social publishing.",
+  referrer: "no-referrer",
 };
 
 export default function RootLayout({ children }) {

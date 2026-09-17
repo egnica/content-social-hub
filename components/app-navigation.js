@@ -12,6 +12,7 @@ const links = [
   { href: "/reports", label: "Reports", icon: "05" },
   { href: "/clients", label: "Clients", icon: "06" },
   { href: "/analytics", label: "Analytics", icon: "07" },
+  { href: "/connections", label: "Social Accounts", icon: "08" },
 ];
 
 export default function AppNavigation() {

@@ -74,6 +74,17 @@ export async function DELETE(_request, { params }) {
       );
     }
 
+    if (result.status === "has_connections") {
+      const label = result.connectionCount === 1 ? "account" : "accounts";
+      return Response.json(
+        {
+          error: `This client has ${result.connectionCount} connected social ${label}. Disconnect those accounts or archive the client instead.`,
+          connectionCount: result.connectionCount,
+        },
+        { status: 409 },
+      );
+    }
+
     return Response.json({ client: result.client });
   } catch (error) {
     return apiError(error, "Unable to delete the client.");
