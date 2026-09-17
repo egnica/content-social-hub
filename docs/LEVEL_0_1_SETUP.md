@@ -11,9 +11,11 @@ MONGODB_URI=<private Atlas connection string>
 MONGODB_DB=content_social_hub
 SESSION_SECRET=<random value containing at least 32 characters>
 ADMIN_PASSWORD=<owner sign-in password>
-AWS_REGION=us-east-2
+APP_AWS_REGION=us-east-2
 S3_MEDIA_BUCKET=content-social-hub-media
 ```
+
+Amplify reserves environment variable names beginning with `AWS`, so the application uses `APP_AWS_REGION`. The standard SDK `AWS_REGION` variable remains available as a runtime fallback outside Amplify.
 
 Generate the session secret locally with:
 
