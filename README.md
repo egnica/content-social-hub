@@ -1426,3 +1426,264 @@ Build:
 20. **Team roles are not a V1 requirement.** The operator has full access; clients use secure limited-purpose links.
 21. **AI is optional.** The app must remain fully functional without it.
 22. **Build in testable slices.** Do not attempt the complete product in one implementation pass, and add social-network credentials only as each adapter is reached.
+
+---
+
+## AI / Work Handoff Context
+
+This section exists to give a new ChatGPT / Work session a compact, machine-readable project snapshot. It does **not** replace the rest of this README. A new work session should read the full README before proposing architecture or implementation changes.
+
+```yaml
+project:
+  name: Content Social Hub
+  repository: egnica/content-social-hub
+  default_branch: main
+  status: planning_complete_ready_for_implementation
+  source_of_truth: README.md
+
+current_infrastructure:
+  framework: Next.js
+  hosting: AWS Amplify
+  app_url: https://main.d1yfjibipwjpld.amplifyapp.com/
+  database: MongoDB
+  media_storage:
+    provider: AWS S3
+    bucket: content-social-hub-media
+    region: us-east-2
+    public_access: blocked
+    encryption: SSE-S3
+  email: Resend
+  scheduled_publishing_planned:
+    - EventBridge Scheduler
+    - Lambda
+    - SQS where retries or queue reliability require it
+
+product_model:
+  hierarchy:
+    - Client
+    - Master Content
+    - Destination / Platform Version
+  master_content_rule: Master Content stores shared source assets and defaults; each destination version can inherit and independently override those defaults.
+  application_contexts:
+    - All Clients
+    - Selected Client
+  top_level_navigation:
+    - Dashboard
+    - Content
+    - Calendar
+    - Approvals
+    - Reports
+    - Clients
+    - Analytics
+  create_content_action: prominent + Create Content action separate from the Content library
+
+v1_operator_model:
+  authenticated_operator: owner_only
+  client_login_accounts: false
+  client_interaction:
+    - secure social-account connection links
+    - secure approval links
+  team_roles_v1: false
+
+dashboard:
+  purpose: operational command center
+  all_clients:
+    global_summary: true
+    row_per_client: true
+    row_fields:
+      - needs_attention
+      - new_comments
+      - audience_growth
+      - upcoming_posts
+      - approvals
+      - recent_publish_activity
+    actionable_counts: true
+  selected_client_sections:
+    - Needs Attention
+    - New Comments
+    - Audience Growth
+    - Today's / Upcoming Schedule
+    - Approvals
+    - Account Health Problems
+    - Recent Activity
+    - Lightweight Analytics Snapshot
+
+notifications:
+  surfaces:
+    - dashboard alerts
+    - in-app notification center
+    - Resend email for higher-value events
+  email_for_routine_successful_publish: false
+  important_events:
+    - failed publish
+    - requested edits
+    - approval completion when useful
+    - reconnection required
+    - missed schedule
+    - completed connection request
+    - report delivery failure
+  email_notification_log: true
+
+engagement:
+  full_social_inbox_v1: false
+  new_comment_alerts: true
+  view_exact_live_post: true
+  mark_reviewed: true
+  replies_inside_app_v1: false
+  direct_messages_v1: false
+  remote_post_url_manual_entry_required: false
+  remote_post_id_and_url_capture: automatic_after_successful_publish
+
+audience_growth:
+  dashboard_feature: true
+  primary_metric: follower_or_subscriber_count_change
+  individual_follower_identity_required: false
+  adapter_rule: add follower/subscriber metrics when each network supports them
+
+reporting:
+  automatic_monthly_reports_v1: false
+  report_hub: true
+  presets:
+    - 7_days
+    - 30_days
+    - 60_days
+    - 90_days
+  custom_from_to_range: true
+  default_range: 30_days
+  platform_filters: true
+  actions:
+    - Download PDF
+    - Send Report via Resend
+
+social_connections:
+  multiple_accounts_per_platform: true
+  connect_paths:
+    - Connect Myself via provider OAuth
+    - Request Connection via secure Resend link
+  client_social_passwords_collected: false
+  secure_invite_default_expiration: approximately_48_hours
+  reconnect_uses_same_secure_flow: true
+  account_health_states:
+    - Healthy
+    - Expiring Soon
+    - Expired
+    - Disconnected
+    - Permission Problem
+    - API Error
+
+content_and_publishing:
+  workflow_status_manual: false
+  status_is_derived: true
+  approval_scope: destination_revision
+  edit_after_approval_invalidates_only_that_destination_approval: true
+  publish_destinations_independently: true
+  retry_failed_destination_only: true
+  duplicate_protection_required: true
+  final_publish_confirmation_required: true
+  live_validation_not_preflight_button: true
+  schedule_default_on_master_with_destination_overrides: true
+  human_blocker_at_schedule_time: mark_missed_schedule_do_not_publish_late
+  temporary_technical_failure: controlled_automatic_retry
+
+media:
+  upload_to_s3_immediately: true
+  bucket_private: true
+  originals_preserved: true
+  multiple_images: true
+  reorder_images: true
+  default_video_thumbnail_or_cover: true
+  database_stores_s3_reference_and_metadata: true
+  separate_bucket_per_client: false
+  cloudfront_v1: false
+  lifecycle_auto_delete_v1: false
+
+tracking_and_analytics:
+  standard_utm_tracking: true
+  utm_medium_default: organic-social
+  ga4_attribution_planned: true
+  preserve_platform_native_metric_definitions: true
+
+v1_exclusions:
+  - Campaign management
+  - Content categories / pillars
+  - complex evergreen recycling queues
+  - separate Content Hub integration
+  - full social inbox / unified messaging
+  - replying to comments inside the app
+  - direct-message management
+  - social listening
+  - competitor monitoring
+  - paid-ad management
+  - built-in graphic editor
+  - link-in-bio product
+  - client login accounts
+  - complex team-role permission matrix
+  - automatic scheduled monthly reports
+  - mandatory AI
+
+implementation:
+  strategy: small_testable_vertical_slices
+  configure_all_social_apis_up_front: false
+  add_social_networks_one_at_a_time: true
+  current_next_stage:
+    - Level 0 Foundation
+    - Level 1 Client + Content Foundation
+  first_major_end_to_end_milestone:
+    - create_client
+    - create_master_content
+    - upload_media_to_s3
+    - connect_one_social_account
+    - create_destination_version
+    - live_validate
+    - publish_now
+    - save_remote_post_id_and_url
+    - view_post_opens_exact_live_post
+  credential_checkpoints:
+    level_0: MongoDB connection
+    level_1: S3 and Amplify permissions
+    level_2: first social provider OAuth credentials plus Resend
+    level_4: EventBridge Lambda and SQS permissions/configuration
+    level_5: each additional provider added individually
+
+architecture_rules:
+  application_source_of_truth: MongoDB
+  media_source: S3
+  timed_work: AWS background services
+  long_lived_social_credentials: server_side_only
+  resend_role: delivery_layer_not_business_logic
+  dynamodb_without_concrete_need: false
+  ai_required_for_core_product: false
+
+work_session_rules:
+  read_full_readme_first: true
+  preserve_locked_product_decisions_unless_user_reopens_them: true
+  build_incrementally: true
+  stop_at_checkpoint_and_test_before_next_level: true
+  stop_when_new_external_credentials_are_required_and_walk_user_through_setup: true
+  never_commit_secrets: true
+  github_read_and_diagnose_without_confirmation: allowed
+  github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
+
+next_expected_action:
+  goal: Begin Level 0 and Level 1 implementation
+  do_not_jump_ahead_to:
+    - multiple social-provider integrations
+    - scheduling infrastructure before foundation is proven
+    - analytics before publishing pipeline exists
+    - optional AI
+  first_checkpoint: deployed app reliably reads/writes MongoDB data and can create/reopen a client and Master Content package with private S3 media upload
+```
+
+### Instructions for the next work session
+
+Read this README in full before beginning implementation. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
+
+Build incrementally and stop at implementation checkpoints for real testing. When a new external API, OAuth application, secret, AWS permission, or environment variable becomes necessary, explain exactly what is required and walk the user through that setup at that point rather than collecting every credential in advance.
+
+Add social networks one at a time. A provider is not considered complete merely because an OAuth screen or UI exists; its relevant checkpoint must work end to end before expanding to the next provider.
+
+Do not introduce new infrastructure solely because it is available. Prefer the architecture already established here unless a concrete implementation problem requires a change.
+
+Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
+
+**Next expected implementation work:** begin Level 0 / Level 1. Do not jump ahead to OAuth, scheduled publishing, analytics, multiple networks, or optional AI until the foundation and Client + Content checkpoint are working.
