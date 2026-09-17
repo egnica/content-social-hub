@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 
@@ -125,6 +125,10 @@ function initialForm(content) {
 
 export default function MasterContentForm({ clients, content = null }) {
   const router = useRouter();
+  const linkInputRef = useRef(null);
+  const textInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const [form, setForm] = useState(() => initialForm(content));
   const [media, setMedia] = useState(() =>
     (content?.media || []).map((asset) => ({
@@ -147,6 +151,11 @@ export default function MasterContentForm({ clients, content = null }) {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
+  }
+
+  function focusField(ref) {
+    ref.current?.focus();
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   function changeClient(nextClientId) {
@@ -332,11 +341,56 @@ export default function MasterContentForm({ clients, content = null }) {
   return (
     <form className={styles.formCard} onSubmit={submit}>
       <div className={styles.entryOptions} aria-label="Creation entry points">
-        <div className={styles.entryOption}>Paste URL</div>
-        <div className={styles.entryOption}>Upload Image</div>
-        <div className={styles.entryOption}>Upload Video</div>
-        <div className={styles.entryOption}>Start With Text</div>
+        <button
+          className={styles.entryOption}
+          type="button"
+          onClick={() => focusField(linkInputRef)}
+        >
+          Add Link
+        </button>
+        <button
+          className={styles.entryOption}
+          type="button"
+          onClick={() => imageInputRef.current?.click()}
+          disabled={uploading}
+        >
+          Upload Image
+        </button>
+        <button
+          className={styles.entryOption}
+          type="button"
+          onClick={() => videoInputRef.current?.click()}
+          disabled={uploading}
+        >
+          Upload Video
+        </button>
+        <button
+          className={styles.entryOption}
+          type="button"
+          onClick={() => focusField(textInputRef)}
+        >
+          Start With Text
+        </button>
       </div>
+
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={uploadFiles}
+        disabled={uploading}
+        hidden
+      />
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*"
+        multiple
+        onChange={uploadFiles}
+        disabled={uploading}
+        hidden
+      />
 
       {message ? (
         <div className={Object.keys(errors).length ? styles.errorNotice : styles.successNotice}>
@@ -384,14 +438,19 @@ export default function MasterContentForm({ clients, content = null }) {
           </label>
 
           <label className={styles.fieldFull}>
-            <span className={styles.label}>Primary URL</span>
+            <span className={styles.label}>Link to Share (optional)</span>
             <input
+              ref={linkInputRef}
               className={styles.input}
               type="url"
               value={form.primaryUrl}
               onChange={(event) => update("primaryUrl", event.target.value)}
-              placeholder="https://example.com/page"
+              placeholder="https://example.com/article"
+              aria-describedby="link-to-share-help"
             />
+            <span className={styles.fieldHint} id="link-to-share-help">
+              The article, webpage, video, event, or other destination this content should point to.
+            </span>
             {errors.primaryUrl ? (
               <span className={styles.fieldError}>{errors.primaryUrl}</span>
             ) : null}
@@ -400,6 +459,7 @@ export default function MasterContentForm({ clients, content = null }) {
           <label className={styles.fieldFull}>
             <span className={styles.label}>Source text</span>
             <textarea
+              ref={textInputRef}
               className={styles.textarea}
               value={form.text}
               onChange={(event) => update("text", event.target.value)}

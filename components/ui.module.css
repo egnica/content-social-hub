@@ -511,6 +511,12 @@
   font-size: 12px;
 }
 
+.fieldHint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .checkboxRow {
   display: flex;
   align-items: flex-start;
@@ -663,14 +669,36 @@
 }
 
 .entryOption {
+  appearance: none;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--muted);
   background: var(--surface-soft);
+  cursor: pointer;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 750;
   text-align: center;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.entryOption:hover {
+  color: var(--brand-dark);
+  border-color: #b9d4c1;
+  background: var(--brand-soft);
+}
+
+.entryOption:focus-visible {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(23, 107, 69, 0.12);
+  outline: none;
+}
+
+.entryOption:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .emptyState {
