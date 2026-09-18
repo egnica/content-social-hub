@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api";
 import {
   createFacebookOauthState,
@@ -17,7 +18,7 @@ export async function GET(request) {
       const connectionRequest = await getConnectionRequestByToken(requestToken);
 
       if (!connectionRequest || connectionRequest.status !== "pending") {
-        return Response.redirect(
+        return NextResponse.redirect(
           new URL("/connect/facebook/error?reason=request", request.url),
           303,
         );
@@ -28,7 +29,7 @@ export async function GET(request) {
         requestId: connectionRequest._id,
         mode: "request",
       });
-      const response = Response.redirect(
+      const response = NextResponse.redirect(
         createFacebookAuthorizationUrl(state),
         303,
       );
@@ -37,7 +38,7 @@ export async function GET(request) {
     }
 
     if (!(await getSession())) {
-      return Response.redirect(new URL("/login", request.url), 303);
+      return NextResponse.redirect(new URL("/login", request.url), 303);
     }
 
     const clientId = url.searchParams.get("clientId");
@@ -45,7 +46,7 @@ export async function GET(request) {
       clientId,
       mode: "owner",
     });
-    const response = Response.redirect(
+    const response = NextResponse.redirect(
       createFacebookAuthorizationUrl(state),
       303,
     );
