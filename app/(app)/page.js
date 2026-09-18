@@ -13,7 +13,7 @@ export default async function DashboardPage() {
     { label: "Active Clients", value: dashboard.activeClients, note: "Ready for content" },
     { label: "Master Content", value: dashboard.savedContent, note: "Saved packages" },
     { label: "Private Media", value: dashboard.uploadedMedia, note: "Uploaded originals" },
-    { label: "Reusable", value: dashboard.reusableContent, note: "Available as a starting point" },
+    { label: "Social Accounts", value: dashboard.connectedAccounts, note: dashboard.connectionProblems ? `${dashboard.connectionProblems} need attention` : "Connections healthy" },
   ];
 
   return (
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
       <PageHeader
         eyebrow="All Clients"
         title="Operational overview"
-        description="The foundation is active. Publishing, approvals, engagement, and analytics will fill this command center as their adapters are added."
+        description="The content foundation is active. Facebook Page connections and Account Health are now the first live social adapter."
         actions={
           <Link className={styles.button} href="/content/new">
             + Create Content
@@ -97,8 +97,12 @@ export default async function DashboardPage() {
               <div className={styles.attentionItem}>
                 <span className={styles.attentionDot} />
                 <div>
-                  <strong>Social adapters</strong>
-                  <p>Begin after the Level 1 checkpoint passes.</p>
+                  <strong>Facebook Pages</strong>
+                  <p>
+                    {dashboard.connectedAccounts
+                      ? `${dashboard.connectedAccounts} account connection${dashboard.connectedAccounts === 1 ? "" : "s"} saved.`
+                      : "Ready for the first OAuth connection."}
+                  </p>
                 </div>
               </div>
             </div>

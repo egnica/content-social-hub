@@ -20,6 +20,8 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 Levels 0 and 1 are implemented, deployed, and verified in the live application.
 
+Level 2 is implemented in code and awaits Meta / Resend credentials plus the live connection checkpoint. It must not be described as deployed or verified until a real Facebook Page is connected successfully.
+
 Implemented:
 
 - owner-only sign-in with a signed HTTP-only session cookie
@@ -33,6 +35,8 @@ Implemented:
 - reorderable attached media and a default primary-media choice
 - Save for Reuse
 - guarded client deletion and Master Content deletion
+- Facebook Pages OAuth adapter with direct Connect and emailed Request Connection paths
+- secure expiring connection links, explicit Page picker, encrypted token storage, and Account Health
 - placeholder screens that clearly identify later implementation levels
 
 Deployment checkpoint passed on September 17, 2026:
@@ -60,6 +64,8 @@ Verified in the deployed application:
 - S3 CORS for secure browser uploads from the Amplify application
 
 Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
+
+Meta, Resend, OAuth callback, token-encryption, and Level 2 checkpoint requirements are documented in `docs/LEVEL_2_FACEBOOK_SETUP.md`.
 
 ---
 
@@ -169,9 +175,9 @@ The Approval / Report Email is used for:
 ### Client lifecycle and deletion
 
 - setting a client to `Inactive` is the normal archive path and preserves its Content and history
-- permanent client deletion is allowed only when the client has zero saved Master Content packages
-- if Content exists, deletion is blocked and the operator must archive the client or delete its Content first
-- the application never silently orphans Content by removing its client
+- permanent client deletion is allowed only when the client has zero saved Master Content packages and zero connected social accounts
+- if Content or social connections exist, deletion is blocked and the operator must archive the client or explicitly remove those dependent records first
+- the application never silently orphans Content or OAuth connections by removing their client
 
 ### Not part of initial client creation
 
@@ -1314,6 +1320,8 @@ Create client
 
 ### Level 2 — First Social Connection
 
+First adapter: Facebook Pages through Meta OAuth.
+
 Build:
 
 - one network OAuth flow only
@@ -1327,6 +1335,10 @@ Build:
 
 Credential checkpoint:
 
+- add `APP_BASE_URL`, `META_APP_ID`, `META_APP_SECRET`, and optional `META_LOGIN_CONFIG_ID`
+- add a base64-encoded 32-byte `OAUTH_TOKEN_ENCRYPTION_KEY`
+- add `RESEND_API_KEY`, `EMAIL_FROM`, and optional `EMAIL_REPLY_TO`
+- configure the production callback URI documented in `docs/LEVEL_2_FACEBOOK_SETUP.md`
 - add only the first social network's API credentials / OAuth configuration
 - add Resend configuration needed for application mail
 
