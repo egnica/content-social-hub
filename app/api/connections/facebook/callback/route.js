@@ -8,12 +8,17 @@ import {
   getFacebookPermissions,
   listFacebookPages,
 } from "@/lib/facebook";
+import { getAppBaseUrl } from "@/lib/env";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-function errorRedirect(request, reason) {
-  const url = new URL("/connect/facebook/error", request.url);
+function appUrl(pathname) {
+  return new URL(pathname, getAppBaseUrl());
+}
+
+function errorRedirect(reason) {
+  const url = appUrl("/connect/facebook/error");
   url.searchParams.set("reason", reason);
   return NextResponse.redirect(url, 303);
 }
@@ -24,22 +29,22 @@ export async function GET(request) {
   const code = url.searchParams.get("code");
 
   if (url.searchParams.get("error")) {
-    return errorRedirect(request, "cancelled");
+    return errorRedirect("cancelled");
   }
 
   if (!stateValue || !code) {
-    return errorRedirect(request, "invalid");
+    return errorRedirect("invalid");
   }
 
   try {
     const state = await consumeFacebookOauthState(stateValue);
 
     if (!state) {
-      return errorRedirect(request, "expired");
+      return errorRedirect("expired");
     }
 
     if (state.mode === "owner" && !(await getSession())) {
-      return NextResponse.redirect(new URL("/login", request.url), 303);
+      return NextResponse.redirect(appUrl("/login"), 303);
     }
 
     const token = await exchangeFacebookCode(code);
@@ -54,13 +59,13 @@ export async function GET(request) {
       pages,
       permissions,
     });
-    const selectionUrl = new URL("/connect/facebook/select", request.url);
+    const selectionUrl = appUrl("/connect/facebook/select");
     selectionUrl.searchParams.set("token", selectionToken);
     const response = NextResponse.redirect(selectionUrl, 303);
     response.headers.set("Referrer-Policy", "no-referrer");
     return response;
   } catch (error) {
     console.error(error);
-    return errorRedirect(request, "provider");
+    return errorRedirect("provider");
   }
 }

@@ -4,10 +4,15 @@ import {
   createFacebookOauthState,
   getConnectionRequestByToken,
 } from "@/lib/connections";
+import { getAppBaseUrl } from "@/lib/env";
 import { createFacebookAuthorizationUrl } from "@/lib/facebook";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
+
+function appUrl(pathname) {
+  return new URL(pathname, getAppBaseUrl());
+}
 
 export async function GET(request) {
   try {
@@ -19,7 +24,7 @@ export async function GET(request) {
 
       if (!connectionRequest || connectionRequest.status !== "pending") {
         return NextResponse.redirect(
-          new URL("/connect/facebook/error?reason=request", request.url),
+          appUrl("/connect/facebook/error?reason=request"),
           303,
         );
       }
@@ -38,7 +43,7 @@ export async function GET(request) {
     }
 
     if (!(await getSession())) {
-      return NextResponse.redirect(new URL("/login", request.url), 303);
+      return NextResponse.redirect(appUrl("/login"), 303);
     }
 
     const clientId = url.searchParams.get("clientId");
