@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import {
   consumeFacebookOauthState,
   createFacebookSelectionFlow,
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 function errorRedirect(request, reason) {
   const url = new URL("/connect/facebook/error", request.url);
   url.searchParams.set("reason", reason);
-  return Response.redirect(url, 303);
+  return NextResponse.redirect(url, 303);
 }
 
 export async function GET(request) {
@@ -38,7 +39,7 @@ export async function GET(request) {
     }
 
     if (state.mode === "owner" && !(await getSession())) {
-      return Response.redirect(new URL("/login", request.url), 303);
+      return NextResponse.redirect(new URL("/login", request.url), 303);
     }
 
     const token = await exchangeFacebookCode(code);
@@ -55,7 +56,7 @@ export async function GET(request) {
     });
     const selectionUrl = new URL("/connect/facebook/select", request.url);
     selectionUrl.searchParams.set("token", selectionToken);
-    const response = Response.redirect(selectionUrl, 303);
+    const response = NextResponse.redirect(selectionUrl, 303);
     response.headers.set("Referrer-Policy", "no-referrer");
     return response;
   } catch (error) {
