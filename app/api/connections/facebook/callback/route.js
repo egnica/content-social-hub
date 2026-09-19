@@ -77,12 +77,12 @@ export async function GET(request) {
       .map((permission) => permission.permission);
     const tokenDetails =
       tokenResult.status === "fulfilled" ? tokenResult.value : null;
-    let pages = pageResult.status === "fulfilled" ? pageResult.value : [];
-    let pageDiscoveryMethod = pages.length ? "me/accounts" : "none";
     const targetedPageIds = getFacebookPageTargetIds(tokenDetails);
+    let pages = [];
+    let pageDiscoveryMethod = "none";
     let targetedPagesErrors = [];
 
-    if (!pages.length && targetedPageIds.length) {
+    if (targetedPageIds.length) {
       const targetedPages = await listFacebookPagesByIds(
         token.access_token,
         targetedPageIds,
@@ -95,6 +95,14 @@ export async function GET(request) {
 
       if (pages.length) {
         pageDiscoveryMethod = "granular_scopes";
+      }
+    }
+
+    if (!pages.length && pageResult.status === "fulfilled") {
+      pages = pageResult.value;
+
+      if (pages.length) {
+        pageDiscoveryMethod = "me/accounts";
       }
     }
 
