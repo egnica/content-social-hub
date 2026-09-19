@@ -5,7 +5,10 @@ import {
 } from "@/lib/connections";
 import {
   exchangeFacebookCode,
-  getFacebookPermissions,
+  FacebookApiError,
+  getFacebookPermissionStatuses,
+  getFacebookRequiredPermissions,
+  inspectFacebookToken,
   listFacebookPages,
 } from "@/lib/facebook";
 import { getAppBaseUrl } from "@/lib/env";
@@ -21,6 +24,18 @@ function errorRedirect(reason) {
   const url = appUrl("/connect/facebook/error");
   url.searchParams.set("reason", reason);
   return NextResponse.redirect(url, 303);
+}
+
+function safeFacebookError(error) {
+  const details = error instanceof FacebookApiError ? error.details : null;
+
+  return {
+    message: error?.message || "Facebook returned an unexpected response.",
+    type: details?.type || "",
+    code: details?.code ?? null,
+    subcode: details?.error_subcode ?? null,
+    traceId: details?.fbtrace_id || "",
+  };
 }
 
 export async function GET(request) {
@@ -48,16 +63,52 @@ export async function GET(request) {
     }
 
     const token = await exchangeFacebookCode(code);
-    const [permissions, pages] = await Promise.all([
-      getFacebookPermissions(token.access_token),
+    const [permissionResult, pageResult, tokenResult] = await Promise.allSettled([
+      getFacebookPermissionStatuses(token.access_token),
       listFacebookPages(token.access_token),
+      inspectFacebookToken(token.access_token),
     ]);
+    const permissionStatuses =
+      permissionResult.status === "fulfilled" ? permissionResult.value : [];
+    const permissions = permissionStatuses
+      .filter((permission) => permission.status === "granted")
+      .map((permission) => permission.permission);
+    const pages = pageResult.status === "fulfilled" ? pageResult.value : [];
+    const tokenDetails =
+      tokenResult.status === "fulfilled" ? tokenResult.value : null;
+    const diagnostics = {
+      requestedPermissions: getFacebookRequiredPermissions(),
+      permissionStatuses,
+      tokenIsValid: tokenDetails?.isValid ?? null,
+      tokenScopes: tokenDetails?.scopes || [],
+      pageCount: pages.length,
+      permissionsError:
+        permissionResult.status === "rejected"
+          ? safeFacebookError(permissionResult.reason)
+          : null,
+      pagesError:
+        pageResult.status === "rejected"
+          ? safeFacebookError(pageResult.reason)
+          : null,
+      tokenInspectionError:
+        tokenResult.status === "rejected"
+          ? safeFacebookError(tokenResult.reason)
+          : null,
+    };
+
+    console.info("Facebook OAuth diagnostic summary", {
+      clientId: state.clientId,
+      mode: state.mode,
+      diagnostics,
+    });
+
     const selectionToken = await createFacebookSelectionFlow({
       clientId: state.clientId,
       requestId: state.requestId,
       mode: state.mode,
       pages,
       permissions,
+      diagnostics,
     });
     const selectionUrl = appUrl("/connect/facebook/select");
     selectionUrl.searchParams.set("token", selectionToken);

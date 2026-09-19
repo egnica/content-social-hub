@@ -1104,6 +1104,53 @@
   font-size: 11px;
 }
 
+.facebookDiagnostics {
+  margin: 18px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.facebookDiagnostics summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.facebookDiagnostics dl {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.facebookDiagnostics dl div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.facebookDiagnostics dt {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.facebookDiagnostics dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.facebookDiagnosticError {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 820px) {
   .connectionProviderCard,
   .connectionItem {

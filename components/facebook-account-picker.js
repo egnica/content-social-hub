@@ -4,6 +4,82 @@ import Link from "next/link";
 import { useState } from "react";
 import styles from "@/components/ui.module.css";
 
+function DiagnosticList({ values }) {
+  if (!values?.length) return <span>None returned</span>;
+  return <span>{values.join(", ")}</span>;
+}
+
+function FacebookDiagnostics({ diagnostics }) {
+  if (!diagnostics) return null;
+
+  const grantedPermissions = diagnostics.permissionStatuses
+    ?.filter((item) => item.status === "granted")
+    .map((item) => item.permission);
+  const nonGrantedPermissions = diagnostics.permissionStatuses
+    ?.filter((item) => item.status !== "granted")
+    .map((item) => `${item.permission} (${item.status})`);
+  const errors = [
+    ["Permission check", diagnostics.permissionsError],
+    ["Page listing", diagnostics.pagesError],
+    ["Token inspection", diagnostics.tokenInspectionError],
+  ].filter(([, error]) => error);
+
+  return (
+    <details className={styles.facebookDiagnostics} open={!diagnostics.pageCount}>
+      <summary>Facebook connection diagnostics</summary>
+      <dl>
+        <div>
+          <dt>Requested</dt>
+          <dd><DiagnosticList values={diagnostics.requestedPermissions} /></dd>
+        </div>
+        <div>
+          <dt>Granted</dt>
+          <dd><DiagnosticList values={grantedPermissions} /></dd>
+        </div>
+        {nonGrantedPermissions?.length ? (
+          <div>
+            <dt>Not granted</dt>
+            <dd><DiagnosticList values={nonGrantedPermissions} /></dd>
+          </div>
+        ) : null}
+        <div>
+          <dt>Token scopes</dt>
+          <dd><DiagnosticList values={diagnostics.tokenScopes} /></dd>
+        </div>
+        <div>
+          <dt>Token valid</dt>
+          <dd>
+            {diagnostics.tokenIsValid === null
+              ? "Unknown"
+              : diagnostics.tokenIsValid
+                ? "Yes"
+                : "No"}
+          </dd>
+        </div>
+        <div>
+          <dt>Pages returned</dt>
+          <dd>{diagnostics.pageCount}</dd>
+        </div>
+      </dl>
+      {errors.map(([label, diagnosticError]) => (
+        <div className={styles.facebookDiagnosticError} key={label}>
+          <strong>{label}:</strong> {diagnosticError.message}
+          {diagnosticError.code !== null
+            ? ` (code ${diagnosticError.code}${
+                diagnosticError.subcode !== null
+                  ? `, subcode ${diagnosticError.subcode}`
+                  : ""
+              })`
+            : ""}
+          {diagnosticError.traceId
+            ? ` Trace: ${diagnosticError.traceId}`
+            : ""}
+        </div>
+      ))}
+    </details>
+  );
+}
+
 export default function FacebookAccountPicker({
   token,
   flow,
@@ -121,10 +197,12 @@ export default function FacebookAccountPicker({
         </div>
       ) : (
         <div className={styles.errorNotice}>
-          Facebook did not return an eligible Page. Confirm that this Facebook
-          user has Page access with permission to create content.
+          Facebook authorized the connection but did not return an eligible
+          Page. The diagnostics below show what Meta returned.
         </div>
       )}
+
+      <FacebookDiagnostics diagnostics={flow.diagnostics} />
 
       <button
         className={styles.button}
