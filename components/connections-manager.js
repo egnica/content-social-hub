@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 
@@ -38,6 +38,13 @@ export default function ConnectionsManager({
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [checkingId, setCheckingId] = useState("");
+
+  useEffect(() => {
+    setConnections(initialConnections);
+    setRequests(initialRequests);
+    setMessage("");
+    setError("");
+  }, [initialConnections, initialRequests, selectedClient?._id]);
 
   function changeClient(event) {
     const clientId = event.target.value;
