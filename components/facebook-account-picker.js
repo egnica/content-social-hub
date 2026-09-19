@@ -22,6 +22,10 @@ function FacebookDiagnostics({ diagnostics }) {
     ["Permission check", diagnostics.permissionsError],
     ["Page listing", diagnostics.pagesError],
     ["Token inspection", diagnostics.tokenInspectionError],
+    ...(diagnostics.targetedPagesErrors || []).map((error) => [
+      `Selected Page ${error.pageId}`,
+      error,
+    ]),
   ].filter(([, error]) => error);
 
   return (
@@ -54,6 +58,20 @@ function FacebookDiagnostics({ diagnostics }) {
               : diagnostics.tokenIsValid
                 ? "Yes"
                 : "No"}
+          </dd>
+        </div>
+        <div>
+          <dt>Selected Page targets</dt>
+          <dd>{diagnostics.granularPageTargetCount ?? "Unknown"}</dd>
+        </div>
+        <div>
+          <dt>Page source</dt>
+          <dd>
+            {diagnostics.pageDiscoveryMethod === "granular_scopes"
+              ? "Meta selected Pages"
+              : diagnostics.pageDiscoveryMethod === "me/accounts"
+                ? "Managed Pages list"
+                : "None"}
           </dd>
         </div>
         <div>

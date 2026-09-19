@@ -6,10 +6,12 @@ import {
 import {
   exchangeFacebookCode,
   FacebookApiError,
+  getFacebookPageTargetIds,
   getFacebookPermissionStatuses,
   getFacebookRequiredPermissions,
   inspectFacebookToken,
   listFacebookPages,
+  listFacebookPagesByIds,
 } from "@/lib/facebook";
 import { getAppBaseUrl } from "@/lib/env";
 import { getSession } from "@/lib/session";
@@ -73,14 +75,36 @@ export async function GET(request) {
     const permissions = permissionStatuses
       .filter((permission) => permission.status === "granted")
       .map((permission) => permission.permission);
-    const pages = pageResult.status === "fulfilled" ? pageResult.value : [];
     const tokenDetails =
       tokenResult.status === "fulfilled" ? tokenResult.value : null;
+    let pages = pageResult.status === "fulfilled" ? pageResult.value : [];
+    let pageDiscoveryMethod = pages.length ? "me/accounts" : "none";
+    const targetedPageIds = getFacebookPageTargetIds(tokenDetails);
+    let targetedPagesErrors = [];
+
+    if (!pages.length && targetedPageIds.length) {
+      const targetedPages = await listFacebookPagesByIds(
+        token.access_token,
+        targetedPageIds,
+      );
+      pages = targetedPages.pages;
+      targetedPagesErrors = targetedPages.errors.map(({ pageId, error }) => ({
+        pageId,
+        ...safeFacebookError(error),
+      }));
+
+      if (pages.length) {
+        pageDiscoveryMethod = "granular_scopes";
+      }
+    }
+
     const diagnostics = {
       requestedPermissions: getFacebookRequiredPermissions(),
       permissionStatuses,
       tokenIsValid: tokenDetails?.isValid ?? null,
       tokenScopes: tokenDetails?.scopes || [],
+      granularPageTargetCount: targetedPageIds.length,
+      pageDiscoveryMethod,
       pageCount: pages.length,
       permissionsError:
         permissionResult.status === "rejected"
@@ -94,6 +118,7 @@ export async function GET(request) {
         tokenResult.status === "rejected"
           ? safeFacebookError(tokenResult.reason)
           : null,
+      targetedPagesErrors,
     };
 
     console.info("Facebook OAuth diagnostic summary", {
