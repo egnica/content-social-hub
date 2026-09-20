@@ -1753,24 +1753,25 @@ The Work session owns the product-level view. It should:
 - decide the active level, dependencies, acceptance criteria, and task order
 - create or update the active phase document in `docs/`
 - break a phase into small implementation tasks that can be tested independently
-- give each implementation Chat one contained assignment
+- maintain an ordered task queue in the active phase document and mark only the next bounded task `READY`
 - review the implementation Chat's handoff and decide whether the checkpoint passed
 - update the README only after a result is verified
 
 ### Implementation Chat: scoped delivery worker
 
-An implementation Chat owns only the task assigned by the user or Work session. It must:
+An implementation Chat selects its work from the active phase document. It does not need the user to restate the assignment. It must:
 
 1. Read this README in full.
-2. Read the active phase document named in the assignment.
-3. Restate the current checkpoint, assigned scope, acceptance criteria, and expected progress-log location before editing code.
+2. Open the `active_phase_document` named in **AI / Work Handoff Context**.
+3. Select the first task marked `READY`. That task ID and its acceptance criteria become the complete assignment.
 4. Inspect the relevant implementation and existing uncommitted changes.
-5. Implement only the assigned slice. Do not redesign the roadmap or jump to later levels.
-6. Run the relevant automated checks and identify any live or manual test still required.
-7. Update the active phase document only when the user has authorized repository edits and the result is supported by evidence.
-8. Return the required handoff report below.
+5. Restate the current checkpoint, selected task, acceptance criteria, and progress-log location before editing code.
+6. Implement only that one `READY` task. Do not begin `WAITING`, `BLOCKED`, or later-level work.
+7. Run the relevant automated checks and identify any live or manual test still required.
+8. Update the task status and append evidence to the active phase document when repository edits are authorized.
+9. Return the required handoff report below and stop.
 
-If the README and phase document disagree, stop and ask the user or Work session which direction is authoritative. Do not resolve product-scope conflicts by guessing.
+If no task is marked `READY`, or if the README and phase document disagree, stop and ask the user or Work session for direction. Do not select work by guessing.
 
 ### What each project document means
 
@@ -1782,12 +1783,22 @@ If the README and phase document disagree, stop and ask the user or Work session
 
 A phase document is not merely a historical log. It begins as the approved plan for that phase and becomes the durable completion record as its tasks are implemented and verified. Code existing is not enough to mark a checkpoint complete; the documented pass condition must be demonstrated.
 
+Task statuses have fixed meanings:
+
+- `DONE`: implemented and supported by the recorded verification evidence
+- `READY`: the next bounded task an implementation Chat should select automatically
+- `WAITING`: planned, but dependent on an earlier task or checkpoint
+- `BLOCKED`: cannot proceed until a named problem or external requirement is resolved
+- `MANUAL`: requires the user to perform or participate in a live external-system test
+
+There should normally be only one `READY` task. This keeps separate implementation Chats from independently choosing overlapping work.
+
 ### Required implementation handoff
 
 Every implementation Chat must end with this information, even when the task is blocked:
 
 ```text
-Task: <the assigned task>
+Task: <task ID and title selected from the active phase document>
 Result: complete | partially complete | blocked
 Files changed: <paths or none>
 Checks run: <commands and results>
@@ -1803,16 +1814,17 @@ An implementation Chat must not mark a level complete in this README. It reports
 
 ### Starting a new implementation Chat
 
-Give the new Chat one specific task and use this instruction:
+The user does not need to write a separate assignment. Start the new Chat with this instruction:
 
-> Read `README.md` in full, especially **Implementation Status**, **Project Management and Chat Delegation Workflow**, **Locked Product Principles**, and **AI / Work Handoff Context**. Then read the active phase document named in this assignment. Confirm the current checkpoint, your exact scope, the acceptance criteria, and where you will record progress before changing code. Implement only this task, test it, update the authorized phase record, and finish with the README's required implementation handoff.
+> Read `README.md` in full, especially **Implementation Status**, **Project Management and Chat Delegation Workflow**, **Locked Product Principles**, and **AI / Work Handoff Context**. Open the named `active_phase_document`, select its first `READY` task, and treat that task and its acceptance criteria as your complete assignment. Confirm what you selected and where progress will be recorded before changing code. Complete only that task, test it, update the authorized phase record, and finish with the README's required implementation handoff.
 
 Current delegation state:
 
 - Active product stage: **Level 2, First Social Connection, in progress**
+- Active phase document: `docs/LEVEL_2_FACEBOOK_SETUP.md`
 - Verified Level 2 result: direct Facebook connection for Davis Criminal Defense under Andrew_Davis and Let Us Clean LLC under Let_Us_Clean
 - Remaining Level 2 work: correct the selected-Page capability lookup, verify the emailed Request Connection / Resend flow, and confirm request completion and revocation behavior
-- Active implementation assignment: **none until Work or the user supplies one**
+- Current implementation task: automatically select the first `READY` task in the active phase document
 
 ---
 
@@ -1827,6 +1839,7 @@ project:
   default_branch: main
   status: level_2_in_progress_direct_connect_deployed_and_verified
   source_of_truth: README.md
+  active_phase_document: docs/LEVEL_2_FACEBOOK_SETUP.md
 
 current_infrastructure:
   framework: Next.js
@@ -2074,7 +2087,8 @@ architecture_rules:
 work_session_rules:
   read_full_readme_first: true
   work_owns_product_roadmap_and_verified_status: true
-  implementation_chat_requires_one_bounded_assignment: true
+  implementation_chat_selects_first_ready_task_from_active_phase_document: true
+  implementation_chat_completes_one_ready_task_per_session: true
   active_phase_document_is_plan_and_completion_record: true
   implementation_chat_must_return_required_handoff: true
   implementation_chat_must_not_mark_level_complete: true
@@ -2088,6 +2102,8 @@ work_session_rules:
 
 next_expected_action:
   goal: Finish the remaining Level 2 Facebook cleanup and verification without rebuilding the working direct-connect architecture.
+  task_source: docs/LEVEL_2_FACEBOOK_SETUP.md
+  selection_rule: select_the_first_task_marked_READY
   immediate_tasks:
     - fix the direct selected-Page tasks/capability lookup while preserving can-publish validation
     - verify Request Connection through Resend and the secure temporary client flow end to end

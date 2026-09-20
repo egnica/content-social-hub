@@ -11,6 +11,59 @@ Level 2 adds the first real social-account adapter. It supports:
 
 No Facebook password is collected or stored by Content Social Hub.
 
+## Phase progress log
+
+- Phase status: **IN PROGRESS**
+- Last verified checkpoint: **September 19, 2026**
+- Next implementation rule: select the first task marked `READY`, complete only that task, record the evidence here, and return the README handoff report
+- Level 2 is not complete until Work reviews the remaining live-test evidence and updates the README
+
+### Task queue
+
+| ID | Status | Task | Evidence or dependency |
+| --- | --- | --- | --- |
+| L2-01 | `DONE` | Deploy the first Facebook Pages OAuth adapter | Production OAuth returns successfully to Content Social Hub |
+| L2-02 | `DONE` | Connect and persist real Pages under the correct clients | `Andrew_Davis -> Davis Criminal Defense`; `Let_Us_Clean -> Let Us Clean LLC` |
+| L2-03 | `DONE` | Verify Account Health and client-scoped Social Accounts state | Both saved connections returned `Healthy`; switching clients showed only that client's Page |
+| L2-04 | `READY` | Correct the selected-Page capability lookup | Use the acceptance criteria below; preserve the working direct Connect architecture |
+| L2-05 | `WAITING` | Test Request Connection through Resend and the secure client link | Begins after L2-04 is reviewed; requires a live email and private-browser test |
+| L2-06 | `WAITING` | Verify request completion and replacement-link revocation | Depends on a successful L2-05 connection request |
+
+There should be only one `READY` task. A new implementation agent selects L2-04 automatically without asking the user to restate the assignment.
+
+### L2-04 acceptance criteria
+
+The selected-Page lookup must stop requesting the unsupported Facebook Page `tasks` field that produced Meta error `(#100) Tried accessing nonexisting field (tasks)`.
+
+The implementation must:
+
+1. Preserve the deployed direct OAuth and selected-Page recovery flow.
+2. Derive the selected Page's relevant permissions from the token information Meta returns, including granular target IDs where applicable.
+3. Preserve publish-capability validation for `pages_manage_posts`; do not make every recovered Page publishable by default.
+4. Preserve encrypted Page-token storage, correct client association, and existing Account Health behavior.
+5. Add or update focused automated coverage for Page discovery, permission mapping, and health/capability evaluation.
+6. Run the relevant checks and record the commands and results in a dated progress entry below.
+
+Do not rebuild the Meta application, OAuth configuration, database model, or client-selection architecture while completing L2-04.
+
+### Progress entries
+
+#### September 19, 2026: direct connection verified
+
+- Connected Davis Criminal Defense under Andrew_Davis.
+- Connected Let Us Clean LLC under Let_Us_Clean.
+- Confirmed both connections returned `Healthy`.
+- Confirmed switching clients did not display another client's saved Page.
+- Identified the remaining direct-target lookup error involving the unsupported `tasks` field.
+
+#### September 20, 2026: task queue established
+
+- Converted this setup guide into the active Level 2 plan and progress record.
+- Marked L2-04 as the single task ready for the next implementation agent.
+- Kept the emailed Request Connection tests waiting until the capability cleanup is reviewed.
+
+Future implementation agents must append a dated entry containing the task ID, files changed, checks run, live-test status, decisions, and remaining blockers. They may update the selected task to `DONE`, `BLOCKED`, or `MANUAL`, but only Work may declare the whole level complete in the README.
+
 ## Amplify environment variables
 
 Add these server-side variables to the Amplify application after the Phase 2 code is merged:
