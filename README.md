@@ -20,7 +20,7 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 Levels 0 and 1 are implemented, deployed, and verified in the live application.
 
-Level 2 Facebook Pages **direct Connect** is implemented, deployed, and verified against real Facebook Pages as of September 19, 2026. The emailed **Request Connection** / Resend path is implemented in code but should still receive its own end-to-end live verification before Level 2 is considered completely closed.
+Level 2 is in progress. Facebook Pages **direct Connect** is implemented, deployed, and verified against real Facebook Pages as of September 19, 2026. The emailed **Request Connection** / Resend path is implemented in code but should still receive its own end-to-end live verification before Level 2 is considered completely closed. The project has not moved to Level 3 yet.
 
 Implemented:
 
@@ -1741,6 +1741,81 @@ Build:
 
 ---
 
+## Project Management and Chat Delegation Workflow
+
+This repository uses two different kinds of ChatGPT sessions. Keeping their responsibilities separate prevents a narrow implementation task from silently changing the product plan.
+
+### Work session: product manager and architect
+
+The Work session owns the product-level view. It should:
+
+- maintain this README as the master roadmap and verified project checkpoint
+- decide the active level, dependencies, acceptance criteria, and task order
+- create or update the active phase document in `docs/`
+- break a phase into small implementation tasks that can be tested independently
+- give each implementation Chat one contained assignment
+- review the implementation Chat's handoff and decide whether the checkpoint passed
+- update the README only after a result is verified
+
+### Implementation Chat: scoped delivery worker
+
+An implementation Chat owns only the task assigned by the user or Work session. It must:
+
+1. Read this README in full.
+2. Read the active phase document named in the assignment.
+3. Restate the current checkpoint, assigned scope, acceptance criteria, and expected progress-log location before editing code.
+4. Inspect the relevant implementation and existing uncommitted changes.
+5. Implement only the assigned slice. Do not redesign the roadmap or jump to later levels.
+6. Run the relevant automated checks and identify any live or manual test still required.
+7. Update the active phase document only when the user has authorized repository edits and the result is supported by evidence.
+8. Return the required handoff report below.
+
+If the README and phase document disagree, stop and ask the user or Work session which direction is authoritative. Do not resolve product-scope conflicts by guessing.
+
+### What each project document means
+
+| Location | Purpose | Who maintains it |
+| --- | --- | --- |
+| `README.md` | Master product plan, locked principles, verified level status, active stage, and operating rules | Work session |
+| `docs/LEVEL_*.md` | Phase workbook: scope and acceptance criteria first, then implementation notes, test evidence, decisions, blockers, and final completion record | Work session plans it; authorized implementation Chats add task evidence |
+| Chat handoff | Immediate report of exactly what changed and what still needs verification | Implementation Chat |
+
+A phase document is not merely a historical log. It begins as the approved plan for that phase and becomes the durable completion record as its tasks are implemented and verified. Code existing is not enough to mark a checkpoint complete; the documented pass condition must be demonstrated.
+
+### Required implementation handoff
+
+Every implementation Chat must end with this information, even when the task is blocked:
+
+```text
+Task: <the assigned task>
+Result: complete | partially complete | blocked
+Files changed: <paths or none>
+Checks run: <commands and results>
+Live/manual verification: <completed evidence or exact remaining steps>
+Phase document updated: <path and section, or not authorized>
+Decisions made: <only decisions inside the assigned scope>
+Open risks or blockers: <items or none>
+Git state: <branch, commit if authorized, and whether push is still needed>
+Recommended next task: <one bounded follow-up, not an entire phase>
+```
+
+An implementation Chat must not mark a level complete in this README. It reports evidence to the Work session, which decides whether the checkpoint passed and updates project status.
+
+### Starting a new implementation Chat
+
+Give the new Chat one specific task and use this instruction:
+
+> Read `README.md` in full, especially **Implementation Status**, **Project Management and Chat Delegation Workflow**, **Locked Product Principles**, and **AI / Work Handoff Context**. Then read the active phase document named in this assignment. Confirm the current checkpoint, your exact scope, the acceptance criteria, and where you will record progress before changing code. Implement only this task, test it, update the authorized phase record, and finish with the README's required implementation handoff.
+
+Current delegation state:
+
+- Active product stage: **Level 2, First Social Connection, in progress**
+- Verified Level 2 result: direct Facebook connection for Davis Criminal Defense under Andrew_Davis and Let Us Clean LLC under Let_Us_Clean
+- Remaining Level 2 work: correct the selected-Page capability lookup, verify the emailed Request Connection / Resend flow, and confirm request completion and revocation behavior
+- Active implementation assignment: **none until Work or the user supplies one**
+
+---
+
 ## AI / Work Handoff Context
 
 This section exists to give a new ChatGPT / Work session a compact, machine-readable project snapshot. It does **not** replace the rest of this README. A new work session should read the full README before proposing architecture or implementation changes.
@@ -1750,7 +1825,7 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_2_facebook_direct_connect_deployed_and_verified
+  status: level_2_in_progress_direct_connect_deployed_and_verified
   source_of_truth: README.md
 
 current_infrastructure:
@@ -1998,6 +2073,11 @@ architecture_rules:
 
 work_session_rules:
   read_full_readme_first: true
+  work_owns_product_roadmap_and_verified_status: true
+  implementation_chat_requires_one_bounded_assignment: true
+  active_phase_document_is_plan_and_completion_record: true
+  implementation_chat_must_return_required_handoff: true
+  implementation_chat_must_not_mark_level_complete: true
   preserve_locked_product_decisions_unless_user_reopens_them: true
   build_incrementally: true
   stop_at_checkpoint_and_test_before_next_level: true
@@ -2024,7 +2104,7 @@ next_expected_action:
 
 ### Instructions for the next work session
 
-Read this README in full before beginning implementation. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
+Read this README in full before beginning implementation. Follow **Project Management and Chat Delegation Workflow**. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
 
 Build incrementally and stop at implementation checkpoints for real testing. When a new external API, OAuth application, secret, AWS permission, or environment variable becomes necessary, explain exactly what is required and walk the user through that setup at that point rather than collecting every credential in advance.
 
