@@ -135,8 +135,8 @@ Every publish must resolve the social connection by the platform version's saved
 
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
-| L3-01 | `READY` | Add destination / platform-version foundation | Persist Facebook destination versions separately; Master Content can select only its client's connected Facebook Page(s); no provider publish yet |
-| L3-02 | `WAITING` | Build Facebook editor, inheritance, live validation, and preview | Depends on L3-01 version records and destination selection |
+| L3-01 | `DONE` | Add destination / platform-version foundation | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; scoped selection, persistence, exclusion/reactivation, and no-publish behavior passed |
+| L3-02 | `READY` | Build Facebook editor, inheritance, live validation, and preview | L3-01 platform-version foundation is verified |
 | L3-03 | `WAITING` | Publish first real Facebook text/link post | Depends on L3-02; live checkpoint uses `Nicholas_Egner -> GIGnovate` |
 | L3-04 | `WAITING` | Add Facebook image publishing from private S3 | Depends on successful text/link publishing and provider result persistence |
 | L3-05 | `WAITING` | Add Facebook video publishing from private S3 | Depends on stable publish pipeline; standard Page video first, not Reels |
@@ -204,22 +204,46 @@ After deployment:
 
 Turn the selected Facebook destination version into a real editable publishing form while preserving the Master-default/platform-override rule.
 
-### Planned acceptance boundary
+The operator should be able to edit the saved GIGnovate Facebook version, understand whether it still matches the current Master Content revision, see live blocking/warning validation, and view an approximate Facebook post preview. This task still must not publish anything to Meta.
 
-- editable Facebook message/caption
-- destination URL treatment for the first publisher
-- media selection based on attached Master media
-- clear indication of destination Page
-- inherited-vs-customized behavior
-- Master revision change notice; customized work is not silently overwritten
-- deliberate `Update From Master` / `Reset to Master` behavior where required
-- continuous blocking validation and warnings
-- destination Account Health/capability reflected in validation
-- Facebook-style live preview beside or near editable fields
-- save/reopen version persistence
-- no provider publishing call yet
+### Acceptance criteria
 
-Detailed implementation acceptance criteria may be refined after L3-01 reveals the exact persisted version shape, but this task must stay inside the editor/validation/preview boundary.
+1. Render a Facebook-specific editor for each active Facebook platform version on the Master Content edit page.
+2. Clearly identify the destination Page using the saved destination name and avatar where available.
+3. Expose editable Facebook-version fields for at least:
+   - message/caption
+   - destination URL
+   - selected media inherited from attached Master media
+   - primary media choice where media exists
+4. Persist edits to the existing `platform_versions` record rather than creating a second version for the same Master Content + social connection.
+5. Editing Facebook-specific fields marks the version as customized and increments/records a destination revision suitable for later publish logging.
+6. New/unmodified platform versions retain their inherited Master defaults and `masterRevisionSynced` marker.
+7. If the Master Content revision changes after a Facebook version was synchronized, the editor must detect that difference and show a clear `Master content changed` state.
+8. A customized Facebook version must never be silently overwritten when Master Content changes.
+9. Provide a deliberate action to synchronize/reset the Facebook version from the current Master defaults. That action must update the synchronized Master revision and make clear that destination-specific edits are being replaced.
+10. Live validation must run without a separate Preflight button and include at minimum:
+    - blocking state when the saved destination is no longer healthy/publishable
+    - blocking state when the version has no usable message, URL, or media
+    - warnings/non-blocking notices where useful for stale Master inheritance
+11. Render an approximate Facebook-style live preview using the current version state, including destination identity, message, and available link/media treatment where practical.
+12. Save/reopen must restore the Facebook version fields, customization state, synchronization marker, and validation-relevant state.
+13. Excluded/inactive platform versions must not appear as active editable/publishable destinations until reactivated.
+14. Add focused automated coverage for inherited-vs-customized behavior, Master revision change detection, reset/update-from-Master behavior, validation, and persistence logic that can be isolated from MongoDB/UI rendering.
+15. Run the relevant tests/lint/build or syntax checks available in the environment and record exact results below.
+16. No Facebook Graph publishing request, remote post creation, publish attempt, scheduling, approval flow, or analytics work may be added in L3-02.
+
+### Live/manual verification
+
+After deployment, use the existing `This Test 1` Master Content item owned by `Nicholas_Egner` and its saved GIGnovate platform version unless a cleaner temporary item is preferred.
+
+1. Open the Master Content item and confirm the active GIGnovate Facebook editor loads with inherited source text and destination URL.
+2. Change the Facebook message to a destination-specific value, save, refresh/reopen, and confirm the override persists.
+3. Change the Master source text, save Master Content, and confirm the customized Facebook message is not silently overwritten.
+4. Confirm the editor shows that Master Content changed.
+5. Use the deliberate update/reset-from-Master action and confirm the Facebook version refreshes from the current Master defaults and the stale-revision notice clears.
+6. Exercise at least one blocking validation state and confirm it is visible without a separate Preflight action.
+7. Confirm the Facebook preview changes live as the Facebook-version fields change.
+8. Confirm nothing was published to Facebook.
 
 ## L3-03 — First Real Facebook Text/Link Publish
 
@@ -313,5 +337,36 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
 - Locked the Level 3 ordering around a separate platform-version model and durable publishing-attempt records.
 - Explicitly excluded scheduling, approvals, additional providers, analytics, and Reels from the first publisher phase.
 - Marked only `L3-01` as `READY`.
+
+### September 28, 2026: L3-01 destination / platform-version foundation
+
+- Task: `L3-01`
+- Outcome: **DONE**
+- Implementation commit: `0dd0099f0f509ef28875badb20d8f63f8859f083` (`Add Level 3 platform version foundation`).
+- Files changed:
+  - `app/(app)/content/[id]/page.js`
+  - `app/api/content/[id]/destinations/route.js`
+  - `components/platform-destination-selector.js`
+  - `lib/platform-version-logic.js`
+  - `lib/platform-versions.js`
+  - `tests/platform-version-logic.test.js`
+- Automated verification:
+  - focused platform-version logic tests passed `4/4`
+  - server-side syntax checks passed
+  - Amplify deployment job `43` succeeded
+- Live verification completed with a temporary `Nicholas_Egner` Master Content item titled `This Test 1`:
+  - GIGnovate was the only Facebook Page offered in Publishing Destinations
+  - Davis Criminal Defense and Let Us Clean LLC were not offered, confirming client scoping
+  - selecting GIGnovate and saving created/persisted the platform version and displayed `version saved`
+  - browser refresh restored GIGnovate as selected, confirming MongoDB persistence
+  - the operator then unselected/saved and reselected/saved GIGnovate, confirming the exclude/reactivate flow completed successfully
+  - UI explicitly confirmed `Destinations saved. Nothing has been published to Facebook.`
+  - no Facebook Graph publishing endpoint or remote publish behavior was added in this task
+- Decisions:
+  - platform versions remain separate MongoDB records with uniqueness on Master Content + social connection
+  - exclusion preserves the record and reactivation reuses it rather than creating a replacement version
+  - inherited source text, URL, media references, primary-media reference, and Master revision marker form the starting Facebook version state
+- Blockers/manual steps: none remaining for L3-01
+- Remaining work: `L3-02` is now the only `READY` task; build the Facebook-specific editor, inheritance/update behavior, continuous validation, and preview without publishing to Meta
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 3 complete without Work review.
