@@ -13,10 +13,10 @@ No Facebook password is collected or stored by Content Social Hub.
 
 ## Phase progress log
 
-- Phase status: **IN PROGRESS**
+- Phase status: **COMPLETE — reviewed and closed September 28, 2026**
 - Last verified checkpoint: **September 28, 2026**
-- Next implementation rule: select the first task marked `READY`, complete only that task, record the evidence here, and return the README handoff report
-- Level 2 is not complete until Work reviews the remaining live-test evidence and updates the README
+- All planned Level 2 tasks are `DONE` and the documented live acceptance evidence has been reviewed
+- No Level 3 task is `READY` yet; Level 3 must be planned and explicitly opened before implementation begins
 
 ### Task queue
 
@@ -29,7 +29,7 @@ No Facebook password is collected or stored by Content Social Hub.
 | L2-05 | `DONE` | Test Request Connection through Resend and the secure client link | Live Request Connection test passed September 28 with `Nicholas_Egner -> GIGnovate`; Resend delivery, private-browser isolation, client-side Facebook authorization, and `Healthy` completion were verified |
 | L2-06 | `DONE` | Verify request completion and replacement-link revocation | Completed-link reuse was blocked; replacement request revoked the older unfinished link; newest replacement link remained usable |
 
-All planned Level 2 implementation tasks are now `DONE`. No Level 3 task is `READY` yet; Level 2 remains **IN PROGRESS** until Work reviews this evidence, updates the README checkpoint, and explicitly opens Level 3.
+All planned Level 2 implementation tasks are `DONE`. This document is now the durable completion record for Level 2. The next product-management action is to plan Level 3 — First Publisher — in a new active phase document before marking any Level 3 task `READY`.
 
 ### L2-04 acceptance criteria
 
@@ -199,7 +199,31 @@ Do not begin Level 3 publishing work while completing L2-06. Level 2 closure rem
 - Blockers/manual steps: none remain for the L2-06 acceptance criteria.
 - Remaining work: no Level 2 implementation task remains `READY`. Work must review the completed Level 2 evidence, update the README checkpoint if accepted, and explicitly open Level 3 before implementation continues.
 
-Future implementation agents must append a dated entry containing the task ID, files changed, checks run, live-test status, decisions, and remaining blockers. They may update the selected task to `DONE`, `BLOCKED`, or `MANUAL`, but only Work may declare the whole level complete in the README.
+#### September 28, 2026: Level 2 closure review
+
+- Review outcome: **PASSED — Level 2 closed**.
+- Reviewed evidence:
+  - direct Facebook Connect works with real Pages and persists the selected Page under the correct Content Social Hub client
+  - `Andrew_Davis -> Davis Criminal Defense` and `Let_Us_Clean -> Let Us Clean LLC` returned `Healthy` after the capability-lookup correction
+  - the unsupported direct selected-Page `tasks` field request was removed without losing publish-capability validation
+  - Request Connection delivered a real Resend email and the secure client-facing link did not expose owner-workspace navigation
+  - `Nicholas_Egner -> GIGnovate` completed through the client-facing Facebook flow and returned `Healthy`
+  - completed setup links cannot be reused
+  - replacement Request Connection links revoke older unfinished links while the newest link remains usable
+  - the request-history UI correctly shows `Pending`, `Revoked`, and `Completed` after server refresh; the immediate local-state sync bug was corrected in commit `d4b569c1`
+- Deployment verification:
+  - Amplify job 35 for commit `d4b569c1` (`Sync revoked connection request status`) returned `SUCCEED`
+  - Amplify job 36 for commit `446374e6` (`Document L2-06 token lifecycle verification`) returned `SUCCEED`
+- Pass-condition decision:
+  - the Level 2 pass condition is satisfied: real Facebook destination accounts are stored under the correct clients and Account Health verifies the saved connections
+  - both supported connection paths — direct owner Connect and emailed client Request Connection — have been exercised end to end
+  - the secure request-token lifecycle has been verified for completion and replacement/revocation
+- Non-blocking follow-up:
+  - the Social Accounts local client selector can still differ visually from the lower-left `Current View` badge; this is a context-label UX cleanup and did not affect database scoping or Level 2 acceptance
+- Blockers: none.
+- Next product-management action: create the Level 3 — First Publisher phase plan and mark only its first bounded task `READY` after review of that plan.
+
+Future implementation agents should treat this document as the closed Level 2 completion record. Do not add Level 3 implementation work here.
 
 ## Amplify environment variables
 
@@ -303,4 +327,4 @@ The connection email contains a secure setup URL. Generating a replacement reque
 13. Complete the connection and confirm the request changes to Completed.
 14. Generate a replacement request and confirm the older unfinished link no longer works.
 
-Level 2 passes when a real Facebook Page is stored under the correct client and Account Health can verify the connection.
+Level 2 passed and was closed on September 28, 2026 after the documented direct-connect, Request Connection, Account Health, and secure-link lifecycle evidence was reviewed.
