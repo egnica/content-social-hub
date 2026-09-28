@@ -13,6 +13,7 @@ import {
   listFacebookPages,
   listFacebookPagesByIds,
 } from "@/lib/facebook";
+import { annotateFacebookPagesWithPermissions } from "@/lib/facebook-connection-logic";
 import { getAppBaseUrl } from "@/lib/env";
 import { getSession } from "@/lib/session";
 
@@ -106,6 +107,8 @@ export async function GET(request) {
       }
     }
 
+    pages = annotateFacebookPagesWithPermissions(pages, tokenDetails);
+
     const diagnostics = {
       requestedPermissions: getFacebookRequiredPermissions(),
       permissionStatuses,
@@ -114,6 +117,9 @@ export async function GET(request) {
       granularPageTargetCount: targetedPageIds.length,
       pageDiscoveryMethod,
       pageCount: pages.length,
+      publishablePageCount: pages.filter((page) =>
+        page.tasks.includes("CREATE_CONTENT"),
+      ).length,
       permissionsError:
         permissionResult.status === "rejected"
           ? safeFacebookError(permissionResult.reason)

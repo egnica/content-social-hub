@@ -78,6 +78,10 @@ function FacebookDiagnostics({ diagnostics }) {
           <dt>Pages returned</dt>
           <dd>{diagnostics.pageCount}</dd>
         </div>
+        <div>
+          <dt>Pages allowed to publish</dt>
+          <dd>{diagnostics.publishablePageCount ?? "Unknown"}</dd>
+        </div>
       </dl>
       {errors.map(([label, diagnosticError]) => (
         <div className={styles.facebookDiagnosticError} key={label}>
@@ -183,40 +187,55 @@ export default function FacebookAccountPicker({
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
 
       {flow.candidates.length ? (
-        <div className={styles.accountPickerList}>
-          {flow.candidates.map((candidate) => (
-            <label className={styles.accountPickerItem} key={candidate.providerAccountId}>
-              <input
-                type="radio"
-                name="facebookPage"
-                value={candidate.providerAccountId}
-                checked={selected === candidate.providerAccountId}
-                onChange={(event) => setSelected(event.target.value)}
-              />
-              <span
-                className={styles.connectionAvatar}
-                style={
-                  candidate.pictureUrl
-                    ? { backgroundImage: `url("${candidate.pictureUrl}")` }
-                    : undefined
-                }
-                aria-hidden="true"
-              >
-                {!candidate.pictureUrl
-                  ? candidate.accountName.slice(0, 1).toUpperCase()
-                  : null}
-              </span>
-              <span>
-                <strong>{candidate.accountName}</strong>
-                <small>Facebook Page</small>
-              </span>
-            </label>
-          ))}
-        </div>
+        <>
+          <div className={styles.accountPickerList}>
+            {flow.candidates.map((candidate) => (
+              <label className={styles.accountPickerItem} key={candidate.providerAccountId}>
+                <input
+                  type="radio"
+                  name="facebookPage"
+                  value={candidate.providerAccountId}
+                  checked={selected === candidate.providerAccountId}
+                  onChange={(event) => setSelected(event.target.value)}
+                />
+                <span
+                  className={styles.connectionAvatar}
+                  style={
+                    candidate.pictureUrl
+                      ? { backgroundImage: `url("${candidate.pictureUrl}")` }
+                      : undefined
+                  }
+                  aria-hidden="true"
+                >
+                  {!candidate.pictureUrl
+                    ? candidate.accountName.slice(0, 1).toUpperCase()
+                    : null}
+                </span>
+                <span>
+                  <strong>{candidate.accountName}</strong>
+                  <small>
+                    Facebook Page
+                    {!candidate.tasks?.includes("CREATE_CONTENT")
+                      ? " · publishing permission missing"
+                      : ""}
+                  </small>
+                </span>
+              </label>
+            ))}
+          </div>
+          <div className={styles.notice}>
+            Don&apos;t see this client&apos;s Page? Restart Connect and choose
+            Facebook&apos;s <strong>Edit settings</strong> option to enable it.
+            Keep any Pages already used by other clients enabled so their saved
+            connections are not interrupted.
+          </div>
+        </>
       ) : (
         <div className={styles.errorNotice}>
           Facebook authorized the connection but did not return an eligible
-          Page. The diagnostics below show what Meta returned.
+          Page. Reconnect and use Facebook&apos;s <strong>Edit settings</strong>
+          option to enable this client&apos;s Page without removing Pages already
+          used by other clients. The diagnostics below show what Meta returned.
         </div>
       )}
 
