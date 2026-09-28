@@ -18,9 +18,11 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 ## Implementation Status
 
-Levels 0 and 1 are implemented, deployed, and verified in the live application.
+Levels 0, 1, and 2 are implemented, deployed, and verified in the live application.
 
-Level 2 is in progress. Facebook Pages **direct Connect** is implemented, deployed, and verified against real Facebook Pages as of September 19, 2026. The emailed **Request Connection** / Resend path is implemented in code but should still receive its own end-to-end live verification before Level 2 is considered completely closed. The project has not moved to Level 3 yet.
+**Level 2 — First Social Connection was reviewed and closed on September 28, 2026.** Facebook Pages direct Connect and emailed Request Connection are both proven with real accounts. The selected-Page capability cleanup passed production verification, the Resend client setup flow passed end to end, and completed/replaced secure setup links were verified to become unusable as designed.
+
+The project has **not begun Level 3 implementation yet**. The next product-management step is to create the Level 3 — First Publisher phase plan and explicitly mark only its first bounded task `READY`.
 
 Implemented:
 
@@ -37,7 +39,10 @@ Implemented:
 - guarded client deletion and Master Content deletion
 - Facebook Pages OAuth adapter with direct Connect and emailed Request Connection paths
 - secure expiring connection links, explicit Page picker, encrypted token storage, and Account Health
+- Request Connection delivery through Resend with private client-facing setup pages
+- completed-link protection and replacement-link revocation
 - client-scoped Social Accounts state that refreshes correctly when the selected client changes
+- request-history state that distinguishes Pending, Revoked, and Completed requests
 - placeholder screens that clearly identify later implementation levels
 
 Deployment checkpoint passed on September 17, 2026:
@@ -67,6 +72,23 @@ Select client
 -> verify each client shows only its own connected Page
 ```
 
+Facebook Level 2 closure checkpoint passed on September 28, 2026:
+
+```text
+Request Connection
+-> Resend delivers real secure setup email
+-> open link in private browser
+-> verify no owner workspace access
+-> authorize Facebook
+-> explicitly select intended Page
+-> save Page under correct client
+-> confirm Account Health is Healthy
+-> reopen completed link and confirm it cannot be reused
+-> create replacement request
+-> confirm older unfinished link is revoked
+-> confirm newest replacement link remains usable
+```
+
 Verified in the deployed application:
 
 - MongoDB health, reads, and writes
@@ -80,10 +102,15 @@ Verified in the deployed application:
 - Meta / Facebook direct OAuth connection from a selected client
 - real Facebook Page selection and persistence under the correct client
 - encrypted Facebook Page token storage
-- initial Facebook Account Health checks returning `Healthy`
+- Facebook Account Health checks returning `Healthy`
 - client switching on Social Accounts without leaking the previously selected client's connection into the next client view
+- real Resend Request Connection email delivery
+- private/incognito client setup flow without owner-workspace access
+- client-facing Facebook authorization and explicit Page selection
+- completed setup-link reuse prevention
+- replacement-link revocation of older unfinished requests
 
-Verified live Facebook mappings on September 19, 2026:
+Verified live Facebook mappings as of September 28, 2026:
 
 ```text
 Andrew_Davis
@@ -93,11 +120,15 @@ Andrew_Davis
 Let_Us_Clean
 -> Let Us Clean LLC
 -> Healthy
+
+Nicholas_Egner
+-> GIGnovate
+-> Healthy
 ```
 
 Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
 
-Meta, Resend, OAuth callback, token-encryption, and Level 2 checkpoint requirements are documented in `docs/LEVEL_2_FACEBOOK_SETUP.md`.
+Meta, Resend, OAuth callback, token-encryption, Level 2 acceptance criteria, and the complete Level 2 evidence record are documented in `docs/LEVEL_2_FACEBOOK_SETUP.md`.
 
 ---
 
@@ -229,21 +260,21 @@ A client can have multiple social connections. Connections are records, not fixe
 
 A client may have multiple accounts on the same platform.
 
-### Facebook Pages implementation checkpoint — September 19, 2026
+### Facebook Pages Level 2 checkpoint — closed September 28, 2026
 
-The Facebook implementation was tested with real Pages and the intended multi-client ownership model is now proven for the direct Connect path.
+The Facebook implementation has been tested with real Pages through both supported connection paths. The intended multi-client ownership model, secure client onboarding model, and initial Account Health behavior are proven.
 
 The key architecture is:
 
 ```text
 Content Social Hub Client
--> operator authorizes with their own Facebook login
--> Meta proves which Pages that operator can manage
--> operator selects / confirms the exact destination Page
--> Content Social Hub stores the Page connection under the selected client
+-> operator or client authorizes through Facebook
+-> Meta proves which Pages that Facebook user can manage
+-> Content Social Hub explicitly selects / confirms the destination Page
+-> Content Social Hub stores that Page connection under one specific client
 ```
 
-The Facebook **user account is only the authorization identity**. The Facebook user is not treated as the client and is not stored as the publishing destination. The saved destination is the specific Facebook Page, and that Page is associated with a specific Content Social Hub client record.
+The Facebook **user account is only the authorization identity**. The Facebook user is not treated as the Content Social Hub client and is not stored as the publishing destination. The saved destination is the specific Facebook Page, and that Page is associated with a specific Content Social Hub client record.
 
 #### Verified direct-connect flow
 
@@ -266,77 +297,32 @@ The live flow that passed is:
 14. Returning to Social Accounts shows the saved Page only for the client it belongs to.
 ```
 
-#### Problem 1 — relying on `/me/accounts` did not fully represent Meta's selected-Page choice
+#### Selected-Page discovery and capability lookup
 
-During testing, Meta's Facebook Login for Business flow allowed the operator to use **Edit settings** and explicitly choose a Page. The first implementation relied primarily on the Graph API `/me/accounts` response to discover Pages.
+Meta's Facebook Login for Business flow can include Page-specific target IDs in `granular_scopes[].target_ids`. The adapter uses those target IDs as preferred Page-discovery context and retains `/me/accounts` as the working source of Page task/capability information where needed.
 
-That is not always the best representation of the Page the operator just selected in the Meta dialog. Meta can include Page-specific targets in the token's `granular_scopes[].target_ids` data.
+The initial implementation requested a direct Page `tasks` field that Meta rejected with:
 
-The fix added token inspection and selected-Page recovery:
+```text
+(#100) Tried accessing nonexisting field (tasks)
+```
 
-- inspect the OAuth token through Meta's token-debug response
-- read `granular_scopes`
-- collect Page `target_ids` for the required Page permissions
-- attempt to recover those specific Pages directly
-- treat those Meta-selected target IDs as the preferred Page source
-- fall back to `/me/accounts` only when the selected-target lookup does not produce a usable Page
-- expose diagnostics showing the selected target count, Page-discovery source, returned Page count, and provider errors
+That issue was corrected on September 28, 2026. The direct selected-Page lookup no longer requests the unsupported `tasks` field. `/me/accounts` remains the source of Page `CREATE_CONTENT` task information, which is merged onto directly recovered Pages by Page ID so publish-capability validation is preserved instead of defaulting every recovered Page to publishable.
 
 Relevant commits:
 
 ```text
 f10e510  Recover selected Facebook Pages from token targets
 cfe022c  Fix selected Facebook Page recovery
+1737fbaf Fix Facebook Page capability lookup
+30cbbcdd Restore Facebook Page publish capability
 ```
 
-The second change was important: the first recovery version still gave a successful `/me/accounts` result priority. `cfe022c` changed the callback so the explicit Meta selected-Page targets are attempted first, and the managed Pages list is the fallback.
-
-#### Problem 2 — direct selected-Page lookup returns a Meta `tasks` field error
-
-The selected-target recovery currently performs a direct Page request that asks Meta for:
-
-```text
-id,name,picture.type(square){url},access_token,tasks
-```
-
-Meta returned this diagnostic during the live test:
-
-```text
-(#100) Tried accessing nonexisting field (tasks)
-```
-
-This error came from the **direct selected-Page recovery request**, not from the overall OAuth authorization and not from the saved connection itself.
-
-In the successful test, `/me/accounts` still returned the correct Page, so the application fell back to the managed Pages list and the connection completed successfully. That is why the UI could show:
-
-```text
-Selected Page targets: 1
-Page source: Managed Pages list
-Pages returned: 1
-```
-
-while also showing the red selected-Page `tasks` diagnostic.
-
-Current interpretation:
-
-- OAuth was successful
-- the correct Page was available
-- the Page could be saved and checked successfully
-- the direct selected-target recovery request is too aggressive about requesting `tasks`
-- the diagnostic should **not** be interpreted as the Page connection failing
-
-Known cleanup still required:
-
-- make the direct Page recovery request compatible with Meta without losing the ability to determine publishing capability
-- do not simply remove the capability check without replacing it
-- `CREATE_CONTENT` / equivalent Page capability information is used by Account Health to decide whether publishing should be allowed
-- after the capability lookup is made correctly, remove the noisy red diagnostic from successful connection attempts
-
-A future thread should treat this as a narrow Meta Graph field/capability lookup issue, **not** as a reason to redesign the OAuth/client association flow.
+Production verification confirmed Davis Criminal Defense and Let Us Clean LLC remained or returned `Healthy` after the corrected capability logic was deployed.
 
 #### `business_management (declined)` diagnostic
 
-The live Meta diagnostic also showed `business_management` as declined. The current Facebook adapter's required permission list is:
+A live Meta diagnostic showed `business_management` as declined. The current Facebook adapter's required permission list is:
 
 ```text
 pages_show_list
@@ -344,41 +330,13 @@ pages_read_engagement
 pages_manage_posts
 ```
 
-`business_management` is not currently one of the adapter's required permissions, and its declined state did not prevent either verified Page connection from reaching `Healthy`. If this appears again, do not assume it is the cause of a failed connection unless a later feature specifically requires it.
+`business_management` is not currently one of the adapter's required permissions, and its declined state did not prevent the verified Page connections from reaching `Healthy`. If this appears again, do not assume it is the cause of a failed connection unless a later feature specifically requires it.
 
-#### Problem 3 — connected Page appeared to persist when switching clients
+#### Client-scoped Social Accounts state
 
-After the first successful Davis connection, switching the Social Accounts client selector from `Andrew_Davis` to a newly created `Let_Us_Clean` client still displayed **Davis Criminal Defense** in the Connected accounts panel.
+A September 19 UI bug made a Page appear to persist visually when switching Content Social Hub clients even though the backend client association was already correct.
 
-This looked like a database association failure, but the backend relationship was already correct.
-
-The server-side Social Accounts page does this correctly:
-
-```text
-selected client ID
--> listSocialConnections({ clientId: selectedClient._id })
--> MongoDB query filters social_connections by that client ObjectId
-```
-
-The actual bug was in `components/connections-manager.js`.
-
-The component initialized local React state from the first server render:
-
-```text
-useState(initialConnections)
-useState(initialRequests)
-```
-
-Changing the client used `router.push()` and loaded new server props, but the component's existing local state was not automatically replaced. The previous client's connected-account row therefore remained visible even though the server had returned the correct data for the new client.
-
-The fix added `useEffect` synchronization so a client/prop change resets:
-
-```text
-connections <- initialConnections
-requests    <- initialRequests
-message     <- ""
-error       <- ""
-```
+The server-side Social Accounts page correctly filters connections by `clientId`. The React component now synchronizes its local connection/request state from new server props whenever the selected client changes.
 
 Relevant commit:
 
@@ -386,7 +344,7 @@ Relevant commit:
 40f100a  Sync social accounts when client changes
 ```
 
-This fix was then tested with two real client/Page relationships:
+This was verified with independently scoped real relationships:
 
 ```text
 Andrew_Davis
@@ -398,19 +356,6 @@ Let_Us_Clean
 -> Healthy
 ```
 
-Switching the selector now changes the connected Page shown. This proves that the connected-account UI is scoped to the selected client and that the two client records do not share one global Facebook connection.
-
-#### Important client-scoping rule for future work
-
-Any future social provider must preserve this relationship:
-
-```text
-Client A -> only Client A connections
-Client B -> only Client B connections
-```
-
-A social connection is never global merely because the same Content Social Hub operator can administer multiple client accounts on that network.
-
 When diagnosing future cross-client display issues, check both layers separately:
 
 1. **Server/database scope** — is the query filtering on `clientId`?
@@ -418,16 +363,46 @@ When diagnosing future cross-client display issues, check both layers separately
 
 Do not rewrite the database model unless the server query actually proves the records are cross-linked.
 
-#### Known remaining Level 2 cleanup
+#### Verified Request Connection flow
 
-Before treating Level 2 as completely closed:
+The normal client onboarding path is now proven:
 
-- correct the direct selected-Page `tasks` / capability lookup described above
-- run an end-to-end live test of **Request Connection** through Resend and the secure temporary client setup link
-- confirm completion/revocation behavior of the emailed request flow
-- optionally clean up the sidebar context label: the Social Accounts screen can be scoped by its local client selector while the lower-left `Current View` badge still says `All Clients`; this is a UX/context-label issue and is not evidence of a cross-client database connection
+```text
+Request Connection
+-> Resend email
+-> secure 48-hour setup link
+-> private/incognito client-facing page
+-> Facebook authorization
+-> explicit Page selection
+-> saved Page under the requested Content Social Hub client
+-> Account Health
+```
 
-The direct owner/operator Facebook connection path itself is proven and should not be rebuilt from scratch.
+On September 28, 2026, `Nicholas_Egner -> GIGnovate` completed through this path and returned `Healthy`.
+
+The setup page does not expose the owner workspace. A completed setup link cannot restart the flow. Generating a replacement request revokes older unfinished `pending` / `email_failed` requests, and the newest replacement link remains usable.
+
+Relevant commits:
+
+```text
+0c66f338 Document L2-05 Request Connection verification
+d4b569c1 Sync revoked connection request status
+446374e6 Document L2-06 token lifecycle verification
+```
+
+#### Level 2 closure result
+
+All blocking Level 2 cleanup is complete:
+
+- selected-Page capability lookup corrected and production-verified
+- direct Connect verified with real Pages
+- Request Connection verified end to end through Resend and a private client setup flow
+- encrypted token persistence and Account Health verified
+- client-scoped connection display verified
+- completed-link reuse blocked
+- replacement-link revocation verified
+
+One non-blocking UX item remains: Social Accounts can be scoped by its local client selector while the lower-left `Current View` badge still says `All Clients`. This is a context-label presentation issue, not evidence of cross-client data leakage.
 
 ### Two connection paths
 
@@ -1579,12 +1554,18 @@ Pass condition:
 
 - connect a real destination account and persist the correct account under the correct client
 
-Direct Connect pass condition: **passed September 19, 2026** with two independently scoped client/Page mappings and healthy saved connections.
+**Status: PASSED and CLOSED September 28, 2026.**
 
-Level 2 closure still requires:
+Verified closure evidence includes:
 
-- fix / clean up the direct selected-Page `tasks` capability lookup
-- verify the emailed Request Connection / Resend path end to end
+- direct Connect with independently scoped real client/Page mappings and healthy saved connections
+- corrected selected-Page capability lookup while preserving publish-capability validation
+- end-to-end Request Connection through Resend and the secure client-facing setup page
+- `Nicholas_Egner -> GIGnovate -> Healthy` through the emailed client flow
+- completed setup links cannot be reused
+- replacement requests revoke older unfinished setup links while preserving the newest link
+
+Detailed evidence is in `docs/LEVEL_2_FACEBOOK_SETUP.md`.
 
 ### Level 3 — First Publisher
 
@@ -1820,11 +1801,15 @@ The user does not need to write a separate assignment. Start the new Chat with t
 
 Current delegation state:
 
-- Active product stage: **Level 2, First Social Connection, in progress**
-- Active phase document: `docs/LEVEL_2_FACEBOOK_SETUP.md`
-- Verified Level 2 result: direct Facebook connection for Davis Criminal Defense under Andrew_Davis and Let Us Clean LLC under Let_Us_Clean
-- Remaining Level 2 work: correct the selected-Page capability lookup, verify the emailed Request Connection / Resend flow, and confirm request completion and revocation behavior
-- Current implementation task: automatically select the first `READY` task in the active phase document
+- Completed product stage: **Level 2, First Social Connection — closed September 28, 2026**
+- Current phase record: `docs/LEVEL_2_FACEBOOK_SETUP.md` — closed completion record
+- Verified Level 2 results:
+  - `Andrew_Davis -> Davis Criminal Defense -> Healthy`
+  - `Let_Us_Clean -> Let Us Clean LLC -> Healthy`
+  - `Nicholas_Egner -> GIGnovate -> Healthy` through Request Connection
+  - completed/replaced secure request-link lifecycle verified
+- Current implementation task: **none**
+- Next product-management action: create the Level 3 — First Publisher phase document, define its acceptance criteria/task queue, and mark only the first bounded task `READY`
 
 ---
 
@@ -1837,9 +1822,10 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_2_in_progress_direct_connect_deployed_and_verified
+  status: level_2_complete_level_3_planning_pending
   source_of_truth: README.md
   active_phase_document: docs/LEVEL_2_FACEBOOK_SETUP.md
+  active_phase_document_status: closed_completion_record
 
 current_infrastructure:
   framework: Next.js
@@ -1972,16 +1958,20 @@ social_connections:
     - Permission Problem
     - API Error
   facebook_pages:
+    level_2_complete: true
     direct_connect_deployed: true
     direct_connect_verified: true
     request_connection_implemented: true
-    request_connection_end_to_end_verified: false
+    request_connection_end_to_end_verified: true
+    secure_request_link_lifecycle_verified: true
+    completed_link_reuse_blocked: true
+    replacement_link_revocation_verified: true
     operator_facebook_login_is_authorization_identity_not_client_destination: true
     saved_destination_is_page: true
     saved_page_is_scoped_by_client_id: true
     selected_page_recovery:
       preferred_source: Meta token granular_scopes target_ids
-      fallback_source: /me/accounts
+      capability_source: /me/accounts Page tasks merged by Page ID
     verified_mappings:
       - client: Andrew_Davis
         page: Davis Criminal Defense
@@ -1989,13 +1979,24 @@ social_connections:
       - client: Let_Us_Clean
         page: Let Us Clean LLC
         health: Healthy
+      - client: Nicholas_Egner
+        page: GIGnovate
+        health: Healthy
+        connection_path: Request Connection via Resend
     verified_client_switching: true
-    known_issue:
-      direct_target_page_lookup_tasks_field: "Meta (#100) Tried accessing nonexisting field (tasks); managed Pages fallback succeeds. Fix capability lookup without removing publish-capability validation."
+    resolved_issues:
+      direct_target_page_lookup_tasks_field: resolved_2026_09_28
+      stale_client_connection_display: resolved_2026_09_19
+      stale_request_revocation_display: resolved_2026_09_28
     relevant_commits:
       - f10e510 Recover selected Facebook Pages from token targets
       - cfe022c Fix selected Facebook Page recovery
       - 40f100a Sync social accounts when client changes
+      - 1737fbaf Fix Facebook Page capability lookup
+      - 30cbbcdd Restore Facebook Page publish capability
+      - 0c66f338 Document L2-05 Request Connection verification
+      - d4b569c1 Sync revoked connection request status
+      - 446374e6 Document L2-06 token lifecycle verification
 
 content_and_publishing:
   client_delete_with_saved_content: blocked
@@ -2053,10 +2054,13 @@ implementation:
   strategy: small_testable_vertical_slices
   configure_all_social_apis_up_front: false
   add_social_networks_one_at_a_time: true
+  completed_levels:
+    - level_0_foundation
+    - level_1_client_content_foundation
+    - level_2_first_social_connection
   current_next_stage:
-    - level_2_facebook_tasks_capability_cleanup
-    - level_2_request_connection_resend_verification
-    - level_3_first_publisher_after_level_2_closure
+    - level_3_phase_planning
+    - level_3_first_facebook_publisher
   first_major_end_to_end_milestone:
     - create_client
     - create_master_content
@@ -2101,39 +2105,39 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Finish the remaining Level 2 Facebook cleanup and verification without rebuilding the working direct-connect architecture.
-  task_source: docs/LEVEL_2_FACEBOOK_SETUP.md
-  selection_rule: select_the_first_task_marked_READY
+  goal: Create and review the Level 3 First Publisher phase plan before any Level 3 implementation begins.
+  current_phase_record: docs/LEVEL_2_FACEBOOK_SETUP.md
+  current_phase_record_status: closed
+  selection_rule: No implementation task is READY until a Level 3 phase document is created and its first bounded task is explicitly marked READY.
   immediate_tasks:
-    - fix the direct selected-Page tasks/capability lookup while preserving can-publish validation
-    - verify Request Connection through Resend and the secure temporary client flow end to end
-    - confirm request completion/revocation behavior
-  then:
-    - begin Level 3 first Facebook publisher
+    - define the first Facebook platform-version data model and editor boundary
+    - define live validation and preview acceptance criteria
+    - define Publish Now, idempotency, result logging, remote post ID/URL capture, retry behavior, and View Post task order
+    - create the Level 3 phase document and mark only its first bounded task READY
   do_not_jump_ahead_to:
-    - multiple social-provider integrations
-    - scheduling infrastructure before the first publisher is proven
-    - analytics before publishing pipeline exists
+    - additional social-provider integrations before the first Facebook publisher is proven
+    - scheduling infrastructure before Publish Now works end to end
+    - analytics before the publishing pipeline exists
     - optional AI
-  direct_connect_checkpoint: passed_2026_09_19
+  level_2_checkpoint: passed_and_closed_2026_09_28
 ```
 
 ### Instructions for the next work session
 
 Read this README in full before beginning implementation. Follow **Project Management and Chat Delegation Workflow**. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
 
+Level 2 is closed. Do not reopen or rebuild the working Facebook connection architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, secure client setup page, and request-token completion/revocation lifecycle have all been verified with real Pages.
+
+There is currently **no implementation task marked `READY`** because Level 3 has not yet been planned into an active phase document. The next Work session should create the Level 3 — First Publisher plan, break it into bounded tasks and acceptance criteria, review that plan with the user, then mark only the first implementation task `READY`.
+
 Build incrementally and stop at implementation checkpoints for real testing. When a new external API, OAuth application, secret, AWS permission, or environment variable becomes necessary, explain exactly what is required and walk the user through that setup at that point rather than collecting every credential in advance.
 
 Add social networks one at a time. A provider is not considered complete merely because an OAuth screen or UI exists; its relevant checkpoint must work end to end before expanding to the next provider.
 
-For Facebook, **do not rebuild the working direct Connect architecture**. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, and client scoping have been verified with real Pages. The current technical cleanup is the direct selected-Page `tasks` capability lookup, followed by an end-to-end verification of the Request Connection / Resend path.
-
-If a future Facebook connection attempt shows `(#100) Tried accessing nonexisting field (tasks)` while the correct Page is otherwise returned, recognize it as the known direct-target lookup issue documented above. Do not misdiagnose it as a failed client association or a failed OAuth login.
-
-If a connected Page appears under the wrong client after switching the Social Accounts selector, first verify the server query's `clientId` filter and then verify the React state is synchronizing from the new server props. The September 19 stale-state bug was a client-rendering problem, not a MongoDB cross-linking problem.
+If a future Facebook connection problem appears, preserve the proven architecture and diagnose the narrow failing layer first. In particular, verify provider authorization, Page discovery/capability data, server-side `clientId` scoping, and client-side React state independently before redesigning the connection model.
 
 Do not introduce new infrastructure solely because it is available. Prefer the architecture already established here unless a concrete implementation problem requires a change.
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected implementation work:** fix the narrow Facebook selected-Page capability lookup, verify the Request Connection / Resend path end to end, then begin Level 3 Facebook publishing.
+**Next expected product work:** plan Level 3 — First Publisher, then implement the first bounded Facebook publishing task only after that plan is approved and marked `READY`.
