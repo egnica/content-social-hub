@@ -22,7 +22,9 @@ Levels 0, 1, and 2 are implemented, deployed, and verified in the live applicati
 
 **Level 2 — First Social Connection was reviewed and closed on September 28, 2026.** Facebook Pages direct Connect and emailed Request Connection are both proven with real accounts. The selected-Page capability cleanup passed production verification, the Resend client setup flow passed end to end, and completed/replaced secure setup links were verified to become unusable as designed.
 
-The project has **not begun Level 3 implementation yet**. The next product-management step is to create the Level 3 — First Publisher phase plan and explicitly mark only its first bounded task `READY`.
+**Level 3 — First Publisher is now the active phase.** The phase plan is `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`. Its first bounded task, `L3-01`, is `READY`; no later Level 3 task should begin until the active task is completed and documented.
+
+Level 3 uses `Nicholas_Egner -> GIGnovate` as the preferred live Facebook publishing test destination because that Page is already connected and verified `Healthy` from Level 2.
 
 Implemented:
 
@@ -130,6 +132,8 @@ Nicholas_Egner
 Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
 
 The closed Level 2 Meta, Resend, OAuth, token-encryption, and live-verification record is `docs/LEVEL_2_FACEBOOK_SETUP.md`.
+
+The active Level 3 First Publisher implementation plan and progress record is `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`.
 
 ---
 
@@ -1119,7 +1123,7 @@ MongoDB is the system of record for schedules and publishing state.
 Planned AWS responsibilities:
 
 - EventBridge Scheduler — wake up at scheduled release time
-- Lambda — perform background publishing
+- Lambda — perform background publishing work
 - SQS — reliable queue / retry handling where appropriate
 - encryption / KMS strategy for sensitive OAuth credentials
 
@@ -1645,6 +1649,14 @@ Create Master Content
 -> View Post opens exact live post
 ```
 
+**Status: IN PROGRESS — phase opened September 28, 2026.**
+
+Active plan: `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`
+
+Current implementation task: `L3-01` — destination / platform-version foundation.
+
+Preferred live publishing checkpoint: `Nicholas_Egner -> GIGnovate`.
+
 This is the first major end-to-end milestone.
 
 ### Level 4 — Scheduling
@@ -1854,14 +1866,16 @@ The user does not need to write a separate assignment. Start the new Chat with t
 Current delegation state:
 
 - Completed product stage: **Level 2, First Social Connection — closed September 28, 2026**
-- Current phase record: `docs/LEVEL_2_FACEBOOK_SETUP.md` — closed completion record
+- Active product stage: **Level 3, First Publisher — in progress**
+- Active phase document: `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`
 - Verified Level 2 results:
   - `Andrew_Davis -> Davis Criminal Defense -> Healthy`
   - `Let_Us_Clean -> Let Us Clean LLC -> Healthy`
   - `Nicholas_Egner -> GIGnovate -> Healthy` through Request Connection
   - completed/replaced secure request-link lifecycle verified
-- Current implementation task: **none**
-- Next product-management action: create the Level 3 — First Publisher phase document, define its acceptance criteria/task queue, and mark only the first bounded task `READY`
+- Current implementation task: **L3-01 — Destination / Platform-Version Foundation (`READY`)**
+- Progress must be documented in: `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`
+- Preferred Level 3 live-test destination: `Nicholas_Egner -> GIGnovate`
 
 ---
 
@@ -1874,10 +1888,10 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_2_complete_level_3_planning_pending
+  status: level_3_first_publisher_in_progress
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_2_FACEBOOK_SETUP.md
-  active_phase_document_status: closed_completion_record
+  active_phase_document: docs/LEVEL_3_FACEBOOK_PUBLISHER.md
+  active_phase_document_status: in_progress
 
 current_infrastructure:
   framework: Next.js
@@ -1902,6 +1916,7 @@ product_model:
     - Master Content
     - Destination / Platform Version
   master_content_rule: Master Content stores shared source assets and defaults; each destination version can inherit and independently override those defaults.
+  platform_version_storage: separate_mongodb_collection
   application_contexts:
     - All Clients
     - Selected Client
@@ -2053,6 +2068,10 @@ social_connections:
 content_and_publishing:
   client_delete_with_saved_content: blocked
   master_content_delete_preserves_s3_media: true
+  platform_versions_separate_records: true
+  publish_attempts_durable_records: true
+  level_3_approval_gate_enabled: false
+  level_3_scheduling_enabled: false
   workflow_status_manual: false
   status_is_derived: true
   approval_scope: destination_revision
@@ -2077,6 +2096,7 @@ media:
   separate_bucket_per_client: false
   cloudfront_v1: false
   lifecycle_auto_delete_v1: false
+  level_3_publish_rule: transfer media server-side to Meta; do not make S3 public
 
 tracking_and_analytics:
   standard_utm_tracking: true
@@ -2110,9 +2130,20 @@ implementation:
     - level_0_foundation
     - level_1_client_content_foundation
     - level_2_first_social_connection
-  current_next_stage:
-    - level_3_phase_planning
-    - level_3_first_facebook_publisher
+  current_stage: level_3_first_facebook_publisher
+  current_task: L3-01_destination_platform_version_foundation
+  current_task_status: READY
+  preferred_live_test_destination:
+    client: Nicholas_Egner
+    platform: facebook
+    page: GIGnovate
+  level_3_task_order:
+    - L3-01 destination/platform-version foundation
+    - L3-02 Facebook editor/inheritance/live validation/preview
+    - L3-03 first real Facebook text/link Publish Now
+    - L3-04 Facebook image publishing
+    - L3-05 Facebook video publishing
+    - L3-06 reliability/idempotency/View Post/final checkpoint
   first_major_end_to_end_milestone:
     - create_client
     - create_master_content
@@ -2157,18 +2188,17 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Create and review the Level 3 First Publisher phase plan before any Level 3 implementation begins.
-  current_phase_record: docs/LEVEL_2_FACEBOOK_SETUP.md
-  current_phase_record_status: closed
-  selection_rule: No implementation task is READY until a Level 3 phase document is created and its first bounded task is explicitly marked READY.
-  immediate_tasks:
-    - define the first Facebook platform-version data model and editor boundary
-    - define live validation and preview acceptance criteria
-    - define Publish Now, idempotency, result logging, remote post ID/URL capture, retry behavior, and View Post task order
-    - create the Level 3 phase document and mark only its first bounded task READY
+  goal: Implement only L3-01, the destination/platform-version foundation, using the active Level 3 plan.
+  task_source: docs/LEVEL_3_FACEBOOK_PUBLISHER.md
+  selection_rule: select_the_first_task_marked_READY
+  active_task: L3-01
+  live_test_destination: Nicholas_Egner -> GIGnovate
   do_not_jump_ahead_to:
+    - Facebook provider publishing calls before L3-01 is complete
+    - image/video publishing before the text/link publisher is proven
     - additional social-provider integrations before the first Facebook publisher is proven
     - scheduling infrastructure before Publish Now works end to end
+    - approvals before Level 7
     - analytics before the publishing pipeline exists
     - optional AI
   level_2_checkpoint: passed_and_closed_2026_09_28
@@ -2180,7 +2210,9 @@ Read this README in full before beginning implementation. Follow **Project Manag
 
 Level 2 is closed. Do not reopen or rebuild the working Facebook connection architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, secure client setup page, and request-token completion/revocation lifecycle have all been verified with real Pages.
 
-There is currently **no implementation task marked `READY`** because Level 3 has not yet been planned into an active phase document. The next Work session should create the Level 3 — First Publisher plan, break it into bounded tasks and acceptance criteria, review that plan with the user, then mark only the first implementation task `READY`.
+Level 3 is active. Open `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, select its first `READY` task, and complete only that bounded task. At phase open, that task is `L3-01` — Destination / Platform-Version Foundation.
+
+For Level 3 live publishing experiments, prefer the verified `Nicholas_Egner -> GIGnovate` Facebook Page. Do not publish experimental content to another client's Page unless Nicholas explicitly chooses it for that live test.
 
 Build incrementally and stop at implementation checkpoints for real testing. When a new external API, OAuth application, secret, AWS permission, or environment variable becomes necessary, explain exactly what is required and walk the user through that setup at that point rather than collecting every credential in advance.
 
@@ -2192,4 +2224,4 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected product work:** plan Level 3 — First Publisher, then implement the first bounded Facebook publishing task only after that plan is approved and marked `READY`.
+**Next expected implementation work:** complete `L3-01` from `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, record its evidence there, and stop before L3-02 until the task-status transition is supported by verification.
