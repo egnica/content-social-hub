@@ -26,10 +26,10 @@ No Facebook password is collected or stored by Content Social Hub.
 | L2-02 | `DONE` | Connect and persist real Pages under the correct clients | `Andrew_Davis -> Davis Criminal Defense`; `Let_Us_Clean -> Let Us Clean LLC` |
 | L2-03 | `DONE` | Verify Account Health and client-scoped Social Accounts state | Both saved connections returned `Healthy`; switching clients showed only that client's Page |
 | L2-04 | `DONE` | Correct the selected-Page capability lookup | Production live verification passed September 28; Davis and Let Us Clean both remained `Healthy` and the direct Page `tasks` error was removed |
-| L2-05 | `READY` | Test Request Connection through Resend and the secure client link | Requires a real connection email, private-browser setup test, and successful client-side Facebook connection |
-| L2-06 | `WAITING` | Verify request completion and replacement-link revocation | Depends on a successful L2-05 connection request |
+| L2-05 | `DONE` | Test Request Connection through Resend and the secure client link | Live Request Connection test passed September 28 with `Nicholas_Egner -> GIGnovate`; Resend delivery, private-browser isolation, client-side Facebook authorization, and `Healthy` completion were verified |
+| L2-06 | `READY` | Verify request completion and replacement-link revocation | L2-05 passed; verify completed-link reuse is blocked and a replacement request revokes the older unfinished link |
 
-There should be only one `READY` task. The next implementation agent should select L2-05 automatically and should not begin L2-06 until the Request Connection flow has passed its live test.
+There should be only one `READY` task. The next implementation agent should select L2-06 automatically and should not begin Level 3 until the request completion/revocation behavior has passed its live test.
 
 ### L2-04 acceptance criteria
 
@@ -60,6 +60,21 @@ The implementation/live test must:
 6. Leave replacement-link revocation and completed-request reuse checks for L2-06.
 
 Do not require the client to use Facebook Business Integrations during the normal flow. Business Integrations is a recovery/admin path only when Meta has removed or excluded a Page from the application's allowed Page set.
+
+### L2-06 acceptance criteria
+
+The secure Request Connection token lifecycle must prevent an old setup link from remaining usable after completion or replacement.
+
+The live test must:
+
+1. Reopen the setup link from the completed L2-05 request and confirm it cannot start another connection flow or expose owner-workspace access.
+2. Create a fresh unfinished Request Connection for a test client and retain its first secure setup link.
+3. Generate a replacement Request Connection for that same client before completing the first request.
+4. Confirm the older unfinished setup link is rejected after the replacement request is generated.
+5. Confirm the replacement link remains usable as the limited-purpose client setup page.
+6. Record the completed-link behavior, replacement-link behavior, any visible expired/revoked states, and any manual steps in the dated progress log.
+
+Do not begin Level 3 publishing work while completing L2-06. Level 2 closure remains a Work review decision after this evidence is recorded.
 
 ### Progress entries
 
@@ -124,6 +139,34 @@ Do not require the client to use Facebook Business Integrations during the norma
   - when an operator authorizes additional Pages under one Facebook login, previously connected client Pages should remain enabled so Meta does not remove the app's access to them
 - Blockers/manual steps: none remain for L2-04.
 - Remaining work: `L2-05` is now the single `READY` task. Test the real Resend Request Connection email and secure client-facing setup flow in a private browser. `L2-06` remains `WAITING`.
+
+#### September 28, 2026: L2-05 Request Connection live verification passed
+
+- Task: `L2-05`.
+- Outcome: `DONE`.
+- Files changed: `docs/LEVEL_2_FACEBOOK_SETUP.md` only; the production application code did not require a change for this task.
+- Checks and tests run:
+  - live Request Connection test through the deployed Content Social Hub application
+  - real Resend delivery verification
+  - private/incognito browser isolation check
+  - client-facing Facebook OAuth and Page-selection flow
+  - completion-screen Account Health verification
+  - no additional automated suite was run because L2-05 was a live-verification task and no application code changed
+- Live verification:
+  - a Request Connection was created for `Nicholas_Egner`
+  - the real Content Social Hub connection email arrived through Resend with the secure expiring setup link
+  - the setup link was opened in a private/incognito browser and displayed only the limited-purpose connection page; no Dashboard, Content, Clients, Social Accounts, or other owner-workspace navigation was exposed
+  - Facebook authorization was completed from that client-facing setup flow
+  - Facebook's Edit settings flow showed `Let Us Clean LLC`, `Davis Criminal Defense`, and `GIGnovate`; all three existing/current Pages were kept enabled to avoid interrupting saved client connections
+  - after authorization, the Content Social Hub Page picker returned all three Pages and `GIGnovate` was explicitly selected for `Nicholas_Egner`
+  - the final client-facing screen confirmed `GIGnovate is now connected to Nicholas_Egner` and reported Account Health as healthy
+  - the setup page reported that setup was complete and could be safely closed
+- Decisions:
+  - the normal emailed client onboarding path remains Request Connection -> secure limited-purpose page -> Facebook authorization -> explicit Page selection
+  - when Facebook exposes previously connected client Pages during authorization, keep those Pages enabled while adding the intended new Page so Meta does not revoke their app access
+  - no owner login or Facebook Business Integrations navigation is required for the normal client-facing flow
+- Blockers/manual steps: none remain for L2-05.
+- Remaining work: `L2-06` is now the single `READY` task. Verify that the completed L2-05 link cannot be reused, then verify that generating a replacement unfinished request invalidates the older link while the replacement remains usable.
 
 Future implementation agents must append a dated entry containing the task ID, files changed, checks run, live-test status, decisions, and remaining blockers. They may update the selected task to `DONE`, `BLOCKED`, or `MANUAL`, but only Work may declare the whole level complete in the README.
 
