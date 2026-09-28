@@ -70,7 +70,14 @@ export default function ConnectionsManager({
         throw new Error(result.error || "Unable to send the connection request.");
       }
 
-      setRequests((current) => [result.request, ...current]);
+      setRequests((current) => [
+        result.request,
+        ...current.map((request) =>
+          ["pending", "email_failed"].includes(request.status)
+            ? { ...request, status: "revoked" }
+            : request,
+        ),
+      ]);
       setMessage(
         `Connection request sent to ${result.request.email}. The link expires in 48 hours.`,
       );
