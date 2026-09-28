@@ -27,9 +27,9 @@ No Facebook password is collected or stored by Content Social Hub.
 | L2-03 | `DONE` | Verify Account Health and client-scoped Social Accounts state | Both saved connections returned `Healthy`; switching clients showed only that client's Page |
 | L2-04 | `DONE` | Correct the selected-Page capability lookup | Production live verification passed September 28; Davis and Let Us Clean both remained `Healthy` and the direct Page `tasks` error was removed |
 | L2-05 | `DONE` | Test Request Connection through Resend and the secure client link | Live Request Connection test passed September 28 with `Nicholas_Egner -> GIGnovate`; Resend delivery, private-browser isolation, client-side Facebook authorization, and `Healthy` completion were verified |
-| L2-06 | `READY` | Verify request completion and replacement-link revocation | L2-05 passed; verify completed-link reuse is blocked and a replacement request revokes the older unfinished link |
+| L2-06 | `DONE` | Verify request completion and replacement-link revocation | Completed-link reuse was blocked; replacement request revoked the older unfinished link; newest replacement link remained usable |
 
-There should be only one `READY` task. The next implementation agent should select L2-06 automatically and should not begin Level 3 until the request completion/revocation behavior has passed its live test.
+All planned Level 2 implementation tasks are now `DONE`. No Level 3 task is `READY` yet; Level 2 remains **IN PROGRESS** until Work reviews this evidence, updates the README checkpoint, and explicitly opens Level 3.
 
 ### L2-04 acceptance criteria
 
@@ -167,6 +167,37 @@ Do not begin Level 3 publishing work while completing L2-06. Level 2 closure rem
   - no owner login or Facebook Business Integrations navigation is required for the normal client-facing flow
 - Blockers/manual steps: none remain for L2-05.
 - Remaining work: `L2-06` is now the single `READY` task. Verify that the completed L2-05 link cannot be reused, then verify that generating a replacement unfinished request invalidates the older link while the replacement remains usable.
+
+#### September 28, 2026: L2-06 token lifecycle verification passed
+
+- Task: `L2-06`.
+- Outcome: `DONE`.
+- Files changed:
+  - `components/connections-manager.js`
+  - `docs/LEVEL_2_FACEBOOK_SETUP.md`
+- Live verification:
+  - the completed L2-05 setup link was reopened in a private/incognito browser and showed `Connection complete`; it exposed no `Continue with Facebook` action and could not restart the connection flow
+  - a fresh unfinished Request Connection was generated for `Nicholas_Egner` and its secure setup link was retained
+  - a second replacement Request Connection was generated before the first unfinished request was completed
+  - reopening the older unfinished link returned `This connection link is unavailable`, confirming the older token had been revoked
+  - the newest replacement link still opened the limited-purpose `Connect your Facebook Page` page and exposed no owner workspace
+  - no additional Facebook connection was completed during the replacement-link test
+  - after a normal page refresh, the owner UI correctly showed the newest request as `Pending`, the superseded request as `Revoked`, and the original successful request as `Completed`
+- UI issue found and corrected:
+  - immediately after creating the replacement request, the owner UI temporarily showed both the newest and superseded requests as `Pending`
+  - the backend token lifecycle was already correct, as proven by the rejected old link and by the server-rendered `Revoked` status after refresh
+  - `components/connections-manager.js` previously prepended the new request into local React state without updating the older request status
+  - the client state update now mirrors the backend behavior by marking existing `pending` and `email_failed` rows as `revoked` before inserting the newest request
+- Checks and tests run:
+  - refetched the changed component from `main` and confirmed the state-update logic was present
+  - targeted Node state-transition check passed with statuses `pending, revoked, revoked, completed, revoked`
+  - full repository lint/build was not run in this environment because the repository could not be cloned from GitHub from the local execution container; the corrective change is limited to the already-existing client-state update path
+- Decisions:
+  - preserve historical request rows rather than deleting superseded requests; the UI should show their actual lifecycle status
+  - replacement requests revoke unfinished `pending` and `email_failed` requests, matching the backend query
+  - do not reconnect an already healthy Page merely to test request-token replacement
+- Blockers/manual steps: none remain for the L2-06 acceptance criteria.
+- Remaining work: no Level 2 implementation task remains `READY`. Work must review the completed Level 2 evidence, update the README checkpoint if accepted, and explicitly open Level 3 before implementation continues.
 
 Future implementation agents must append a dated entry containing the task ID, files changed, checks run, live-test status, decisions, and remaining blockers. They may update the selected task to `DONE`, `BLOCKED`, or `MANUAL`, but only Work may declare the whole level complete in the README.
 
