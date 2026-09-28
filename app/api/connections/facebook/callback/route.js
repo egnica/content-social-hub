@@ -13,7 +13,10 @@ import {
   listFacebookPages,
   listFacebookPagesByIds,
 } from "@/lib/facebook";
-import { annotateFacebookPagesWithPermissions } from "@/lib/facebook-connection-logic";
+import {
+  annotateFacebookPagesWithPermissions,
+  mergeFacebookManagedPageCapabilities,
+} from "@/lib/facebook-connection-logic";
 import { getAppBaseUrl } from "@/lib/env";
 import { getSession } from "@/lib/session";
 
@@ -99,11 +102,15 @@ export async function GET(request) {
       }
     }
 
-    if (!pages.length && pageResult.status === "fulfilled") {
-      pages = pageResult.value;
-
+    if (pageResult.status === "fulfilled") {
       if (pages.length) {
-        pageDiscoveryMethod = "me/accounts";
+        pages = mergeFacebookManagedPageCapabilities(pages, pageResult.value);
+      } else {
+        pages = pageResult.value;
+
+        if (pages.length) {
+          pageDiscoveryMethod = "me/accounts";
+        }
       }
     }
 

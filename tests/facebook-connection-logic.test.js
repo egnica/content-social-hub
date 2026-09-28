@@ -5,6 +5,7 @@ import {
   canFacebookPagePublish,
   getFacebookPagePermissions,
   getFacebookPageTargetIds,
+  mergeFacebookManagedPageCapabilities,
 } from "../lib/facebook-connection-logic.js";
 
 const tokenDetails = {
@@ -36,6 +37,37 @@ test("maps granular permissions to the specific Page target", () => {
     "pages_read_engagement",
     "pages_manage_posts",
   ]);
+});
+
+test("restores Page tasks from me/accounts when direct Page recovery omits them", () => {
+  const [davis] = mergeFacebookManagedPageCapabilities(
+    [{ providerAccountId: "davis", accountName: "Davis", tasks: [] }],
+    [
+      {
+        providerAccountId: "davis",
+        accountName: "Davis",
+        tasks: ["CREATE_CONTENT"],
+      },
+    ],
+  );
+
+  assert.deepEqual(davis.tasks, ["CREATE_CONTENT"]);
+});
+
+test("preserves a real CREATE_CONTENT task even when granular manage-posts targets are incomplete", () => {
+  const [davis] = annotateFacebookPagesWithPermissions(
+    [
+      {
+        providerAccountId: "davis",
+        accountName: "Davis",
+        tasks: ["CREATE_CONTENT"],
+      },
+    ],
+    tokenDetails,
+  );
+
+  assert.deepEqual(davis.tasks, ["CREATE_CONTENT"]);
+  assert.equal(canFacebookPagePublish(davis.permissions), false);
 });
 
 test("does not make a Page publishable just because the user token has pages_manage_posts globally", () => {
