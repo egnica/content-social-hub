@@ -25,11 +25,11 @@ No Facebook password is collected or stored by Content Social Hub.
 | L2-01 | `DONE` | Deploy the first Facebook Pages OAuth adapter | Production OAuth returns successfully to Content Social Hub |
 | L2-02 | `DONE` | Connect and persist real Pages under the correct clients | `Andrew_Davis -> Davis Criminal Defense`; `Let_Us_Clean -> Let Us Clean LLC` |
 | L2-03 | `DONE` | Verify Account Health and client-scoped Social Accounts state | Both saved connections returned `Healthy`; switching clients showed only that client's Page |
-| L2-04 | `MANUAL` | Correct the selected-Page capability lookup | Code and automated coverage completed September 28; production live verification is required after Amplify deploy |
-| L2-05 | `WAITING` | Test Request Connection through Resend and the secure client link | Begins after L2-04 is reviewed; requires a live email and private-browser test |
+| L2-04 | `DONE` | Correct the selected-Page capability lookup | Production live verification passed September 28; Davis and Let Us Clean both remained `Healthy` and the direct Page `tasks` error was removed |
+| L2-05 | `READY` | Test Request Connection through Resend and the secure client link | Requires a real connection email, private-browser setup test, and successful client-side Facebook connection |
 | L2-06 | `WAITING` | Verify request completion and replacement-link revocation | Depends on a successful L2-05 connection request |
 
-There should be only one `READY` task. While L2-04 is `MANUAL`, do not begin L2-05 until the production Facebook live check is completed and reviewed.
+There should be only one `READY` task. The next implementation agent should select L2-05 automatically and should not begin L2-06 until the Request Connection flow has passed its live test.
 
 ### L2-04 acceptance criteria
 
@@ -45,6 +45,21 @@ The implementation must:
 6. Run the relevant checks and record the commands and results in a dated progress entry below.
 
 Do not rebuild the Meta application, OAuth configuration, database model, or client-selection architecture while completing L2-04.
+
+### L2-05 acceptance criteria
+
+The normal client onboarding path must work without requiring the client to enter the owner workspace or manually navigate Facebook Business Integrations.
+
+The implementation/live test must:
+
+1. Use **Request Connection** for a client with an Approval / Report Email and send the real setup email through Resend.
+2. Open the secure setup link in a private/incognito browser session and confirm it cannot access the owner workspace.
+3. Complete Facebook authorization from that client-facing flow, select the intended Facebook Page, and save it under the correct client.
+4. Confirm the connected Page returns `Healthy` after the client-facing connection completes.
+5. Record email delivery, private-browser behavior, Facebook connection result, and any manual steps in the dated progress log.
+6. Leave replacement-link revocation and completed-request reuse checks for L2-06.
+
+Do not require the client to use Facebook Business Integrations during the normal flow. Business Integrations is a recovery/admin path only when Meta has removed or excluded a Page from the application's allowed Page set.
 
 ### Progress entries
 
@@ -65,7 +80,7 @@ Do not rebuild the Meta application, OAuth configuration, database model, or cli
 #### September 28, 2026: L2-04 implemented; production verification pending
 
 - Task: `L2-04`.
-- Outcome: implementation and automated coverage completed; task moved to `MANUAL` until the deployed OAuth flow is verified against real Facebook Pages.
+- Outcome: implementation and automated coverage completed; task moved to `MANUAL` until the deployed OAuth flow was verified against real Facebook Pages.
 - Files changed:
   - `lib/facebook.js`
   - `lib/facebook-connection-logic.js`
@@ -75,30 +90,40 @@ Do not rebuild the Meta application, OAuth configuration, database model, or cli
   - `package.json`
   - `docs/LEVEL_2_FACEBOOK_SETUP.md`
 - Implementation decisions:
-  - stopped requesting the unsupported Page `tasks` field from both direct selected-Page lookup and `/me/accounts`
-  - Page-specific permissions now come from Meta token scopes plus granular `target_ids`; `pages_manage_posts` only makes the Page publishable when it applies to that Page
-  - the existing Account Health `CREATE_CONTENT` capability gate is preserved by deriving that capability from the Page-specific `pages_manage_posts` mapping rather than from Meta's unsupported Page `tasks` field
+  - stopped requesting the unsupported Page `tasks` field from the direct selected-Page lookup that Meta rejects
+  - retained `/me/accounts` as the working source of Page `CREATE_CONTENT` tasks and merged those capabilities onto directly recovered Pages by Page ID
+  - granular token target IDs remain part of Page discovery and permission context, while publish capability is not inferred from granular scope data alone
   - the Page picker explains how to use Facebook `Edit settings` when the intended client Page is missing and warns the operator to keep previously connected client Pages enabled
   - Facebook Business Integrations remains a recovery/admin path, not the normal onboarding path; normal onboarding remains Content Social Hub `Connect` / `Request Connection` -> Facebook authorization -> Page selection
-  - observed that Account Health can currently label some revoked Meta Page access as `Expired`; this wording issue is documented from the Davis incident but is not part of the L2-04 capability-lookup code change
-- Automated checks:
-  - `npm test` -> 4 tests passed, 0 failed
-  - `node --check lib/facebook.js` -> passed
-  - `node --check lib/facebook-connection-logic.js` -> passed
-  - `node --check app/api/connections/facebook/callback/route.js` -> passed
-  - full ESLint / Next build was not run in the scratch environment because project dependencies were not installed there; the Amplify deployment build remains the integration/build checkpoint
-- Live evidence collected before this code change:
+  - observed that Account Health can label some revoked Meta Page access as `Expired`; the Davis incident showed this can represent loss of app-to-Page authorization rather than a normal short token lifetime
+- Automated and deployment checks across the L2-04 implementation/correction:
+  - focused Node test suite reached `6 passed, 0 failed`
+  - server-side syntax checks passed for the changed Facebook modules/routes
+  - Amplify job 31 passed Build / Deploy / Verify for commit `1737fbaf` (`Fix Facebook Page capability lookup`)
+  - Amplify job 32 passed Build / Deploy / Verify for corrective commit `30cbbcdd` (`Restore Facebook Page publish capability`)
+- Live evidence collected during diagnosis:
   - Let Us Clean LLC remained `Healthy` while Davis Criminal Defense was reported as expired
   - Facebook Business Integrations showed only Let Us Clean LLC enabled for Content Social Hub, even though Nicholas's Facebook account still managed Davis Criminal Defense
-  - after Davis Criminal Defense was re-enabled for all required Page permissions and reconnected, `Andrew_Davis -> Davis Criminal Defense` returned to `Healthy` on September 28
+  - after Davis Criminal Defense was re-enabled for all required Page permissions and reconnected, `Andrew_Davis -> Davis Criminal Defense` returned to `Healthy`
   - this demonstrated that the earlier Davis failure was loss of app-to-Page authorization, not proof of a normal nine-day token expiration
-- Production live verification still required after deploy:
-  1. reconnect / check `Andrew_Davis -> Davis Criminal Defense`
-  2. reconnect / check `Let_Us_Clean -> Let Us Clean LLC`
-  3. confirm both remain independently `Healthy`
-  4. confirm the red `(#100) Tried accessing nonexisting field (tasks)` diagnostic no longer appears
-  5. confirm the picker reports Page-specific publish permission correctly and reconnecting one Page does not remove the other from Meta's allowed Page set
-- Remaining work: after L2-04 passes this live checkpoint and is reviewed, move L2-04 to `DONE` and L2-05 to `READY` for the Resend/private-browser client connection test.
+- A first L2-04 deployment incorrectly inferred publish capability from granular token data alone and produced a false `Permission Problem` for Davis; the corrective deployment restored the working `/me/accounts` Page-task capability source while keeping the unsupported direct Page `tasks` lookup removed.
+
+#### September 28, 2026: L2-04 production verification passed
+
+- Task: `L2-04`.
+- Outcome: `DONE`.
+- Live verification:
+  - `Andrew_Davis -> Davis Criminal Defense` reconnected successfully and returned `Healthy` at approximately 12:52 PM local time
+  - `Let_Us_Clean -> Let Us Clean LLC` returned `Healthy` at approximately 12:52 PM local time after the Davis reconnect
+  - reconnecting Davis did not break the Let Us Clean saved connection
+  - the unsupported direct selected-Page `tasks` lookup error no longer blocked the flow
+  - the corrected deployment preserved the real Facebook Page publish capability instead of producing the false `Permission Problem`
+- Decisions:
+  - keep the normal client workflow inside Content Social Hub -> Facebook authorization -> Page selection
+  - keep Facebook Business Integrations as troubleshooting/recovery only
+  - when an operator authorizes additional Pages under one Facebook login, previously connected client Pages should remain enabled so Meta does not remove the app's access to them
+- Blockers/manual steps: none remain for L2-04.
+- Remaining work: `L2-05` is now the single `READY` task. Test the real Resend Request Connection email and secure client-facing setup flow in a private browser. `L2-06` remains `WAITING`.
 
 Future implementation agents must append a dated entry containing the task ID, files changed, checks run, live-test status, decisions, and remaining blockers. They may update the selected task to `DONE`, `BLOCKED`, or `MANUAL`, but only Work may declare the whole level complete in the README.
 
