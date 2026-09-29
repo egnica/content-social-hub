@@ -1,9 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "@/components/ui.module.css";
 import { validateFacebookPublishDraft } from "@/lib/facebook-publish-logic";
 import { normalizeFacebookProviderUrl } from "@/lib/facebook-provider-url";
+import {
+  getFacebookPublishControlState,
+  isAttemptForRevision,
+} from "@/lib/facebook-publish-state";
 
 function exactPublishConfirmation(
   destinationName,
@@ -45,6 +49,27 @@ function exactPublishConfirmation(
   ].join("\n");
 }
 
+function attemptDate(attempt) {
+  const value = attempt?.completedAt || attempt?.startedAt || attempt?.createdAt;
+  if (!value) return "";
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+}
+
+function attemptLabel(status) {
+  const labels = {
+    submitting: "Submitting",
+    uploading: "Uploading",
+    processing: "Processing",
+    succeeded: "Succeeded",
+    failed: "Failed",
+    unknown: "Review required",
+  };
+
+  return labels[String(status || "").toLowerCase()] || String(status || "Unknown");
+}
+
 export default function FacebookPublishControls({
   version,
   destination,
@@ -61,6 +86,8 @@ export default function FacebookPublishControls({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const destinationName =
     version.destinationName || destination?.accountName || "Facebook Page";
   const validation = useMemo(
@@ -76,15 +103,61 @@ export default function FacebookPublishControls({
       }),
     [destination, form, masterChanged, media, videoThumbnailAsset, version.customized],
   );
-  const alreadyPublished =
-    version.lastPublishStatus === "succeeded" &&
-    Number(version.publishedRevision || 0) === Number(version.revision || 0);
-  const processing =
-    attempt?.status === "processing" || version.lastPublishStatus === "processing";
+  const currentAttempt = useMemo(() => {
+    if (isAttemptForRevision(attempt, version.revision)) return attempt;
+    return history.find((item) => isAttemptForRevision(item, version.revision)) || null;
+  }, [attempt, history, version.revision]);
+  const effectiveStatus =
+    currentAttempt?.status ||
+    (version.lastPublishStatus === "succeeded" ? "succeeded" : "");
+  const controlState = getFacebookPublishControlState({
+    status: effectiveStatus,
+    publishedRevision: version.publishedRevision,
+    revision: version.revision,
+  });
+  const processing = controlState.mode === "processing";
+  const videoProcessing = currentAttempt?.status === "processing";
   const postUrl = normalizeFacebookProviderUrl(
-    attempt?.providerPostUrl || version.providerPostUrl || "",
+    currentAttempt?.providerPostUrl || version.providerPostUrl || "",
   );
   const hasSelectedMedia = Array.isArray(form.mediaIds) && form.mediaIds.length > 0;
+
+  async function refreshHistory({ preferLatest = false } = {}) {
+    try {
+      const response = await fetch(
+        `/api/platform-versions/${version._id}/publish-attempts`,
+        { cache: "no-store" },
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to load Facebook publish history.");
+      }
+
+      const attempts = Array.isArray(result.attempts) ? result.attempts : [];
+      setHistory(attempts);
+
+      if (preferLatest) {
+        const latestCurrent = attempts.find((item) =>
+          isAttemptForRevision(item, version.revision),
+        );
+        if (latestCurrent) setAttempt(latestCurrent);
+      }
+    } catch (requestError) {
+      setError((current) => current || requestError.message);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    setAttempt(null);
+    setHistory([]);
+    setHistoryLoading(true);
+    refreshHistory({ preferLatest: true });
+    // Reload persisted attempt state whenever the saved version/revision changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version._id, version.revision]);
 
   async function publishNow() {
     setMessage("");
@@ -97,6 +170,15 @@ export default function FacebookPublishControls({
 
     if (!validation.publishable) {
       setError(validation.blocking.join(" "));
+      return;
+    }
+
+    if (!controlState.canSubmit) {
+      setError(
+        controlState.mode === "locked"
+          ? "The last Facebook result is uncertain. Review the recorded attempt before trying again."
+          : "This Facebook version cannot be submitted again in its current state.",
+      );
       return;
     }
 
@@ -124,6 +206,7 @@ export default function FacebookPublishControls({
 
       if (!response.ok) {
         if (result.attempt) setAttempt(result.attempt);
+        await refreshHistory();
         throw new Error(result.error || "Unable to publish this Facebook version.");
       }
 
@@ -138,6 +221,7 @@ export default function FacebookPublishControls({
       }
 
       onPublished?.(result.platformVersion, result.attempt);
+      await refreshHistory();
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -159,6 +243,7 @@ export default function FacebookPublishControls({
 
       if (!response.ok) {
         if (result.attempt) setAttempt(result.attempt);
+        await refreshHistory();
         throw new Error(
           result.error || "Unable to refresh Facebook video status.",
         );
@@ -166,6 +251,7 @@ export default function FacebookPublishControls({
 
       setAttempt(result.attempt || null);
       onPublished?.(result.platformVersion, result.attempt);
+      await refreshHistory();
 
       if (result.attempt?.status === "succeeded") {
         setMessage(`Facebook video is live on ${destinationName}.`);
@@ -188,11 +274,9 @@ export default function FacebookPublishControls({
       <div className={styles.sectionHeader}>
         <h2>Publish Now</h2>
         <p>
-          L3-05 publishes text, links, images, and one standard Facebook Page
-          video from private media. Video thumbnails can inherit from Master or
-          be overridden for Facebook. Reels are not part of this flow. Facebook
-          Account Health is checked again on the server immediately before
-          submission.
+          Facebook Account Health is checked again on the server immediately
+          before submission. Successful revisions and uncertain provider results
+          are locked against duplicate publishing; only known failures can retry.
         </p>
       </div>
 
@@ -213,8 +297,26 @@ export default function FacebookPublishControls({
 
       {processing ? (
         <div className={styles.notice}>
-          Facebook has accepted this video and is processing it. Do not publish
-          the same version again; use Check Video Status instead.
+          Facebook already has this revision in progress. Do not publish it again.
+          {videoProcessing ? " Use Check Video Status instead." : ""}
+        </div>
+      ) : null}
+
+      {controlState.mode === "locked" ? (
+        <div className={styles.errorNotice}>
+          <strong>Review required</strong>
+          <div style={{ marginTop: 6 }}>
+            Facebook may have received this revision, but the result could not be
+            confirmed. Automatic retry is blocked to prevent a duplicate post.
+          </div>
+        </div>
+      ) : null}
+
+      {controlState.mode === "retry" ? (
+        <div className={styles.notice}>
+          The last provider attempt definitively failed before a successful post
+          was recorded. A new retry attempt is allowed and the prior failure stays
+          in Publish history.
         </div>
       ) : null}
 
@@ -242,21 +344,15 @@ export default function FacebookPublishControls({
             publishing ||
             checkingStatus ||
             dirty ||
+            historyLoading ||
             !validation.publishable ||
-            alreadyPublished ||
-            processing
+            !controlState.canSubmit
           }
         >
-          {publishing
-            ? "Publishing…"
-            : alreadyPublished
-              ? "Published"
-              : processing
-                ? "Video Processing"
-                : "Publish Now"}
+          {publishing ? "Publishing…" : controlState.label}
         </button>
 
-        {processing ? (
+        {videoProcessing ? (
           <button
             className={styles.buttonSecondary}
             type="button"
@@ -277,6 +373,54 @@ export default function FacebookPublishControls({
             View Post
           </a>
         ) : null}
+      </div>
+
+      <div style={{ marginTop: 22 }}>
+        <div className={styles.sectionHeader}>
+          <h2>Publish History</h2>
+          <p>Prior attempts are preserved as an audit trail and are never overwritten.</p>
+        </div>
+
+        {historyLoading ? (
+          <div className={styles.notice}>Loading publish history…</div>
+        ) : history.length ? (
+          <div style={{ display: "grid", gap: 10 }}>
+            {history.map((item) => {
+              const itemUrl = normalizeFacebookProviderUrl(item.providerPostUrl || "");
+              const providerError = item.providerError?.message || "";
+
+              return (
+                <div
+                  key={item._id}
+                  style={{
+                    padding: 12,
+                    border: "1px solid #e4e7ec",
+                    borderRadius: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <strong>{attemptLabel(item.status)}</strong>
+                    <span>Revision {item.platformVersionRevision || "—"}</span>
+                    <span>{item.publishMode || "facebook"}</span>
+                    {attemptDate(item) ? <span>{attemptDate(item)}</span> : null}
+                  </div>
+                  {providerError ? (
+                    <div style={{ marginTop: 6 }}>{providerError}</div>
+                  ) : null}
+                  {itemUrl ? (
+                    <div style={{ marginTop: 8 }}>
+                      <a href={itemUrl} target="_blank" rel="noreferrer">
+                        View Post
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={styles.notice}>No Facebook publish attempts yet.</div>
+        )}
       </div>
     </div>
   );
