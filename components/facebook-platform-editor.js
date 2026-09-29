@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
+import FacebookPublishControls from "@/components/facebook-publish-controls";
 import {
   isFacebookVersionOutOfSync,
   validateFacebookVersionDraft,
@@ -250,7 +251,7 @@ function FacebookPreview({
             textAlign: "center",
           }}
         >
-          Preview only — this editor does not publish to Facebook.
+          Preview only — use Publish Now after saving and confirming the exact post.
         </div>
       </div>
     </div>
@@ -415,6 +416,15 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handlePublished(publishedVersion) {
+    setVersion(publishedVersion);
+    setForm(initialDraft(publishedVersion));
+    setDirty(false);
+    setMessage("Facebook post published successfully.");
+    setError("");
+    router.refresh();
   }
 
   return (
@@ -584,6 +594,16 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
               {saving ? "Saving" : dirty ? "Save Facebook Version" : "Saved"}
             </button>
           </div>
+
+          <FacebookPublishControls
+            version={version}
+            destination={destination}
+            form={form}
+            dirty={dirty}
+            busy={saving}
+            masterChanged={masterChanged}
+            onPublished={handlePublished}
+          />
         </div>
 
         <FacebookPreview
