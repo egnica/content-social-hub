@@ -161,7 +161,7 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | --- | --- | --- | --- |
 | L4-01 | `DONE` | Build scheduling data/timezone/revision foundation | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-02 | `DONE` | Add Schedule / Reschedule / Cancel controls | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
-| L4-03 | `READY` | Add EventBridge Scheduler + Lambda infrastructure | Application schedule records and controls are verified; proceed to the AWS IAM/environment checkpoint |
+| L4-03 | `MANUAL` | Add EventBridge Scheduler + Lambda infrastructure | Implementation and automated/AWS validation complete; deploy/configure the AWS stack and verify real create/reschedule/cancel + Lambda wake-up before marking DONE |
 | L4-04 | `WAITING` | Publish scheduled Facebook releases in the background | Depends on L4-03 worker path and must reuse Level 3 publishing safety |
 | L4-05 | `WAITING` | Add missed-schedule and controlled retry behavior | Depends on real background dispatch path |
 | L4-06 | `WAITING` | Run final browser-closed GIGnovate scheduling checkpoint | Depends on all prior Level 4 tasks; requires real deployed evidence before Work review |
@@ -423,5 +423,72 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - the current scheduling UI is functionally acceptable for the working version, but it is visually more complex than desired; defer simplification/polish until the end-to-end scheduling path is proven so UI changes do not interrupt Level 4 infrastructure work
 - Blockers/manual steps: none for L4-02.
 - Remaining work: implement only `L4-03` — EventBridge Scheduler + Lambda infrastructure. Stop at any AWS IAM/environment configuration checkpoint requiring Nicholas; keep `L4-04` and later tasks `WAITING`.
+
+### September 29, 2026: L4-03 implementation checkpoint
+
+- Task ID: `L4-03` — EventBridge Scheduler and Lambda Infrastructure.
+- Outcome: repository implementation and automated/AWS validation completed; task moved to `MANUAL` at the required AWS deployment/environment checkpoint. `L4-04` remains `WAITING`.
+- Files changed:
+  - `.env.example`
+  - `app/api/platform-versions/[id]/schedule/route.js`
+  - `components/facebook-schedule-controls.js`
+  - `infrastructure/level4-scheduling.yaml`
+  - `lib/aws-scheduler-logic.js`
+  - `lib/aws-scheduler.js`
+  - `lib/schedule-infrastructure.js`
+  - `tests/aws-scheduler-logic.test.js`
+  - `docs/LEVEL_4_SCHEDULING.md`
+- Implemented one-time EventBridge Scheduler definitions from the durable MongoDB schedule record using the already-resolved UTC release instant. AWS schedule names are stable and destination-specific: `csh-facebook-<platformVersionId>`.
+- Scheduler definitions use `at(UTC-time)`, `FlexibleTimeWindow: OFF`, `ActionAfterCompletion: DELETE`, and a target payload containing only the exact `scheduledReleaseId`. No OAuth token, MongoDB credential, social content, or other secret is embedded in the Scheduler event.
+- EventBridge Scheduler automatic target retry is deliberately set to zero in L4-03. Controlled technical retry behavior remains owned by `L4-05`, where it can be designed around the proven publish-result/idempotency semantics rather than introduced implicitly at the wake-up layer.
+- The authenticated destination schedule route now wraps the proven L4-02 MongoDB transitions with AWS create/update/delete operations. Create/reschedule/cancel include compensating cleanup/rollback so a failed AWS operation does not intentionally leave application schedule state claiming a transition that the timed trigger did not complete.
+- Stable-name create handles an orphaned/conflicting Scheduler entry by replacing its full one-time definition rather than creating a second timed trigger.
+- Rescheduling replaces the same destination-specific AWS schedule name while the MongoDB scheduling history still records the superseded application schedule and its replacement.
+- Cancelling removes the AWS schedule before the operation is treated as complete; an already-absent AWS schedule is accepted as cleanup success.
+- Added `infrastructure/level4-scheduling.yaml`, which defines:
+  - a dedicated `content-social-hub` EventBridge Scheduler group
+  - a Node.js 24 Lambda placeholder worker that accepts/logs only `scheduledReleaseId` and does **not** call Facebook
+  - a retained Secrets Manager container for worker configuration so future background credentials are not committed to Git
+  - a Lambda execution role limited to worker logging plus access to that one worker secret
+  - a Scheduler target role limited to invoking the one worker Lambda, with `aws:SourceAccount` and exact schedule-group `aws:SourceArn` trust conditions
+  - a policy attachment for the existing Amplify compute role allowing only Scheduler Create/Update/Delete on `content-social-hub/csh-facebook-*`, plus `iam:PassRole` for the one Scheduler target role with `iam:PassedToService = scheduler.amazonaws.com`
+- The application continues using AWS temporary credentials from the Amplify compute role; no static AWS access key/secret key variables were added.
+- `.env.example` now documents only the non-secret application-side Scheduler identifiers: `SCHEDULER_GROUP_NAME`, `SCHEDULED_RELEASE_WORKER_ARN`, and `SCHEDULER_TARGET_ROLE_ARN`. Worker secret values remain outside Git.
+- The scheduling UI copy now reflects that a deliberate Schedule/Reschedule action creates or updates the AWS timed trigger while still making clear that L4-03 does not publish to Facebook.
+- Automated checks run:
+  - `node --check /mnt/data/l403/lib/aws-scheduler-logic.js` — passed
+  - `node --check /mnt/data/l403/lib/aws-scheduler.js` — passed
+  - `node --check /mnt/data/l403/lib/schedule-infrastructure.js` — passed
+  - `node --check /mnt/data/l403/app/api/platform-versions/[id]/schedule/route.js` — passed
+  - `node --experimental-default-type=module --test /mnt/data/l403/tests/aws-scheduler-logic.test.js` — **4 tests passed, 0 failed**
+  - AWS CloudFormation `ValidateTemplate` on `infrastructure/level4-scheduling.yaml` in `us-east-2` — passed; template reports `CAPABILITY_IAM` as expected
+  - AWS IAM Access Analyzer validation of the scoped Amplify Scheduler policy, Scheduler-to-Lambda invoke policy, and worker secret policy — **0 findings**
+- IAM policy-generation check: the required `uvx iam-policy-autopilot@latest --version` check was attempted twice, but the isolated environment could not resolve `pypi.org`; no policy was uploaded or applied. The fallback used the named Scheduler/Lambda/Secrets Manager operations and current AWS service-authorization documentation, followed by Access Analyzer validation.
+- Full `npm run lint`, `npm test`, and `npm run build` were not run in the isolated execution environment because a full repository checkout with installed application dependencies was not available. The L4-03 JavaScript syntax checks and new pure scheduling tests passed independently.
+- Live/AWS preflight observations before any mutation:
+  - the existing Amplify app uses `content-social-hub-amplify-compute-role`
+  - that role currently has only the previously verified private-S3 access policy
+  - `us-east-2` had no Content Social Hub Lambda function and no application EventBridge Scheduler entries before L4-03 deployment
+  - the Amplify app currently has no Scheduler environment variables configured
+  - the current Amplify build specification copies server environment variables into `.env.production`, so the three new Scheduler variables must be added there as part of the deployment checkpoint
+- Live-test status: **not yet complete**. No AWS resources were created or modified during this implementation chat, and no Facebook publish request was made.
+- Required manual/AWS checkpoint for Nicholas before `L4-03` can become `DONE`:
+  1. deploy `infrastructure/level4-scheduling.yaml` in `us-east-2` using the existing Amplify compute-role name
+  2. capture the stack outputs for schedule group, worker Lambda ARN, Scheduler target-role ARN, and worker-secret ARN
+  3. keep worker secrets in the retained Secrets Manager resource; do not copy secret values into Git or client-visible environment variables
+  4. add `SCHEDULER_GROUP_NAME`, `SCHEDULED_RELEASE_WORKER_ARN`, and `SCHEDULER_TARGET_ROLE_ARN` to the Amplify app and its `.env.production` build-spec copy list, then redeploy the application
+  5. with `Nicholas_Egner -> GIGnovate`, schedule a safe unpublished destination for a future time and verify one AWS schedule exists under the expected stable name and points at the placeholder worker
+  6. reschedule it and verify the same AWS schedule name is replaced with the new UTC instant rather than duplicated
+  7. cancel it before dispatch and verify the AWS schedule is deleted while MongoDB retains the cancelled history
+  8. run one near-future infrastructure-only wake-up and verify the Lambda logs the exact scheduled-release ID and **does not create a Facebook post**
+- Decisions made inside L4-03 scope:
+  - MongoDB remains authoritative; EventBridge Scheduler only holds the timed wake-up
+  - one stable AWS schedule exists per destination/platform-version, while application history can contain superseded schedule records
+  - the Lambda event contains only the MongoDB scheduled-release identifier
+  - the L4-03 Lambda is intentionally a non-publishing placeholder; provider submission remains `L4-04`
+  - SQS remains deferred because L4-03 does not yet demonstrate a concrete queue/retry need
+  - current repository lockfile constraints prevent adding a new direct Scheduler SDK dependency without safely regenerating `package-lock.json`; the isolated Scheduler transport therefore uses the AWS credential-provider and SigV4 packages already pinned transitively by the existing AWS SDK dependency tree. This boundary is isolated in `lib/aws-scheduler.js`.
+- Blockers/manual steps: AWS stack deployment, Amplify environment/build-spec configuration, application redeploy, and real Scheduler/Lambda verification are required before `L4-03` can become `DONE`.
+- Remaining work: complete only the L4-03 manual checkpoint. Keep `L4-04`, `L4-05`, and `L4-06` `WAITING` until the infrastructure evidence above is recorded.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
