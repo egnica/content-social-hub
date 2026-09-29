@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import {
@@ -33,11 +33,28 @@ function linkHost(value) {
   }
 }
 
+function previewableLink(value) {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function mediaPreviewUrl(asset) {
   return asset?._id ? `/api/media/${asset._id}/url` : "";
 }
 
-function FacebookPreview({ destination, form, media }) {
+function FacebookPreview({
+  destination,
+  form,
+  media,
+  linkPreview,
+  linkPreviewStatus,
+}) {
   const selectedMedia = media.filter((asset) =>
     form.mediaIds.includes(stringId(asset._id)),
   );
@@ -46,6 +63,9 @@ function FacebookPreview({ destination, form, media }) {
       (asset) => stringId(asset._id) === stringId(form.primaryMediaId),
     ) || selectedMedia[0];
   const destinationName = destination?.accountName || "Facebook Page";
+  const previewUrl = linkPreview?.url || form.destinationUrl;
+  const previewTitle = linkPreview?.title || form.destinationUrl;
+  const previewSource = linkPreview?.siteName || linkHost(previewUrl);
 
   return (
     <div>
@@ -107,7 +127,9 @@ function FacebookPreview({ destination, form, media }) {
             }}
           >
             {form.message || (
-              <span style={{ color: "#98a2b3" }}>Your Facebook message preview</span>
+              <span style={{ color: "#98a2b3" }}>
+                Your Facebook message preview
+              </span>
             )}
           </div>
         </div>
@@ -135,26 +157,74 @@ function FacebookPreview({ destination, form, media }) {
             )}
           </div>
         ) : form.destinationUrl ? (
-          <div
-            style={{
-              padding: "16px 18px",
-              borderTop: "1px solid #e4e7ec",
-              background: "#f7f8fa",
-            }}
-          >
-            <span
+          <div style={{ borderTop: "1px solid #e4e7ec" }}>
+            {linkPreview?.imageUrl ? (
+              <img
+                src={linkPreview.imageUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  maxHeight: 280,
+                  objectFit: "cover",
+                  background: "#eef1f4",
+                }}
+              />
+            ) : null}
+            <div
               style={{
-                display: "block",
-                color: "#667085",
-                fontSize: 11,
-                textTransform: "uppercase",
+                padding: "14px 18px 16px",
+                borderTop: linkPreview?.imageUrl ? "1px solid #e4e7ec" : 0,
+                background: "#f7f8fa",
               }}
             >
-              {linkHost(form.destinationUrl)}
-            </span>
-            <strong style={{ display: "block", marginTop: 5, fontSize: 14 }}>
-              {form.destinationUrl}
-            </strong>
+              <span
+                style={{
+                  display: "block",
+                  color: "#667085",
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                }}
+              >
+                {previewSource}
+              </span>
+              <strong
+                style={{
+                  display: "block",
+                  marginTop: 5,
+                  fontSize: 15,
+                  lineHeight: 1.3,
+                }}
+              >
+                {previewTitle}
+              </strong>
+              {linkPreview?.description ? (
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 5,
+                    color: "#667085",
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {linkPreview.description}
+                </span>
+              ) : null}
+              {linkPreviewStatus === "loading" ? (
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 6,
+                    color: "#98a2b3",
+                    fontSize: 11,
+                  }}
+                >
+                  Loading page preview…
+                </span>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -195,6 +265,8 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [linkPreview, setLinkPreview] = useState(null);
+  const [linkPreviewStatus, setLinkPreviewStatus] = useState("idle");
   const media = masterContent.media || [];
   const masterChanged = isFacebookVersionOutOfSync(
     version,
@@ -211,6 +283,50 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
       }),
     [destination, form, masterChanged, version.customized],
   );
+
+  useEffect(() => {
+    const destinationUrl = form.destinationUrl.trim();
+    setLinkPreview(null);
+
+    if (!destinationUrl) {
+      setLinkPreviewStatus("idle");
+      return undefined;
+    }
+
+    if (!previewableLink(destinationUrl)) {
+      setLinkPreviewStatus("unavailable");
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLinkPreviewStatus("loading");
+
+      try {
+        const response = await fetch(
+          `/api/link-preview?url=${encodeURIComponent(destinationUrl)}`,
+          { signal: controller.signal },
+        );
+        const result = await response.json();
+
+        if (!response.ok || !result.preview) {
+          throw new Error(result.error || "Unable to load link preview.");
+        }
+
+        setLinkPreview(result.preview);
+        setLinkPreviewStatus("ready");
+      } catch (requestError) {
+        if (requestError.name === "AbortError") return;
+        setLinkPreview(null);
+        setLinkPreviewStatus("unavailable");
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [form.destinationUrl]);
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -375,6 +491,24 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
                 onChange={(event) => update("destinationUrl", event.target.value)}
                 placeholder="https://example.com/page"
               />
+              {form.destinationUrl ? (
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 6,
+                    color: "#667085",
+                    fontSize: 12,
+                  }}
+                >
+                  {linkPreviewStatus === "loading"
+                    ? "Loading page image and link metadata…"
+                    : linkPreviewStatus === "ready"
+                      ? "Link preview loaded from the page's metadata."
+                      : linkPreviewStatus === "unavailable"
+                        ? "Page metadata could not be loaded. Facebook may still create its own link preview when published."
+                        : ""}
+                </span>
+              ) : null}
             </label>
           </div>
 
@@ -452,7 +586,13 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
           </div>
         </div>
 
-        <FacebookPreview destination={destination} form={form} media={media} />
+        <FacebookPreview
+          destination={destination}
+          form={form}
+          media={media}
+          linkPreview={linkPreview}
+          linkPreviewStatus={linkPreviewStatus}
+        />
       </div>
     </section>
   );
