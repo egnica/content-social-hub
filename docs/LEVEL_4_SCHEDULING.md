@@ -159,8 +159,8 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
-| L4-01 | `MANUAL` | Build scheduling data/timezone/revision foundation | Implementation and automated checks complete; deployed live verification is required before `DONE` |
-| L4-02 | `WAITING` | Add Schedule / Reschedule / Cancel controls | Depends on L4-01 persistence and validation foundation |
+| L4-01 | `DONE` | Build scheduling data/timezone/revision foundation | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
+| L4-02 | `READY` | Add Schedule / Reschedule / Cancel controls | L4-01 persistence, timezone, and revision foundation is verified |
 | L4-03 | `WAITING` | Add EventBridge Scheduler + Lambda infrastructure | Depends on proven application schedule records; includes AWS IAM/environment checkpoint |
 | L4-04 | `WAITING` | Publish scheduled Facebook releases in the background | Depends on L4-03 worker path and must reuse Level 3 publishing safety |
 | L4-05 | `WAITING` | Add missed-schedule and controlled retry behavior | Depends on real background dispatch path |
@@ -349,5 +349,22 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - ambiguous/nonexistent DST wall times are blocking errors
 - Blockers/manual steps: deployed Amplify verification is required before `L4-01` may become `DONE` and before `L4-02` becomes `READY`.
 - Remaining work: complete the L4-01 live checkpoint; keep `L4-02` and all later Level 4 tasks `WAITING` until that evidence is recorded.
+
+### September 29, 2026: L4-01 live checkpoint passed
+
+- Task ID: `L4-01` — Scheduling Data, Timezone, and Revision Foundation.
+- Outcome: deployed live verification passed with `Nicholas_Egner -> GIGnovate`; task is `DONE` and `L4-02` is now the sole `READY` task.
+- Live verification completed:
+  - the Master release-time control displayed `America/Chicago` as the authoritative client timezone
+  - a future Master default release time was saved and preserved as the same client-local wall-clock value after reopening the item
+  - changing only the release time from 8:00 AM to 8:15 AM did not create a stale Facebook-version warning or alter the destination publish revision
+  - changing real publish content caused the Facebook destination to show `Update From Master`, proving the Master revision advanced and stale-version protection remained intact
+  - no Facebook post was created by the scheduling-default changes
+  - no AWS timed schedule exists in L4-01; AWS scheduling remains intentionally deferred to later Level 4 tasks
+- Automated evidence remains: focused scheduling suite **8 passed, 0 failed**, with changed JavaScript syntax checks passed.
+- Files changed for the completion record: `docs/LEVEL_4_SCHEDULING.md` only.
+- Decisions: L4-01 architecture remains unchanged; the live test confirms the schedule-only/publish-content revision boundary works in the deployed application.
+- Blockers/manual steps: none for L4-01.
+- Remaining work: implement only `L4-02` — destination Schedule / Reschedule / Cancel controls. Keep L4-03 and later tasks `WAITING`.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
