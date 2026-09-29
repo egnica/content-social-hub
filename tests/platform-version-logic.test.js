@@ -37,13 +37,14 @@ test("Facebook destination eligibility requires same client, healthy state, and 
   );
 });
 
-test("new Facebook versions inherit Master defaults and revision marker", () => {
+test("new Facebook versions inherit Master defaults, video thumbnail, and revision marker", () => {
   assert.deepEqual(
     buildInheritedFacebookFields({
       text: "Master copy",
       primaryUrl: "https://example.com/page",
       mediaIds: ["media-1", "media-2"],
       defaultPrimaryMediaId: "media-2",
+      defaultVideoThumbnailMediaId: "thumb-1",
       revision: 4,
     }),
     {
@@ -51,6 +52,7 @@ test("new Facebook versions inherit Master defaults and revision marker", () => 
       destinationUrl: "https://example.com/page",
       mediaIds: ["media-1", "media-2"],
       primaryMediaId: "media-2",
+      videoThumbnailMediaId: "thumb-1",
       masterRevisionSynced: 4,
       customized: false,
     },
@@ -114,7 +116,7 @@ test("Facebook live validation warns on stale customized content without overwri
   assert.match(result.warnings[0], /edits are preserved/);
 });
 
-test("Facebook draft normalization keeps only attached Master media and repairs primary media", () => {
+test("Facebook draft normalization keeps attached media and independent thumbnail override", () => {
   assert.deepEqual(
     normalizeFacebookVersionDraft(
       {
@@ -122,6 +124,7 @@ test("Facebook draft normalization keeps only attached Master media and repairs 
         destinationUrl: "https://example.com",
         mediaIds: ["media-2", "foreign", "media-1"],
         primaryMediaId: "foreign",
+        videoThumbnailMediaId: "thumb-1",
       },
       ["media-1", "media-2"],
     ),
@@ -130,6 +133,7 @@ test("Facebook draft normalization keeps only attached Master media and repairs 
       destinationUrl: "https://example.com",
       mediaIds: ["media-2", "media-1"],
       primaryMediaId: "media-2",
+      videoThumbnailMediaId: "thumb-1",
     },
   );
 });

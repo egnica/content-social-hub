@@ -4,11 +4,26 @@ import { useMemo, useState } from "react";
 import styles from "@/components/ui.module.css";
 import { validateFacebookPublishDraft } from "@/lib/facebook-publish-logic";
 
-function exactPublishConfirmation(destinationName, form) {
+function exactPublishConfirmation(
+  destinationName,
+  form,
+  media,
+  videoThumbnailAsset,
+) {
   const mediaCount = Array.isArray(form.mediaIds) ? form.mediaIds.length : 0;
   const linkLabel = mediaCount
     ? "Link (included in media post text/description):"
     : "Link:";
+  const selected = (media || []).filter((asset) =>
+    (form.mediaIds || []).includes(String(asset?._id || "")),
+  );
+  const primary =
+    selected.find(
+      (asset) => String(asset?._id || "") === String(form.primaryMediaId || ""),
+    ) || selected[0];
+  const videoThumbnailLabel = primary?.contentType?.startsWith("video/")
+    ? videoThumbnailAsset?.originalName || "Facebook automatic"
+    : "(not applicable)";
 
   return [
     `Publish this exact Facebook post to ${destinationName}?`,
@@ -22,6 +37,9 @@ function exactPublishConfirmation(destinationName, form) {
     "Media:",
     mediaCount ? `${mediaCount} selected` : "(none)",
     "",
+    "Video thumbnail:",
+    videoThumbnailLabel,
+    "",
     "This creates a real live Facebook Page post.",
   ].join("\n");
 }
@@ -30,6 +48,8 @@ export default function FacebookPublishControls({
   version,
   destination,
   form,
+  media = [],
+  videoThumbnailAsset = null,
   dirty,
   busy,
   masterChanged,
@@ -46,12 +66,14 @@ export default function FacebookPublishControls({
     () =>
       validateFacebookPublishDraft({
         ...form,
+        mediaAssets: media,
+        videoThumbnailAsset,
         healthStatus: destination?.healthStatus || "unavailable",
         canPublish: destination?.canPublish === true,
         masterChanged,
         customized: version.customized === true,
       }),
-    [destination, form, masterChanged, version.customized],
+    [destination, form, masterChanged, media, videoThumbnailAsset, version.customized],
   );
   const alreadyPublished =
     version.lastPublishStatus === "succeeded" &&
@@ -75,7 +97,16 @@ export default function FacebookPublishControls({
       return;
     }
 
-    if (!window.confirm(exactPublishConfirmation(destinationName, form))) {
+    if (
+      !window.confirm(
+        exactPublishConfirmation(
+          destinationName,
+          form,
+          media,
+          videoThumbnailAsset,
+        ),
+      )
+    ) {
       return;
     }
 
@@ -155,7 +186,8 @@ export default function FacebookPublishControls({
         <h2>Publish Now</h2>
         <p>
           L3-05 publishes text, links, images, and one standard Facebook Page
-          video from private media. Reels are not part of this flow. Facebook
+          video from private media. Video thumbnails can inherit from Master or
+          be overridden for Facebook. Reels are not part of this flow. Facebook
           Account Health is checked again on the server immediately before
           submission.
         </p>

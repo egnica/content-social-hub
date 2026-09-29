@@ -87,7 +87,7 @@ async function inspectMedia(file) {
   return {};
 }
 
-function putFile(url, headers, file, onProgress) {
+function putFile(url, headers, file, onProgress = () => {}) {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("PUT", url);
@@ -119,8 +119,14 @@ function initialForm(content) {
     contentLength: content?.contentLength || "short",
     reusable: Boolean(content?.reusable),
     defaultPrimaryMediaId: content?.defaultPrimaryMediaId || "",
+    defaultVideoThumbnailMediaId: content?.defaultVideoThumbnailMediaId || "",
     defaultReleaseAt: toLocalDateTime(content?.defaultReleaseAt),
   };
+}
+
+function mediaPreviewUrl(asset) {
+  if (!asset) return "";
+  return asset.previewUrl || (asset._id ? `/api/media/${asset._id}/url` : "");
 }
 
 export default function MasterContentForm({ clients, content = null }) {
@@ -129,6 +135,7 @@ export default function MasterContentForm({ clients, content = null }) {
   const textInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  const thumbnailInputRef = useRef(null);
   const [form, setForm] = useState(() => initialForm(content));
   const [media, setMedia] = useState(() =>
     (content?.media || []).map((asset) => ({
@@ -137,16 +144,57 @@ export default function MasterContentForm({ clients, content = null }) {
       progress: 100,
     })),
   );
+  const [thumbnailAsset, setThumbnailAsset] = useState(() =>
+    content?.defaultVideoThumbnail
+      ? {
+          ...content.defaultVideoThumbnail,
+          previewUrl: `/api/media/${content.defaultVideoThumbnail._id}/url`,
+        }
+      : null,
+  );
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const isEditing = Boolean(content?._id);
 
   const defaultMediaOptions = useMemo(
     () => media.filter((asset) => asset.status !== "error"),
     [media],
+  );
+  const effectivePrimaryMedia = useMemo(
+    () =>
+      defaultMediaOptions.find(
+        (asset) => String(asset._id || "") === form.defaultPrimaryMediaId,
+      ) || defaultMediaOptions[0] || null,
+    [defaultMediaOptions, form.defaultPrimaryMediaId],
+  );
+  const videoIsPrimary = Boolean(
+    effectivePrimaryMedia?.contentType?.startsWith("video/"),
+  );
+  const thumbnailOptions = useMemo(() => {
+    const byId = new Map();
+
+    for (const asset of defaultMediaOptions) {
+      if (asset.contentType?.startsWith("image/") && asset._id) {
+        byId.set(String(asset._id), asset);
+      }
+    }
+
+    if (thumbnailAsset?._id) {
+      byId.set(String(thumbnailAsset._id), thumbnailAsset);
+    }
+
+    return [...byId.values()];
+  }, [defaultMediaOptions, thumbnailAsset]);
+  const selectedThumbnail = useMemo(
+    () =>
+      thumbnailOptions.find(
+        (asset) => String(asset._id || "") === form.defaultVideoThumbnailMediaId,
+      ) || null,
+    [form.defaultVideoThumbnailMediaId, thumbnailOptions],
   );
 
   function update(field, value) {
@@ -160,16 +208,18 @@ export default function MasterContentForm({ clients, content = null }) {
   }
 
   function changeClient(nextClientId) {
-    if (media.length && nextClientId !== form.clientId) {
+    if ((media.length || thumbnailAsset) && nextClientId !== form.clientId) {
       const shouldChange = window.confirm(
-        "Changing the client will detach the media currently shown on this content item.",
+        "Changing the client will detach the media and video thumbnail currently shown on this content item.",
       );
       if (!shouldChange) return;
       setMedia([]);
+      setThumbnailAsset(null);
       setForm((current) => ({
         ...current,
         clientId: nextClientId,
         defaultPrimaryMediaId: "",
+        defaultVideoThumbnailMediaId: "",
       }));
       return;
     }
@@ -278,6 +328,79 @@ export default function MasterContentForm({ clients, content = null }) {
     setUploading(false);
   }
 
+  async function uploadVideoThumbnail(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    setMessage("");
+
+    if (!file) return;
+    if (!form.clientId) {
+      setErrors((current) => ({ ...current, clientId: "Choose a client before uploading." }));
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setMessage("Video thumbnails must be image files.");
+      return;
+    }
+
+    const localPreviewUrl = URL.createObjectURL(file);
+    setThumbnailAsset({
+      originalName: file.name,
+      contentType: file.type,
+      size: file.size,
+      previewUrl: localPreviewUrl,
+      status: "uploading",
+    });
+    setThumbnailUploading(true);
+
+    try {
+      const metadata = await inspectImage(file);
+      const presignResponse = await fetch("/api/uploads/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: form.clientId,
+          filename: file.name,
+          contentType: file.type,
+          size: file.size,
+          ...metadata,
+        }),
+      });
+      const presignResult = await presignResponse.json();
+
+      if (!presignResponse.ok) {
+        throw new Error(presignResult.error || "Unable to prepare the thumbnail upload.");
+      }
+
+      await putFile(presignResult.uploadUrl, presignResult.headers, file);
+
+      const completeResponse = await fetch(
+        `/api/media/${presignResult.media._id}/complete`,
+        { method: "POST" },
+      );
+      const completeResult = await completeResponse.json();
+
+      if (!completeResponse.ok) {
+        throw new Error(completeResult.error || "Unable to confirm the thumbnail upload.");
+      }
+
+      URL.revokeObjectURL(localPreviewUrl);
+      const uploaded = {
+        ...completeResult.media,
+        previewUrl: `/api/media/${completeResult.media._id}/url`,
+      };
+      setThumbnailAsset(uploaded);
+      update("defaultVideoThumbnailMediaId", String(uploaded._id));
+    } catch (uploadError) {
+      setThumbnailAsset((current) =>
+        current ? { ...current, status: "error", error: uploadError.message } : null,
+      );
+      setMessage(uploadError.message);
+    } finally {
+      setThumbnailUploading(false);
+    }
+  }
+
   function moveMedia(index, direction) {
     const destination = index + direction;
     if (destination < 0 || destination >= media.length) return;
@@ -295,6 +418,10 @@ export default function MasterContentForm({ clients, content = null }) {
 
     if (form.defaultPrimaryMediaId === removed?._id) {
       update("defaultPrimaryMediaId", "");
+    }
+
+    if (form.defaultVideoThumbnailMediaId === removed?._id) {
+      update("defaultVideoThumbnailMediaId", "");
     }
   }
 
@@ -384,7 +511,7 @@ export default function MasterContentForm({ clients, content = null }) {
           className={styles.entryOption}
           type="button"
           onClick={() => imageInputRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || thumbnailUploading}
         >
           Upload Image
         </button>
@@ -392,7 +519,7 @@ export default function MasterContentForm({ clients, content = null }) {
           className={styles.entryOption}
           type="button"
           onClick={() => videoInputRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || thumbnailUploading}
         >
           Upload Video
         </button>
@@ -411,7 +538,7 @@ export default function MasterContentForm({ clients, content = null }) {
         accept="image/*"
         multiple
         onChange={uploadFiles}
-        disabled={uploading}
+        disabled={uploading || thumbnailUploading}
         hidden
       />
       <input
@@ -420,7 +547,15 @@ export default function MasterContentForm({ clients, content = null }) {
         accept="video/*"
         multiple
         onChange={uploadFiles}
-        disabled={uploading}
+        disabled={uploading || thumbnailUploading}
+        hidden
+      />
+      <input
+        ref={thumbnailInputRef}
+        type="file"
+        accept="image/*"
+        onChange={uploadVideoThumbnail}
+        disabled={uploading || thumbnailUploading}
         hidden
       />
 
@@ -538,7 +673,7 @@ export default function MasterContentForm({ clients, content = null }) {
               accept="image/*,video/*"
               multiple
               onChange={uploadFiles}
-              disabled={uploading}
+              disabled={uploading || thumbnailUploading}
             />
           </div>
         </div>
@@ -623,6 +758,71 @@ export default function MasterContentForm({ clients, content = null }) {
             </select>
           </label>
         ) : null}
+
+        {videoIsPrimary ? (
+          <div style={{ marginTop: 18 }}>
+            <div className={styles.sectionHeader}>
+              <h2>Default video thumbnail / cover</h2>
+              <p>
+                Optional default for video platforms. Each platform version can
+                override this without changing Master Content.
+              </p>
+            </div>
+
+            <label className={styles.field}>
+              <span className={styles.label}>Video thumbnail / cover</span>
+              <select
+                className={styles.select}
+                value={form.defaultVideoThumbnailMediaId}
+                onChange={(event) =>
+                  update("defaultVideoThumbnailMediaId", event.target.value)
+                }
+              >
+                <option value="">Let each platform choose automatically</option>
+                {thumbnailOptions.map((asset) => (
+                  <option key={asset._id} value={asset._id}>
+                    {asset.originalName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {selectedThumbnail ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  width: 220,
+                  overflow: "hidden",
+                  border: "1px solid #d8dde3",
+                  borderRadius: 10,
+                  background: "#f4f6f8",
+                }}
+              >
+                <img
+                  src={mediaPreviewUrl(selectedThumbnail)}
+                  alt="Selected video thumbnail"
+                  style={{ display: "block", width: "100%", maxHeight: 140, objectFit: "cover" }}
+                />
+              </div>
+            ) : null}
+
+            {thumbnailAsset?.status === "error" ? (
+              <div className={styles.errorNotice} style={{ marginTop: 10 }}>
+                {thumbnailAsset.error}
+              </div>
+            ) : null}
+
+            <button
+              className={styles.buttonSecondary}
+              type="button"
+              style={{ marginTop: 12 }}
+              onClick={() => thumbnailInputRef.current?.click()}
+              disabled={uploading || thumbnailUploading}
+            >
+              {thumbnailUploading ? "Uploading Thumbnail…" : "Upload Thumbnail Image"}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <section className={styles.formSection}>
@@ -646,7 +846,7 @@ export default function MasterContentForm({ clients, content = null }) {
         <button
           className={styles.button}
           type="submit"
-          disabled={pending || uploading}
+          disabled={pending || uploading || thumbnailUploading}
         >
           {pending ? "Saving" : isEditing ? "Save Changes" : "Save Master Content"}
         </button>
@@ -664,7 +864,7 @@ export default function MasterContentForm({ clients, content = null }) {
             className={styles.buttonDangerStrong}
             type="button"
             onClick={deleteMasterContent}
-            disabled={pending || uploading || deleting}
+            disabled={pending || uploading || thumbnailUploading || deleting}
           >
             {deleting ? "Deleting Content" : "Delete Content"}
           </button>
