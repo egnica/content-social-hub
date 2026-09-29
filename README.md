@@ -18,13 +18,15 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 ## Implementation Status
 
-Levels 0, 1, and 2 are implemented, deployed, and verified in the live application.
+Levels 0, 1, 2, and 3 are implemented, deployed, and verified in the live application.
 
 **Level 2 — First Social Connection was reviewed and closed on September 28, 2026.** Facebook Pages direct Connect and emailed Request Connection are both proven with real accounts. The selected-Page capability cleanup passed production verification, the Resend client setup flow passed end to end, and completed/replaced secure setup links were verified to become unusable as designed.
 
-**Level 3 — First Publisher is now the active phase.** The phase plan is `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`. Its first bounded task, `L3-01`, is `READY`; no later Level 3 task should begin until the active task is completed and documented.
+**Level 3 — First Publisher was reviewed and closed on September 29, 2026.** The Facebook destination-version editor, continuous validation and preview, real text/link publishing, private-S3 image publishing, private-S3 standard video publishing, durable Publish History, duplicate protection, retry-state handling, remote result persistence, and exact `View Post` behavior were verified with `Nicholas_Egner -> GIGnovate`.
 
-Level 3 uses `Nicholas_Egner -> GIGnovate` as the preferred live Facebook publishing test destination because that Page is already connected and verified `Healthy` from Level 2.
+**Level 4 — Scheduling is now the active phase.** The phase plan is `docs/LEVEL_4_SCHEDULING.md`. Its first bounded task, `L4-01`, is `READY`; no later Level 4 task should begin until the scheduling data/timezone/revision foundation is completed and documented.
+
+Level 4 continues to use `Nicholas_Egner -> GIGnovate` as the preferred live Facebook scheduling test destination because that Page is already connected, verified `Healthy`, and proven through the Level 3 publisher.
 
 Implemented:
 
@@ -45,6 +47,13 @@ Implemented:
 - completed-link protection and replacement-link revocation
 - client-scoped Social Accounts state that refreshes correctly when the selected client changes
 - request-history state that distinguishes Pending, Revoked, and Completed requests
+- destination-specific Facebook platform-version records with Master-default / destination-override behavior
+- Facebook-specific editing, continuous validation, live preview, and Master-change protection
+- real Facebook text/link, image, and standard video publishing from the application
+- private-S3 server-side image/video transfer to Meta without making the media bucket public
+- durable publish attempts/results, provider post IDs/URLs, and Publish History
+- duplicate-submission protection, conservative ambiguous-result locking, and deliberate known-failure retry behavior
+- exact `View Post` handling for verified Facebook text/link, image, and video results
 - placeholder screens that clearly identify later implementation levels
 
 Deployment checkpoint passed on September 17, 2026:
@@ -91,6 +100,23 @@ Request Connection
 -> confirm newest replacement link remains usable
 ```
 
+Facebook Level 3 publisher closure checkpoint passed on September 29, 2026:
+
+```text
+Create / open Master Content
+-> select GIGnovate destination
+-> create/load Facebook platform version
+-> customize and live-validate the Facebook version
+-> preview destination content
+-> Publish Now with final confirmation
+-> server rechecks ownership, Account Health, and publishability
+-> duplicate submission protection applies
+-> publish real text/link, image, and video posts
+-> persist provider IDs / URLs and durable attempt history
+-> refresh/reopen and retain Published lock + Publish History
+-> View Post opens the exact live Facebook result
+```
+
 Verified in the deployed application:
 
 - MongoDB health, reads, and writes
@@ -111,8 +137,16 @@ Verified in the deployed application:
 - client-facing Facebook authorization and explicit Page selection
 - completed setup-link reuse prevention
 - replacement-link revocation of older unfinished requests
+- Facebook platform-version creation, exclusion/reactivation, inherited defaults, destination customization, and Master-change protection
+- continuous Facebook validation and approximate destination preview
+- real Facebook text/link publishing to GIGnovate
+- real private-S3 Facebook image publishing to GIGnovate
+- real private-S3 Facebook standard video publishing to GIGnovate with custom video cover support
+- durable Facebook Publish History after refresh/reopen
+- successful-revision duplicate lockout and destination-specific publish state
+- exact `View Post` for the verified text/link, image, and video flows
 
-Verified live Facebook mappings as of September 28, 2026:
+Verified live Facebook mappings as of September 29, 2026:
 
 ```text
 Andrew_Davis
@@ -127,13 +161,16 @@ Nicholas_Egner
 -> GIGnovate
 -> Healthy
 -> Connected through Request Connection / Resend client flow
+-> Level 3 text/link, image, and video publishing verified
 ```
 
 Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
 
 The closed Level 2 Meta, Resend, OAuth, token-encryption, and live-verification record is `docs/LEVEL_2_FACEBOOK_SETUP.md`.
 
-The active Level 3 First Publisher implementation plan and progress record is `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`.
+The closed Level 3 Facebook publisher plan and completion record is `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`.
+
+The active Level 4 Scheduling implementation plan and progress record is `docs/LEVEL_4_SCHEDULING.md`.
 
 ---
 
@@ -1649,15 +1686,22 @@ Create Master Content
 -> View Post opens exact live post
 ```
 
-**Status: IN PROGRESS — phase opened September 28, 2026.**
+**Status: PASSED and CLOSED September 29, 2026.**
 
-Active plan: `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`
+Verified closure evidence includes:
 
-Current implementation task: `L3-01` — destination / platform-version foundation.
+- separate destination-specific Facebook platform versions with Master-default / destination-override behavior
+- continuous validation, live preview, customization persistence, and Master-change protection
+- real GIGnovate text/link publish with exact `View Post`
+- real GIGnovate image publish from private S3 with exact `View Post`
+- real GIGnovate standard video publish from private S3 with custom cover and corrected exact `View Post`
+- durable provider IDs/URLs and Publish History
+- successful-revision duplicate lockout, conservative ambiguous-result handling, and known-failure retry rules
+- final reliability checkpoint after refresh/reopen with no duplicate remote post
 
-Preferred live publishing checkpoint: `Nicholas_Egner -> GIGnovate`.
+Detailed evidence is in `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`.
 
-This is the first major end-to-end milestone.
+This is the first major end-to-end publishing milestone and is now complete.
 
 ### Level 4 — Scheduling
 
@@ -1671,11 +1715,19 @@ Build:
 
 Credential / infrastructure checkpoint:
 
-- configure AWS permissions and environment values required for EventBridge, Lambda, and SQS
+- configure AWS permissions and environment values required for EventBridge, Lambda, and SQS where the implementation actually uses them
 
 Pass condition:
 
 - schedule a real post, close the browser, and verify background publishing occurs correctly
+
+**Status: IN PROGRESS — phase opened September 29, 2026.**
+
+Active plan: `docs/LEVEL_4_SCHEDULING.md`
+
+Current implementation task: `L4-01` — scheduling data, timezone, and revision foundation.
+
+Preferred live scheduling checkpoint: `Nicholas_Egner -> GIGnovate`.
 
 ### Level 5 — Multi-Platform
 
@@ -1865,17 +1917,18 @@ The user does not need to write a separate assignment. Start the new Chat with t
 
 Current delegation state:
 
-- Completed product stage: **Level 2, First Social Connection — closed September 28, 2026**
-- Active product stage: **Level 3, First Publisher — in progress**
-- Active phase document: `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`
-- Verified Level 2 results:
-  - `Andrew_Davis -> Davis Criminal Defense -> Healthy`
-  - `Let_Us_Clean -> Let Us Clean LLC -> Healthy`
-  - `Nicholas_Egner -> GIGnovate -> Healthy` through Request Connection
-  - completed/replaced secure request-link lifecycle verified
-- Current implementation task: **L3-01 — Destination / Platform-Version Foundation (`READY`)**
-- Progress must be documented in: `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`
-- Preferred Level 3 live-test destination: `Nicholas_Egner -> GIGnovate`
+- Completed product stage: **Level 3, First Publisher — closed September 29, 2026**
+- Active product stage: **Level 4, Scheduling — in progress**
+- Active phase document: `docs/LEVEL_4_SCHEDULING.md`
+- Verified Level 3 results:
+  - Facebook destination-specific platform versions and editor are live
+  - text/link, image, and standard video publishing to GIGnovate are verified
+  - private S3 remains private during image/video provider transfer
+  - durable Publish History and duplicate protection are verified after refresh/reopen
+  - exact `View Post` behavior is verified for text/link, image, and video
+- Current implementation task: **L4-01 — Scheduling Data, Timezone, and Revision Foundation (`READY`)**
+- Progress must be documented in: `docs/LEVEL_4_SCHEDULING.md`
+- Preferred Level 4 live-test destination: `Nicholas_Egner -> GIGnovate`
 
 ---
 
@@ -1888,9 +1941,9 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_3_first_publisher_in_progress
+  status: level_4_scheduling_in_progress
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_3_FACEBOOK_PUBLISHER.md
+  active_phase_document: docs/LEVEL_4_SCHEDULING.md
   active_phase_document_status: in_progress
 
 current_infrastructure:
@@ -1908,7 +1961,7 @@ current_infrastructure:
   scheduled_publishing_planned:
     - EventBridge Scheduler
     - Lambda
-    - SQS where retries or queue reliability require it
+    - SQS only where retries or queue reliability demonstrate a concrete need
 
 product_model:
   hierarchy:
@@ -2070,6 +2123,11 @@ content_and_publishing:
   master_content_delete_preserves_s3_media: true
   platform_versions_separate_records: true
   publish_attempts_durable_records: true
+  level_3_complete: true
+  facebook_text_link_publish_verified: true
+  facebook_image_publish_verified: true
+  facebook_video_publish_verified: true
+  publish_history_live_verified: true
   level_3_approval_gate_enabled: false
   level_3_scheduling_enabled: false
   workflow_status_manual: false
@@ -2082,6 +2140,7 @@ content_and_publishing:
   final_publish_confirmation_required: true
   live_validation_not_preflight_button: true
   schedule_default_on_master_with_destination_overrides: true
+  scheduling_phase_active: true
   human_blocker_at_schedule_time: mark_missed_schedule_do_not_publish_late
   temporary_technical_failure: controlled_automatic_retry
 
@@ -2096,7 +2155,7 @@ media:
   separate_bucket_per_client: false
   cloudfront_v1: false
   lifecycle_auto_delete_v1: false
-  level_3_publish_rule: transfer media server-side to Meta; do not make S3 public
+  publishing_rule: transfer media server-side to providers; do not make S3 public
 
 tracking_and_analytics:
   standard_utm_tracking: true
@@ -2130,35 +2189,38 @@ implementation:
     - level_0_foundation
     - level_1_client_content_foundation
     - level_2_first_social_connection
-  current_stage: level_3_first_facebook_publisher
-  current_task: L3-01_destination_platform_version_foundation
+    - level_3_first_publisher
+  current_stage: level_4_scheduling
+  current_task: L4-01_scheduling_data_timezone_revision_foundation
   current_task_status: READY
   preferred_live_test_destination:
     client: Nicholas_Egner
     platform: facebook
     page: GIGnovate
-  level_3_task_order:
-    - L3-01 destination/platform-version foundation
-    - L3-02 Facebook editor/inheritance/live validation/preview
-    - L3-03 first real Facebook text/link Publish Now
-    - L3-04 Facebook image publishing
-    - L3-05 Facebook video publishing
-    - L3-06 reliability/idempotency/View Post/final checkpoint
+  level_4_task_order:
+    - L4-01 scheduling data/timezone/revision foundation
+    - L4-02 Schedule/Reschedule/Cancel controls
+    - L4-03 EventBridge Scheduler and Lambda infrastructure
+    - L4-04 background Facebook scheduled publishing
+    - L4-05 missed-schedule and controlled retry behavior
+    - L4-06 browser-closed GIGnovate final checkpoint
   first_major_end_to_end_milestone:
-    - create_client
-    - create_master_content
-    - upload_media_to_s3
-    - connect_one_social_account
-    - create_destination_version
-    - live_validate
-    - publish_now
-    - save_remote_post_id_and_url
-    - view_post_opens_exact_live_post
+    status: completed_level_3
+    steps:
+      - create_client
+      - create_master_content
+      - upload_media_to_s3
+      - connect_one_social_account
+      - create_destination_version
+      - live_validate
+      - publish_now
+      - save_remote_post_id_and_url
+      - view_post_opens_exact_live_post
   credential_checkpoints:
     level_0: MongoDB connection
     level_1: S3 and Amplify permissions
     level_2: first social provider OAuth credentials plus Resend
-    level_4: EventBridge Lambda and SQS permissions/configuration
+    level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS only if used
     level_5: each additional provider added individually
 
 architecture_rules:
@@ -2188,40 +2250,45 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Implement only L3-01, the destination/platform-version foundation, using the active Level 3 plan.
-  task_source: docs/LEVEL_3_FACEBOOK_PUBLISHER.md
+  goal: Implement only L4-01, the scheduling data/timezone/revision foundation, using the active Level 4 plan.
+  task_source: docs/LEVEL_4_SCHEDULING.md
   selection_rule: select_the_first_task_marked_READY
-  active_task: L3-01
+  active_task: L4-01
   live_test_destination: Nicholas_Egner -> GIGnovate
   do_not_jump_ahead_to:
-    - Facebook provider publishing calls before L3-01 is complete
-    - image/video publishing before the text/link publisher is proven
-    - additional social-provider integrations before the first Facebook publisher is proven
-    - scheduling infrastructure before Publish Now works end to end
-    - approvals before Level 7
-    - analytics before the publishing pipeline exists
+    - EventBridge or Lambda infrastructure before L4-01 application scheduling semantics are proven
+    - background provider publishing before durable schedule records and Schedule/Cancel behavior are proven
+    - full visual Calendar before Level 6
+    - additional social-provider integrations before Level 4 scheduling is closed
+    - client approvals before Level 7
+    - analytics before Level 8
     - optional AI
   level_2_checkpoint: passed_and_closed_2026_09_28
+  level_3_checkpoint: passed_and_closed_2026_09_29
 ```
 
 ### Instructions for the next work session
 
 Read this README in full before beginning implementation. Follow **Project Management and Chat Delegation Workflow**. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
 
-Level 2 is closed. Do not reopen or rebuild the working Facebook connection architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, secure client setup page, and request-token completion/revocation lifecycle have all been verified with real Pages.
+Levels 2 and 3 are closed. Do not reopen or rebuild the working Facebook connection or publisher architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, destination-specific Facebook editor, private-S3 provider transfer, provider-result persistence, Publish History, duplicate protection, and exact `View Post` behavior have all been verified with real Pages/posts.
 
-Level 3 is active. Open `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, select its first `READY` task, and complete only that bounded task. At phase open, that task is `L3-01` — Destination / Platform-Version Foundation.
+Level 4 is active. Open `docs/LEVEL_4_SCHEDULING.md`, select its first `READY` task, and complete only that bounded task. At phase open, that task is `L4-01` — Scheduling Data, Timezone, and Revision Foundation.
 
-For Level 3 live publishing experiments, prefer the verified `Nicholas_Egner -> GIGnovate` Facebook Page. Do not publish experimental content to another client's Page unless Nicholas explicitly chooses it for that live test.
+For Level 4 live scheduling experiments, prefer the verified `Nicholas_Egner -> GIGnovate` Facebook Page. Do not schedule experimental content to another client's Page unless Nicholas explicitly chooses it for that live test.
 
-Build incrementally and stop at implementation checkpoints for real testing. When a new external API, OAuth application, secret, AWS permission, or environment variable becomes necessary, explain exactly what is required and walk the user through that setup at that point rather than collecting every credential in advance.
+Build incrementally and stop at implementation checkpoints for real testing. When AWS EventBridge Scheduler, Lambda roles, environment values, or other external infrastructure become necessary, explain exactly what is required and walk the user through that setup at that point rather than collecting configuration before the phase reaches it.
+
+Preserve the Level 3 idempotency boundary. Schedule-time edits must not create a loophole that republishes an already successful destination revision, and the background worker must reuse the proven publishing safety checks rather than creating a second Facebook publisher.
+
+Do not build the full visual Calendar in Level 4; that remains Level 6. Do not invent fake approval state; client approvals remain Level 7.
 
 Add social networks one at a time. A provider is not considered complete merely because an OAuth screen or UI exists; its relevant checkpoint must work end to end before expanding to the next provider.
 
-If a future Facebook connection problem appears, preserve the proven architecture and diagnose the narrow failing layer first. In particular, verify provider authorization, Page discovery/capability data, server-side `clientId` scoping, and client-side React state independently before redesigning the connection model.
+If a future Facebook connection or publish problem appears, preserve the proven architecture and diagnose the narrow failing layer first. In particular, verify provider authorization, Page discovery/capability data, server-side `clientId` scoping, platform-version revision state, publish-attempt idempotency, and client-side React state independently before redesigning the connection or publishing model.
 
 Do not introduce new infrastructure solely because it is available. Prefer the architecture already established here unless a concrete implementation problem requires a change.
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected implementation work:** complete `L3-01` from `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, record its evidence there, and stop before L3-02 until the task-status transition is supported by verification.
+**Next expected implementation work:** complete `L4-01` from `docs/LEVEL_4_SCHEDULING.md`, record its evidence there, and stop before L4-02 until the task-status transition is supported by verification.
