@@ -139,8 +139,8 @@ Every publish must resolve the social connection by the platform version's saved
 | L3-02 | `DONE` | Build Facebook editor, inheritance, live validation, and preview | Deployed and live-verified with `This Test 1 -> GIGnovate`; customization persistence, Master-change protection, reset, validation, media/link preview, and no-publish behavior passed |
 | L3-03 | `DONE` | Publish first real Facebook text/link post | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; text + link publish succeeded, durable provider result persisted, and `View Post` opened the exact remote post |
 | L3-04 | `DONE` | Add Facebook image publishing from private S3 | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; private-S3 image transfer, real image post, durable provider result, and `View Post` passed |
-| L3-05 | `MANUAL` | Add Facebook video publishing from private S3 | Real GIGnovate video publish reached `Published` with a custom thumbnail; the relative `View Post` URL defect is fixed and deployed through commit `bf9545c98445027d7500a73d994cc0c3ae5c7364`; final corrected `View Post` live recheck is still required |
-| L3-06 | `WAITING` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Depends on prior publishing tasks; requires deployed live evidence before Work review |
+| L3-05 | `DONE` | Add Facebook video publishing from private S3 | Real GIGnovate video publish reached `Published` with custom thumbnail; corrected deployed `View Post` was manually confirmed to open the exact Facebook video |
+| L3-06 | `MANUAL` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Reliability controls and attempt history are deployed; final signed-in GIGnovate reliability verification is still required before Work review |
 
 There should normally be only one `READY` task. Do not begin a later task because it appears straightforward.
 
@@ -574,5 +574,60 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - click the existing `View Post` button without republishing
   - confirm it opens the exact GIGnovate Facebook video, the video plays, the expected text is present, and `video-cover.png` is the intended cover/thumbnail
 - Remaining work: after that single manual check passes, mark `L3-05` `DONE` and make `L3-06` the only `READY` task; do not begin L3-06 before that evidence exists
+
+### September 29, 2026: L3-05 final View Post verification
+
+- Task: `L3-05`
+- Outcome: **DONE**
+- Files changed: none for this manual verification step
+- Live verification:
+  - Nicholas refreshed the deployed Content Social Hub after the permalink normalization deployment
+  - the existing successful video result was reused; no duplicate video was published
+  - `View Post` opened the Facebook video successfully, closing the final L3-05 manual checkpoint
+- Decisions: preserve the successful provider result and do not republish merely to re-test the corrected link
+- Blockers/manual steps: none remaining for L3-05
+- Remaining work: L3-06 became the final Level 3 task
+
+### September 29, 2026: L3-06 reliability controls implementation and deployment
+
+- Task: `L3-06`
+- Outcome: **MANUAL — implementation deployed; final signed-in GIGnovate reliability checkpoint pending**
+- Implementation commits:
+  - `bd4f4fdca45cf325f72a83a604219c624bbaed86` (`Add Facebook publish reliability state`)
+  - `72291f99064b0f16a4e9ac6a9856bb61762fefbb` (`Test Facebook publish reliability state`)
+  - `56380792780d4e4474678a2d403f368a715f9b88` (`Expose Facebook publish attempt history`)
+  - `6771fff0081e29b387ef174cc499dccc3992c908` (`Add Facebook publish reliability controls`)
+- Files changed:
+  - `lib/facebook-publish-state.js`
+  - `tests/facebook-publish-state.test.js`
+  - `app/api/platform-versions/[id]/publish-attempts/route.js`
+  - `components/facebook-publish-controls.js`
+- Automated verification:
+  - focused reliability-state suite passed `5/5`
+  - `node --check` passed for the reliability-state helper, focused test file, and publish-attempt history route shape
+  - existing publish pipeline behavior remains unchanged: successful/ambiguous attempts retain the deterministic submission key, definitive failures release it for a deliberate retry, and Account Health is rechecked before provider submission
+  - Amplify job `62` for commit `6771fff0081e29b387ef174cc499dccc3992c908` succeeded; BUILD, DEPLOY, and VERIFY all returned `SUCCEED`
+- Implementation details:
+  - Publish History now reloads durable `publish_attempts` records from MongoDB instead of relying only on transient browser state
+  - successful current revisions render `Published` and cannot submit again
+  - submitting/uploading/processing revisions remain locked against a second Publish Now action
+  - ambiguous `unknown` results render `Review Required` and automatic retry stays blocked to avoid duplicate Facebook posts
+  - only a definitive `failed` result exposes `Retry Publish`; the retry creates a new durable attempt because the failed attempt's submission key was released
+  - prior attempts remain visible in chronological audit history and sanitized provider error messages are shown when present
+  - per-attempt `View Post` links use the shared Facebook URL normalization path
+- Live/manual verification still required in the deployed signed-in app:
+  1. open the previously successful GIGnovate text/link version and confirm `Published` is disabled, Publish History shows its successful attempt, and `View Post` opens the exact post
+  2. open the previously successful GIGnovate image version and confirm the same successful-history/duplicate-lock behavior and exact `View Post`
+  3. open the successful GIGnovate video version and confirm its successful history remains visible and `View Post` still opens the exact video
+  4. refresh/reopen at least one successful version and confirm the lock/history persists from MongoDB rather than disappearing with browser state
+  5. if an existing failed publish attempt is present in history, confirm its sanitized error is visible and only that failed current revision offers `Retry Publish`; do not manufacture a risky Facebook failure solely to satisfy this check
+  6. confirm a healthy destination remains publishable only when the continuous/server validation passes; do not intentionally disconnect the working GIGnovate account merely to create an Account Health failure
+- Decisions:
+  - do not create destructive provider failures or disconnect a healthy Page only for test coverage
+  - durable attempt history is the operator-facing evidence surface for failures, retries, and prior successes
+  - ambiguous provider outcomes remain deliberately conservative: review first, never blind-retry
+  - L3-06 remains `MANUAL` until the deployed signed-in checks above are recorded
+- Blockers/manual steps: final signed-in reliability verification only; implementation and deployment are complete
+- Remaining work: after the final L3-06 live checkpoint passes, Work reviews the evidence and decides whether Level 3 can be closed and Level 4 opened
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 3 complete without Work review.
