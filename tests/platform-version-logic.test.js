@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildInheritedFacebookFields,
+  isFacebookVersionOutOfSync,
   isPublishableFacebookConnection,
+  normalizeFacebookVersionDraft,
   planPlatformVersionSelection,
   uniqueStringIds,
+  validateFacebookVersionDraft,
 } from "../lib/platform-version-logic.js";
 
 test("uniqueStringIds removes duplicate and blank selections", () => {
@@ -70,4 +73,63 @@ test("selection plan prevents duplicate creates and excludes removed destination
     keep: ["keep"],
     exclude: ["remove"],
   });
+});
+
+test("Facebook version detects a changed Master revision", () => {
+  assert.equal(
+    isFacebookVersionOutOfSync({ masterRevisionSynced: 2 }, 3),
+    true,
+  );
+  assert.equal(
+    isFacebookVersionOutOfSync({ masterRevisionSynced: 3 }, 3),
+    false,
+  );
+});
+
+test("Facebook live validation blocks unhealthy and empty drafts", () => {
+  const result = validateFacebookVersionDraft({
+    message: "",
+    destinationUrl: "",
+    mediaIds: [],
+    healthStatus: "expired",
+    canPublish: false,
+  });
+
+  assert.equal(result.publishable, false);
+  assert.equal(result.blocking.length, 2);
+});
+
+test("Facebook live validation warns on stale customized content without overwriting it", () => {
+  const result = validateFacebookVersionDraft({
+    message: "Custom Facebook copy",
+    healthStatus: "healthy",
+    canPublish: true,
+    masterChanged: true,
+    customized: true,
+  });
+
+  assert.equal(result.publishable, true);
+  assert.equal(result.blocking.length, 0);
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0], /edits are preserved/);
+});
+
+test("Facebook draft normalization keeps only attached Master media and repairs primary media", () => {
+  assert.deepEqual(
+    normalizeFacebookVersionDraft(
+      {
+        message: "Facebook copy",
+        destinationUrl: "https://example.com",
+        mediaIds: ["media-2", "foreign", "media-1"],
+        primaryMediaId: "foreign",
+      },
+      ["media-1", "media-2"],
+    ),
+    {
+      message: "Facebook copy",
+      destinationUrl: "https://example.com",
+      mediaIds: ["media-2", "media-1"],
+      primaryMediaId: "media-2",
+    },
+  );
 });
