@@ -140,7 +140,7 @@ Every publish must resolve the social connection by the platform version's saved
 | L3-03 | `DONE` | Publish first real Facebook text/link post | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; text + link publish succeeded, durable provider result persisted, and `View Post` opened the exact remote post |
 | L3-04 | `DONE` | Add Facebook image publishing from private S3 | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; private-S3 image transfer, real image post, durable provider result, and `View Post` passed |
 | L3-05 | `DONE` | Add Facebook video publishing from private S3 | Real GIGnovate video publish reached `Published` with custom thumbnail; corrected deployed `View Post` was manually confirmed to open the exact Facebook video |
-| L3-06 | `MANUAL` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Reliability controls and attempt history are deployed; final signed-in GIGnovate reliability verification is still required before Work review |
+| L3-06 | `DONE` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Deployed reliability controls, durable Publish History, duplicate lockout, and exact `View Post` behavior were live-verified on the prior GIGnovate text/link, image, and video publishes |
 
 There should normally be only one `READY` task. Do not begin a later task because it appears straightforward.
 
@@ -216,7 +216,7 @@ The operator should be able to edit the saved GIGnovate Facebook version, unders
    - selected media inherited from attached Master media
    - primary media choice where media exists
 4. Persist edits to the existing `platform_versions` record rather than creating a second version for the same Master Content + social connection.
-5. Editing Facebook-specific fields marks the version as customized and increments/records a destination revision suitable for later publish logging.
+5. Editing Facebook-specific fields marks the version as customized and increments/recordss a destination revision suitable for later publish logging.
 6. New/unmodified platform versions retain their inherited Master defaults and `masterRevisionSynced` marker.
 7. If the Master Content revision changes after a Facebook version was synchronized, the editor must detect that difference and show a clear `Master content changed` state.
 8. A customized Facebook version must never be silently overwritten when Master Content changes.
@@ -629,5 +629,24 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - L3-06 remains `MANUAL` until the deployed signed-in checks above are recorded
 - Blockers/manual steps: final signed-in reliability verification only; implementation and deployment are complete
 - Remaining work: after the final L3-06 live checkpoint passes, Work reviews the evidence and decides whether Level 3 can be closed and Level 4 opened
+
+### September 29, 2026: L3-06 final live reliability verification
+
+- Task: `L3-06`
+- Outcome: **DONE**
+- Files changed: none for this manual verification step
+- Checks/tests run: no new automated checks were needed; the deployed reliability implementation had already passed focused state tests `5/5`, syntax checks, and Amplify BUILD/DEPLOY/VERIFY in job `62`
+- Live verification completed with the deployed signed-in `Nicholas_Egner -> GIGnovate` publisher:
+  - previously published text/link, image, and video versions were reviewed after the reliability deployment and reported as correct
+  - successful versions remained locked in the `Published` state rather than exposing a second Publish Now action
+  - durable Publish History remained visible after refresh/reopen, confirming prior attempts are loaded from MongoDB rather than only held in browser state
+  - the video version showed a preserved `Succeeded` history row for revision 2 and the existing `View Post` action remained available
+  - `View Post` behavior for the verified text/link, image, and video flows continued to open the intended Facebook result
+  - no duplicate post was created during the reliability checkpoint
+- Decisions:
+  - no destructive provider failure or forced Account Health outage was manufactured; those branches remain covered by the implemented state machine and focused automated tests
+  - the final Level 3 implementation evidence is now ready for Work review
+- Blockers/manual steps: none remaining for L3-06
+- Remaining work: no Level 3 task becomes `READY`; Work must review the accumulated Level 3 evidence before the README is updated, Level 3 is declared complete, or Level 4 is opened
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 3 complete without Work review.
