@@ -139,7 +139,7 @@ Every publish must resolve the social connection by the platform version's saved
 | L3-02 | `DONE` | Build Facebook editor, inheritance, live validation, and preview | Deployed and live-verified with `This Test 1 -> GIGnovate`; customization persistence, Master-change protection, reset, validation, media/link preview, and no-publish behavior passed |
 | L3-03 | `DONE` | Publish first real Facebook text/link post | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; text + link publish succeeded, durable provider result persisted, and `View Post` opened the exact remote post |
 | L3-04 | `DONE` | Add Facebook image publishing from private S3 | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; private-S3 image transfer, real image post, durable provider result, and `View Post` passed |
-| L3-05 | `MANUAL` | Add Facebook video publishing from private S3 | Implementation commit `9bc7e6878b70c902d20cb89929dbbaf64a1a9f6c` is ready; deployed real GIGnovate video verification is still required |
+| L3-05 | `MANUAL` | Add Facebook video publishing from private S3 | Real GIGnovate video publish reached `Published` with a custom thumbnail; the relative `View Post` URL defect is fixed and deployed through commit `bf9545c98445027d7500a73d994cc0c3ae5c7364`; final corrected `View Post` live recheck is still required |
 | L3-06 | `WAITING` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Depends on prior publishing tasks; requires deployed live evidence before Work review |
 
 There should normally be only one `READY` task. Do not begin a later task because it appears straightforward.
@@ -516,5 +516,63 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   5. confirm `View Post` opens the exact GIGnovate video and the text/URL treatment is correct
 - Blockers/manual steps: deployment plus the real GIGnovate video post test
 - Remaining work: do not begin `L3-06` until the real L3-05 video publish and `View Post` verification pass
+
+### September 29, 2026: L3-05 live video checkpoint, thumbnail support, and View Post correction
+
+- Task: `L3-05`
+- Outcome: **MANUAL — real video publish and processing passed; final corrected `View Post` manual recheck pending**
+- Implementation/refinement commits:
+  - `9bc7e6878b70c902d20cb89929dbbaf64a1a9f6c` (`Add Facebook video publishing`)
+  - `7e256fce2c88c1614dc6da98ac0b2a2055d4827a` (`Add video thumbnail defaults and Facebook overrides`)
+  - `6104dbd556b74ac51358d7492d1c61d0f888578f` (`Add Facebook provider URL normalization`)
+  - `108b5f289d0386fd01714d55cead368fd0fe5cbb` (`Normalize Facebook View Post URLs`)
+  - `bf9545c98445027d7500a73d994cc0c3ae5c7364` (`Add Facebook View Post URL regression test`)
+- Files changed across the L3-05 implementation/refinements:
+  - `app/api/platform-versions/[id]/publish/route.js`
+  - `components/facebook-platform-editor.js`
+  - `components/facebook-publish-controls.js`
+  - `components/master-content-form.js`
+  - `lib/data.js`
+  - `lib/facebook-publish-logic.js`
+  - `lib/facebook-publisher.js`
+  - `lib/facebook-provider-url.js`
+  - `lib/platform-version-logic.js`
+  - `lib/platform-versions.js`
+  - `lib/publishing.js`
+  - `lib/s3.js`
+  - `lib/validation.js`
+  - `tests/content-validation.test.js`
+  - `tests/facebook-provider-url.test.js`
+  - `tests/facebook-publish-logic.test.js`
+  - `tests/platform-version-logic.test.js`
+- Automated/deployment verification:
+  - initial focused Facebook video publish-logic suite passed `19/19`
+  - initial `node --check` passed for the modified L3-05 logic, publisher, publishing service, S3 helper, publish controls, API route, and focused tests
+  - thumbnail/default/override refinement deployed successfully in Amplify job `57`; BUILD, DEPLOY, and VERIFY succeeded
+  - URL-normalization regression coverage explicitly verifies relative video permalinks such as `/GIGnovate/videos/123456` normalize to `https://www.facebook.com/GIGnovate/videos/123456` while usable absolute Facebook links are preserved
+  - permalink correction/regression-test deployment succeeded in Amplify job `59`; BUILD, DEPLOY, and VERIFY all succeeded
+- Live verification completed so far with `Nicholas_Egner -> GIGnovate`:
+  - `video-test.mp4` was selected as the Facebook primary media
+  - when a video is primary, Master Content now exposes an optional default video thumbnail/cover; Facebook inherits that default but may override it independently, matching the existing Master-default/platform-override architecture
+  - `video-cover.png` was selected as the Facebook thumbnail and rendered correctly in the Facebook preview
+  - the thumbnail remains a separate cover asset rather than a normal image attachment, so it does not create a mixed image/video post
+  - Nicholas used `Publish Now` for the real GIGnovate video test
+  - Facebook accepted the video and Content Social Hub entered `Video Processing`, blocking a duplicate publish and directing the operator to `Check Video Status`
+  - `Check Video Status` subsequently reported `Facebook video is live on GIGnovate` and changed the destination state to `Published`
+  - the real provider video therefore passed upload, processing, and final publish state on GIGnovate
+  - the first `View Post` click did not reach Facebook; it opened Content Social Hub's own Not Found page because Meta had returned a relative video `permalink_url` and the UI treated it as an application-relative route
+  - the correction added shared Facebook provider-URL normalization and applies it to `View Post`, converting relative provider paths to absolute `https://www.facebook.com/...` URLs
+  - a dedicated regression test now covers the relative-video-permalink failure mode
+- Decisions:
+  - video thumbnails/covers are a Master Content default when video is primary, with platform-specific overrides allowed in Facebook just like destination-specific text overrides
+  - Facebook may still choose its own automatic thumbnail when no cover is selected
+  - custom thumbnail assets remain independent from the post's selected media set
+  - do not republish the already successful GIGnovate video merely to test the link fix; the existing successful result should be reused
+  - keep `L3-05` at `MANUAL` until the corrected deployed `View Post` button is manually confirmed to open the exact Facebook video and the live video/text/thumbnail are verified there
+- Blockers/manual steps:
+  - refresh the deployed Content Social Hub page after Amplify job `59`
+  - click the existing `View Post` button without republishing
+  - confirm it opens the exact GIGnovate Facebook video, the video plays, the expected text is present, and `video-cover.png` is the intended cover/thumbnail
+- Remaining work: after that single manual check passes, mark `L3-05` `DONE` and make `L3-06` the only `READY` task; do not begin L3-06 before that evidence exists
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 3 complete without Work review.
