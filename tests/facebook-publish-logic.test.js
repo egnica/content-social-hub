@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   FACEBOOK_MAX_IMAGE_BYTES,
+  FACEBOOK_MAX_VIDEO_BYTES,
   buildFacebookFeedPayload,
   buildFacebookImagePostMessage,
   buildFacebookPostUrl,
+  buildFacebookVideoDescription,
+  buildFacebookVideoUrl,
   createFacebookSubmissionKey,
   isDefinitiveFacebookProviderFailure,
+  normalizeFacebookVideoProcessingStatus,
   orderFacebookImageAssets,
   sanitizeFacebookProviderError,
   validateFacebookPublishDraft,
@@ -18,6 +22,7 @@ test("Facebook publish validation accepts a healthy saved text-link draft", () =
     message: "New post",
     destinationUrl: "https://example.com/post",
     mediaIds: [],
+    mediaAssets: [],
     healthStatus: "healthy",
     canPublish: true,
   });
@@ -44,18 +49,78 @@ test("Facebook publish validation accepts selected supported images", () => {
   assert.deepEqual(result.blocking, []);
 });
 
-test("Facebook image publisher blocks video until L3-05", () => {
+test("Facebook publish validation accepts one supported video", () => {
   const result = validateFacebookPublishDraft({
-    mediaIds: ["media-1"],
+    message: "Video post",
+    mediaIds: ["video-1"],
     mediaAssets: [
-      { _id: "media-1", contentType: "video/mp4", size: 500_000 },
+      { _id: "video-1", contentType: "video/mp4", size: 5_000_000 },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(result.publishable, true);
+  assert.equal(result.publishMode, "video");
+  assert.deepEqual(result.blocking, []);
+});
+
+test("Facebook video publisher blocks multiple videos", () => {
+  const result = validateFacebookPublishDraft({
+    mediaIds: ["video-1", "video-2"],
+    mediaAssets: [
+      { _id: "video-1", contentType: "video/mp4", size: 5_000_000 },
+      { _id: "video-2", contentType: "video/quicktime", size: 6_000_000 },
     ],
     healthStatus: "healthy",
     canPublish: true,
   });
 
   assert.equal(result.publishable, false);
-  assert.match(result.blocking.join(" "), /Video publishing is not enabled yet/);
+  assert.match(result.blocking.join(" "), /one video per post/);
+});
+
+test("Facebook video publisher blocks mixed image and video attachments", () => {
+  const result = validateFacebookPublishDraft({
+    mediaIds: ["video-1", "image-1"],
+    mediaAssets: [
+      { _id: "video-1", contentType: "video/mp4", size: 5_000_000 },
+      { _id: "image-1", contentType: "image/jpeg", size: 500_000 },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(result.publishable, false);
+  assert.match(result.blocking.join(" "), /cannot mix a video with image/);
+});
+
+test("Facebook video publisher blocks unsupported types and files over 2 GB", () => {
+  const unsupported = validateFacebookPublishDraft({
+    mediaIds: ["video-1"],
+    mediaAssets: [
+      { _id: "video-1", contentType: "video/webm", size: 5_000_000 },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+  const oversized = validateFacebookPublishDraft({
+    mediaIds: ["video-1"],
+    mediaAssets: [
+      {
+        _id: "video-1",
+        contentType: "video/mp4",
+        size: FACEBOOK_MAX_VIDEO_BYTES + 1,
+      },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(unsupported.publishable, false);
+  assert.match(unsupported.blocking.join(" "), /MP4, MOV, or M4V/);
+  assert.equal(oversized.publishable, false);
+  assert.match(oversized.blocking.join(" "), /2 GB or smaller/);
 });
 
 test("Facebook image publisher blocks unsupported image types and files over 10 MB", () => {
@@ -130,6 +195,16 @@ test("image posts preserve destination URLs in post text without duplicating the
   );
 });
 
+test("video descriptions preserve destination URLs without duplicating them", () => {
+  assert.equal(
+    buildFacebookVideoDescription({
+      message: "Video update",
+      destinationUrl: "https://example.com/a",
+    }),
+    "Video update\n\nhttps://example.com/a",
+  );
+});
+
 test("primary image is uploaded first while remaining selected order is preserved", () => {
   const ordered = orderFacebookImageAssets(
     [
@@ -155,6 +230,34 @@ test("Facebook post URL is recovered from page and provider post ids", () => {
   assert.equal(
     buildFacebookPostUrl("123", "123_456"),
     "https://www.facebook.com/123/posts/456",
+  );
+});
+
+test("Facebook video URL is recoverable from page and video ids", () => {
+  assert.equal(
+    buildFacebookVideoUrl("123", "789"),
+    "https://www.facebook.com/123/videos/789",
+  );
+});
+
+test("video processing status normalizes ready, failed, and in-progress states", () => {
+  assert.equal(
+    normalizeFacebookVideoProcessingStatus({
+      status: { video_status: "ready" },
+    }),
+    "succeeded",
+  );
+  assert.equal(
+    normalizeFacebookVideoProcessingStatus({
+      status: { processing_phase: { status: "error" } },
+    }),
+    "failed",
+  );
+  assert.equal(
+    normalizeFacebookVideoProcessingStatus({
+      status: { processing_phase: { status: "in_progress" } },
+    }),
+    "processing",
   );
 });
 
