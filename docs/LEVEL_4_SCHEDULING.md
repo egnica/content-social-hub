@@ -159,7 +159,7 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
-| L4-01 | `READY` | Build scheduling data/timezone/revision foundation | Establish durable destination schedule semantics without creating AWS schedules or publishing anything |
+| L4-01 | `MANUAL` | Build scheduling data/timezone/revision foundation | Implementation and automated checks complete; deployed live verification is required before `DONE` |
 | L4-02 | `WAITING` | Add Schedule / Reschedule / Cancel controls | Depends on L4-01 persistence and validation foundation |
 | L4-03 | `WAITING` | Add EventBridge Scheduler + Lambda infrastructure | Depends on proven application schedule records; includes AWS IAM/environment checkpoint |
 | L4-04 | `WAITING` | Publish scheduled Facebook releases in the background | Depends on L4-03 worker path and must reuse Level 3 publishing safety |
@@ -311,5 +311,43 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
 - Chose EventBridge Scheduler -> Lambda as the first background path; SQS remains conditional on a demonstrated retry/queue need.
 - Explicitly excluded the Level 6 visual calendar and Level 7 approval workflow from this phase.
 - Marked only `L4-01` as `READY`.
+
+### September 29, 2026: L4-01 implementation complete; live verification pending
+
+- Task ID: `L4-01` — Scheduling Data, Timezone, and Revision Foundation.
+- Outcome: implementation and automated verification completed; task moved to `MANUAL` until the deployed live checkpoint is completed with `Nicholas_Egner -> GIGnovate`.
+- Files changed:
+  - `lib/scheduling-logic.js`
+  - `lib/scheduling.js`
+  - `lib/data.js`
+  - `components/master-content-form.js`
+  - `tests/scheduling-logic.test.js`
+  - `docs/LEVEL_4_SCHEDULING.md`
+- Implemented a dedicated `scheduled_releases` MongoDB persistence layer with a partial unique index that permits only one active schedule for a platform-version revision, plus release-time, Master Content, and client query indexes.
+- Schedule records bind Master Content ID, client ID, platform-version ID, exact platform-version revision, social connection/destination, provider account ID, platform, UTC release instant, IANA timezone, release source, state, AWS schedule placeholder, timestamps, and missed/failure placeholders.
+- Added pure scheduling helpers for IANA timezone validation, client-local `datetime-local` -> UTC conversion, UTC -> client-local display, Master-default vs destination-override resolution, active-schedule conflict detection, Master publish-content change detection, and schedule-state validation.
+- DST handling is explicit: nonexistent spring-forward wall times and ambiguous fall-back wall times are blocked rather than silently resolved to an unintended instant.
+- Master release-time input now displays and resolves in the selected client's saved timezone instead of the operator/browser timezone. The UI explicitly shows the timezone and states that saving the Master default does not schedule or publish anything.
+- Saving release-time metadata stores both the UTC instant and the IANA timezone used for scheduling semantics.
+- Master revision increments are now limited to publish-relevant source changes: client, text, destination URL, content length, media/order, primary media, and default video thumbnail. Release-time-only changes, internal-title changes, and reuse metadata do not create a false publish-content revision.
+- Destination scheduling metadata remains outside `platform_versions`, so schedule-only changes cannot increment the platform-version publish revision or unlock a successfully published revision.
+- Existing Level 3 publishing/idempotency files and Facebook provider code were not changed.
+- Automated checks run:
+  - `node --check /tmp/l4/lib/scheduling-logic.js` — passed
+  - `node --check /tmp/l4/lib/scheduling.js` — passed
+  - `node --check /tmp/l4/lib/data.js` — passed
+  - `node --check /tmp/l4/master-content-form.js` — passed
+  - `node --experimental-default-type=module --test tests/scheduling-logic.test.js` — **8 tests passed, 0 failed**
+- Focused tests cover valid/invalid IANA zones, winter/summer DST offsets, nonexistent and repeated DST wall times, UTC round-trip display, Master default versus destination override, schedule-only versus publish-content revision behavior, required schedule states, and duplicate active-schedule detection.
+- Full `npm run lint`, `npm test`, and `npm run build` could not be executed in the isolated execution environment because the repository checkout and installed Next.js dependencies were not available there; the changed JavaScript files passed syntax checks and the new pure scheduling suite passed independently.
+- Live-test status: still required after Amplify deploy. Verify the six L4-01 manual steps above with a `Nicholas_Egner` Master Content item and its GIGnovate Facebook version.
+- Decisions made inside L4-01 scope:
+  - MongoDB collection name: `scheduled_releases`
+  - active schedule uniqueness is enforced by `{ platformVersionId, platformVersionRevision }` with `partialFilterExpression: { active: true }`
+  - release source values are `master` and `destination_override`
+  - destination override wall-clock data belongs to the schedule record, not the destination's publish-content fields
+  - ambiguous/nonexistent DST wall times are blocking errors
+- Blockers/manual steps: deployed Amplify verification is required before `L4-01` may become `DONE` and before `L4-02` becomes `READY`.
+- Remaining work: complete the L4-01 live checkpoint; keep `L4-02` and all later Level 4 tasks `WAITING` until that evidence is recorded.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
