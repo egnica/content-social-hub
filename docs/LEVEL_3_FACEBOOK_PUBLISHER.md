@@ -216,7 +216,7 @@ The operator should be able to edit the saved GIGnovate Facebook version, unders
    - selected media inherited from attached Master media
    - primary media choice where media exists
 4. Persist edits to the existing `platform_versions` record rather than creating a second version for the same Master Content + social connection.
-5. Editing Facebook-specific fields marks the version as customized and increments/recordss a destination revision suitable for later publish logging.
+5. Editing Facebook-specific fields marks the version as customized and increments/records a destination revision suitable for later publish logging.
 6. New/unmodified platform versions retain their inherited Master defaults and `masterRevisionSynced` marker.
 7. If the Master Content revision changes after a Facebook version was synchronized, the editor must detect that difference and show a clear `Master content changed` state.
 8. A customized Facebook version must never be silently overwritten when Master Content changes.
