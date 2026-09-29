@@ -1,16 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  FACEBOOK_MAX_IMAGE_BYTES,
   buildFacebookFeedPayload,
+  buildFacebookImagePostMessage,
   buildFacebookPostUrl,
   createFacebookSubmissionKey,
   isDefinitiveFacebookProviderFailure,
+  orderFacebookImageAssets,
   sanitizeFacebookProviderError,
+  validateFacebookPublishDraft,
   validateFacebookTextLinkPublishDraft,
 } from "../lib/facebook-publish-logic.js";
 
-test("text/link publish validation accepts a healthy saved text-link draft", () => {
-  const result = validateFacebookTextLinkPublishDraft({
+test("Facebook publish validation accepts a healthy saved text-link draft", () => {
+  const result = validateFacebookPublishDraft({
     message: "New post",
     destinationUrl: "https://example.com/post",
     mediaIds: [],
@@ -19,13 +23,78 @@ test("text/link publish validation accepts a healthy saved text-link draft", () 
   });
 
   assert.equal(result.publishable, true);
+  assert.equal(result.publishMode, "text_link");
   assert.deepEqual(result.blocking, []);
 });
 
-test("text/link publisher blocks selected media rather than silently dropping it", () => {
+test("Facebook publish validation accepts selected supported images", () => {
+  const result = validateFacebookPublishDraft({
+    message: "Photo post",
+    mediaIds: ["media-1", "media-2"],
+    mediaAssets: [
+      { _id: "media-1", contentType: "image/jpeg", size: 500_000 },
+      { _id: "media-2", contentType: "image/png", size: 900_000 },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(result.publishable, true);
+  assert.equal(result.publishMode, "image");
+  assert.deepEqual(result.blocking, []);
+});
+
+test("Facebook image publisher blocks video until L3-05", () => {
+  const result = validateFacebookPublishDraft({
+    mediaIds: ["media-1"],
+    mediaAssets: [
+      { _id: "media-1", contentType: "video/mp4", size: 500_000 },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(result.publishable, false);
+  assert.match(result.blocking.join(" "), /Video publishing is not enabled yet/);
+});
+
+test("Facebook image publisher blocks unsupported image types and files over 10 MB", () => {
+  const result = validateFacebookPublishDraft({
+    mediaIds: ["media-1", "media-2"],
+    mediaAssets: [
+      { _id: "media-1", contentType: "image/webp", size: 100_000 },
+      {
+        _id: "media-2",
+        contentType: "image/jpeg",
+        size: FACEBOOK_MAX_IMAGE_BYTES + 1,
+      },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(result.publishable, false);
+  assert.match(result.blocking.join(" "), /JPEG, BMP, PNG, GIF, or TIFF/);
+  assert.match(result.blocking.join(" "), /10 MB or smaller/);
+});
+
+test("server validation blocks a selected media id that cannot be resolved", () => {
+  const result = validateFacebookPublishDraft({
+    mediaIds: ["media-1", "missing"],
+    mediaAssets: [
+      { _id: "media-1", contentType: "image/jpeg", size: 100_000 },
+    ],
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(result.publishable, false);
+  assert.match(result.blocking.join(" "), /no longer available/);
+});
+
+test("legacy text-link validation still blocks selected media", () => {
   const result = validateFacebookTextLinkPublishDraft({
     message: "New post",
-    destinationUrl: "https://example.com/post",
     mediaIds: ["media-1"],
     healthStatus: "healthy",
     canPublish: true,
@@ -42,6 +111,36 @@ test("Facebook feed payload omits blank values", () => {
   assert.deepEqual(buildFacebookFeedPayload({ message: "", destinationUrl: " https://example.com/a " }), {
     link: "https://example.com/a",
   });
+});
+
+test("image posts preserve destination URLs in post text without duplicating them", () => {
+  assert.equal(
+    buildFacebookImagePostMessage({
+      message: "Photo update",
+      destinationUrl: "https://example.com/a",
+    }),
+    "Photo update\n\nhttps://example.com/a",
+  );
+  assert.equal(
+    buildFacebookImagePostMessage({
+      message: "Photo update https://example.com/a",
+      destinationUrl: "https://example.com/a",
+    }),
+    "Photo update https://example.com/a",
+  );
+});
+
+test("primary image is uploaded first while remaining selected order is preserved", () => {
+  const ordered = orderFacebookImageAssets(
+    [
+      { _id: "one" },
+      { _id: "two" },
+      { _id: "three" },
+    ],
+    "two",
+  );
+
+  assert.deepEqual(ordered.map((asset) => asset._id), ["two", "one", "three"]);
 });
 
 test("submission key is stable for one platform-version revision", () => {
@@ -80,7 +179,6 @@ test("provider errors retain useful fields while redacting secrets", () => {
   assert.doesNotMatch(sanitized.message, /secret-token|secret-proof/);
   assert.match(sanitized.message, /\[redacted\]/);
 });
-
 
 test("Graph API rejections are definitive but transport failures remain ambiguous", () => {
   const graphError = new Error("Permission denied");

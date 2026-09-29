@@ -2,17 +2,25 @@
 
 import { useMemo, useState } from "react";
 import styles from "@/components/ui.module.css";
-import { validateFacebookTextLinkPublishDraft } from "@/lib/facebook-publish-logic";
+import { validateFacebookPublishDraft } from "@/lib/facebook-publish-logic";
 
 function exactPublishConfirmation(destinationName, form) {
+  const mediaCount = Array.isArray(form.mediaIds) ? form.mediaIds.length : 0;
+  const linkLabel = mediaCount
+    ? "Link (included in post text with images):"
+    : "Link:";
+
   return [
     `Publish this exact Facebook post to ${destinationName}?`,
     "",
     "Message:",
     String(form.message || "").trim() || "(none)",
     "",
-    "Link:",
+    linkLabel,
     String(form.destinationUrl || "").trim() || "(none)",
+    "",
+    "Images:",
+    mediaCount ? `${mediaCount} selected` : "(none)",
     "",
     "This creates a real live Facebook Page post.",
   ].join("\n");
@@ -35,7 +43,7 @@ export default function FacebookPublishControls({
     version.destinationName || destination?.accountName || "Facebook Page";
   const validation = useMemo(
     () =>
-      validateFacebookTextLinkPublishDraft({
+      validateFacebookPublishDraft({
         ...form,
         healthStatus: destination?.healthStatus || "unavailable",
         canPublish: destination?.canPublish === true,
@@ -48,6 +56,7 @@ export default function FacebookPublishControls({
     version.lastPublishStatus === "succeeded" &&
     Number(version.publishedRevision || 0) === Number(version.revision || 0);
   const postUrl = attempt?.providerPostUrl || version.providerPostUrl || "";
+  const hasSelectedMedia = Array.isArray(form.mediaIds) && form.mediaIds.length > 0;
 
   async function publishNow() {
     setMessage("");
@@ -96,8 +105,9 @@ export default function FacebookPublishControls({
       <div className={styles.sectionHeader}>
         <h2>Publish Now</h2>
         <p>
-          L3-03 publishes text and links only. Facebook Account Health is checked
-          again on the server immediately before submission.
+          L3-04 publishes text, links, and selected Facebook images. Videos
+          remain blocked until L3-05. Facebook Account Health is checked again
+          on the server immediately before submission.
         </p>
       </div>
 
@@ -105,6 +115,13 @@ export default function FacebookPublishControls({
         <div className={styles.notice}>
           Save the Facebook version before publishing so the confirmed draft and
           server-side publish payload are identical.
+        </div>
+      ) : null}
+
+      {hasSelectedMedia && form.destinationUrl ? (
+        <div className={styles.notice}>
+          Facebook image posts do not use the normal link-card treatment. The
+          destination URL will be included in the post text with the images.
         </div>
       ) : null}
 
