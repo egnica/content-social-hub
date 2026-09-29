@@ -138,8 +138,8 @@ Every publish must resolve the social connection by the platform version's saved
 | L3-01 | `DONE` | Add destination / platform-version foundation | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; scoped selection, persistence, exclusion/reactivation, and no-publish behavior passed |
 | L3-02 | `DONE` | Build Facebook editor, inheritance, live validation, and preview | Deployed and live-verified with `This Test 1 -> GIGnovate`; customization persistence, Master-change protection, reset, validation, media/link preview, and no-publish behavior passed |
 | L3-03 | `DONE` | Publish first real Facebook text/link post | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; text + link publish succeeded, durable provider result persisted, and `View Post` opened the exact remote post |
-| L3-04 | `READY` | Add Facebook image publishing from private S3 | L3-03 text/link publisher and provider-result persistence are verified end to end |
-| L3-05 | `WAITING` | Add Facebook video publishing from private S3 | Depends on stable publish pipeline; standard Page video first, not Reels |
+| L3-04 | `DONE` | Add Facebook image publishing from private S3 | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; private-S3 image transfer, real image post, durable provider result, and `View Post` passed |
+| L3-05 | `MANUAL` | Add Facebook video publishing from private S3 | Implementation commit `9bc7e6878b70c902d20cb89929dbbaf64a1a9f6c` is ready; deployed real GIGnovate video verification is still required |
 | L3-06 | `WAITING` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Depends on prior publishing tasks; requires deployed live evidence before Work review |
 
 There should normally be only one `READY` task. Do not begin a later task because it appears straightforward.
@@ -236,7 +236,7 @@ The operator should be able to edit the saved GIGnovate Facebook version, unders
 
 After deployment, use the existing `This Test 1` Master Content item owned by `Nicholas_Egner` and its saved GIGnovate platform version unless a cleaner temporary item is preferred.
 
-1. Open the Master Content item and confirm the active GIGnovate Facebook editor loads with inherited source text and destination URL.
+1. Open the Master Content item and confirm the active GIGnovate Facebook editor loads with inherited Master message and destination URL.
 2. Change the Facebook message to a destination-specific value, save, refresh/reopen, and confirm the override persists.
 3. Change the Master source text, save Master Content, and confirm the customized Facebook message is not silently overwritten.
 4. Confirm the editor shows that Master Content changed.
@@ -452,5 +452,69 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - publish attempts remain durable records and successful provider post ID/URL are persisted on both the result path and platform version state
 - Blockers/manual steps: none remaining for L3-03
 - Remaining work: `L3-04` is now the only `READY` task; extend the proven pipeline to Facebook image publishing from private S3 and verify a real GIGnovate image post
+
+### September 29, 2026: L3-04 Facebook image publishing
+
+- Task: `L3-04`
+- Outcome: **DONE**
+- Implementation commit: `4d9b84048d7401ceb2c3e8dbb29fe9c48b3a8f69` (`Add Facebook image publishing`)
+- Files changed:
+  - `components/facebook-publish-controls.js`
+  - `lib/facebook-publish-logic.js`
+  - `lib/facebook-publisher.js`
+  - `lib/publishing.js`
+  - `lib/s3.js`
+  - `tests/facebook-publish-logic.test.js`
+- Automated verification:
+  - focused Facebook publish-logic suite passed `13/13`
+  - syntax checks passed for the modified publisher files
+- Live verification completed with `Nicholas_Egner -> GIGnovate`:
+  - the deployed editor showed L3-04 image publishing controls
+  - `first-post.png` was selected from Master Content and remained in the Facebook preview
+  - the saved Facebook version included the approved image-post copy and `https://nicholasegner.com/` in the message body
+  - Meta accepted the real image post and the app showed `Published live to GIGnovate`
+  - the action changed to `Published` and exposed `View Post`
+  - Nicholas opened the remote post and confirmed the expected image and post content appeared correctly on Facebook
+- Decisions:
+  - S3 remains private; the app reads private image bytes server-side and uploads them to Meta
+  - single- and multi-image publishing use unpublished Meta photo IDs attached to one feed post
+  - the selected primary image is uploaded first while preserving the remaining selected order
+  - once Meta has accepted any remote photo media, an ambiguous later failure keeps the submission key locked to prevent accidental duplication
+- Blockers/manual steps: none remaining for L3-04
+- Remaining work: `L3-05` is the next task; publish a standard Facebook Page video from private S3 and verify it live on GIGnovate
+
+### September 29, 2026: L3-05 Facebook video publishing implementation
+
+- Task: `L3-05`
+- Outcome: **MANUAL — implementation complete, deployed live verification pending**
+- Implementation commit: `9bc7e6878b70c902d20cb89929dbbaf64a1a9f6c` (`Add Facebook video publishing`)
+- Files changed:
+  - `app/api/platform-versions/[id]/publish/route.js`
+  - `components/facebook-publish-controls.js`
+  - `lib/facebook-publish-logic.js`
+  - `lib/facebook-publisher.js`
+  - `lib/publishing.js`
+  - `lib/s3.js`
+  - `tests/facebook-publish-logic.test.js`
+- Automated verification:
+  - focused Facebook publish-logic suite passed `19/19`
+  - `node --check` passed for the modified logic, publisher, publishing service, S3 helper, publish controls, API route, and focused tests
+- Implementation details:
+  - adds one-video standard Facebook Page publishing; Reels remain out of scope
+  - video media remains private in S3 and is read in byte ranges for resumable upload rather than loading the entire file into memory
+  - Meta video upload state is persisted as `uploading` / `processing` / `succeeded` where applicable
+  - provider video ID, shared provider post ID, final/fallback video URL, provider status, and uploaded-byte progress are persisted in the publish attempt/result model
+  - the UI blocks a second submission while the same revision is processing and exposes `Check Video Status`
+  - known provider processing failure releases the submission key so the version may be deliberately retried; ambiguous remote results remain locked to prevent duplicate posts
+  - MP4, MOV, and M4V are accepted up to the existing 2 GB application upload limit; mixed image/video selections and multiple videos are rejected server-side
+- Live-test status: **required after Amplify deploys commit `9bc7e6878b70c902d20cb89929dbbaf64a1a9f6c`**
+- Manual verification still required:
+  1. create or open `Nicholas_Egner` Master Content with one small MP4/MOV/M4V video
+  2. select `GIGnovate`, save the Facebook version, and confirm the preview/text are correct
+  3. use `Publish Now` and approve the exact live payload
+  4. if Facebook returns processing state, use `Check Video Status` until it reaches success
+  5. confirm `View Post` opens the exact GIGnovate video and the text/URL treatment is correct
+- Blockers/manual steps: deployment plus the real GIGnovate video post test
+- Remaining work: do not begin `L3-06` until the real L3-05 video publish and `View Post` verification pass
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 3 complete without Work review.
