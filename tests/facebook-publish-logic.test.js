@@ -255,9 +255,15 @@ test("video processing status normalizes ready, failed, and in-progress states",
   );
   assert.equal(
     normalizeFacebookVideoProcessingStatus({
-      status: { processing_phase: { status: "in_progress" } },
+      status: { processing_phase: { status: "complete" } },
     }),
     "processing",
+  );
+  assert.equal(
+    normalizeFacebookVideoProcessingStatus({
+      status: { publishing_phase: { status: "complete" } },
+    }),
+    "succeeded",
   );
 });
 
