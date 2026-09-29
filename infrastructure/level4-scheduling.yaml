@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Content Social Hub Level 4 scheduled-release infrastructure
+
+Parameters:
+  AmplifyComputeRoleName:
+    Type: String
+    Default: content-social-hub-amplify-compute-role
+  ScheduleGroupName:
+    Type: String
+    Default: content-social-hub
+  WorkerConfigSecretName:
+    Type: String
+    Default: content-social-hub/scheduled-release-worker
+
+Resources:
+  ScheduledReleaseGroup:
+    Type: AWS::Scheduler::ScheduleGroup
+    Properties:
+      Name: !Ref ScheduleGroupName
+
+  ScheduledReleaseWorkerConfig:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: !Ref WorkerConfigSecretName
+      Description: Server-side configuration for the Content Social Hub scheduled-release worker. Populate manually; never commit values.
+
+  ScheduledReleaseWorkerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: WorkerLogsAndConfig
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/content-social-hub-scheduled-release-worker:*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref ScheduledReleaseWorkerConfig
+
+  ScheduledReleaseWorker:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: content-social-hub-scheduled-release-worker
+      Runtime: nodejs24.x
+      Handler: index.handler
+      Role: !GetAtt ScheduledReleaseWorkerRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          WORKER_CONFIG_SECRET_ARN: !Ref ScheduledReleaseWorkerConfig
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            const scheduledReleaseId = String(event?.scheduledReleaseId || '').trim();
+            if (!scheduledReleaseId) {
+              throw new Error('scheduledReleaseId is required');
+            }
+            console.log(JSON.stringify({
+              message: 'L4-03 scheduled release wake-up received',
+              scheduledReleaseId,
+            }));
+            return { accepted: true, scheduledReleaseId };
+          };
+
+  SchedulerTargetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+                aws:SourceArn: !GetAtt ScheduledReleaseGroup.Arn
+      Policies:
+        - PolicyName: InvokeScheduledReleaseWorker
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt ScheduledReleaseWorker.Arn
+
+  AmplifySchedulerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ContentSocialHubSchedulerAccess
+      Roles:
+        - !Ref AmplifyComputeRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ManageContentSocialHubSchedules
+            Effect: Allow
+            Action:
+              - scheduler:CreateSchedule
+              - scheduler:UpdateSchedule
+              - scheduler:DeleteSchedule
+            Resource: !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-facebook-*
+          - Sid: PassSchedulerTargetRoleOnly
+            Effect: Allow
+            Action: iam:PassRole
+            Resource: !GetAtt SchedulerTargetRole.Arn
+            Condition:
+              StringEquals:
+                iam:PassedToService: scheduler.amazonaws.com
+
+Outputs:
+  ScheduleGroupName:
+    Value: !Ref ScheduledReleaseGroup
+  ScheduledReleaseWorkerArn:
+    Value: !GetAtt ScheduledReleaseWorker.Arn
+  SchedulerTargetRoleArn:
+    Value: !GetAtt SchedulerTargetRole.Arn
+  WorkerConfigSecretArn:
+    Value: !Ref ScheduledReleaseWorkerConfig

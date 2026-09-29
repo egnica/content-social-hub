@@ -1,10 +1,10 @@
 import { apiError, readJson } from "@/lib/api";
 import {
-  cancelDestinationSchedule,
-  createDestinationSchedule,
-  getDestinationScheduleState,
-  rescheduleDestinationSchedule,
-} from "@/lib/scheduling";
+  cancelDestinationScheduleWithInfrastructure,
+  createDestinationScheduleWithInfrastructure,
+  rescheduleDestinationScheduleWithInfrastructure,
+} from "@/lib/schedule-infrastructure";
+import { getDestinationScheduleState } from "@/lib/scheduling";
 import { requireApiSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export async function POST(request, { params }) {
   try {
     const { id } = await params;
     const body = await readJson(request);
-    const schedule = await createDestinationSchedule({
+    const schedule = await createDestinationScheduleWithInfrastructure({
       platformVersionId: id,
       releaseSource: body?.releaseSource,
       destinationLocalDateTime: body?.destinationLocalDateTime,
@@ -63,7 +63,7 @@ export async function PATCH(request, { params }) {
   try {
     const { id } = await params;
     const body = await readJson(request);
-    const schedule = await rescheduleDestinationSchedule({
+    const schedule = await rescheduleDestinationScheduleWithInfrastructure({
       platformVersionId: id,
       scheduleId: body?.scheduleId,
       releaseSource: body?.releaseSource,
@@ -89,7 +89,7 @@ export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
     const body = await readJson(request);
-    const schedule = await cancelDestinationSchedule({
+    const schedule = await cancelDestinationScheduleWithInfrastructure({
       platformVersionId: id,
       scheduleId: body?.scheduleId,
     });
@@ -99,6 +99,9 @@ export async function DELETE(request, { params }) {
       scheduleState: await getDestinationScheduleState(id),
     });
   } catch (error) {
-    return scheduleErrorResponse(error, "Unable to cancel this Facebook schedule.");
+    return scheduleErrorResponse(
+      error,
+      "Unable to cancel this Facebook schedule.",
+    );
   }
 }
