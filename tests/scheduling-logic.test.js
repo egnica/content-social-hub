@@ -4,6 +4,7 @@ import {
   evaluateScheduleState,
   findActiveScheduleConflict,
   formatUtcDateTimeForZone,
+  isScheduleMutable,
   isValidIanaTimeZone,
   masterPublishContentChanged,
   resolveLocalDateTimeToUtc,
@@ -121,6 +122,8 @@ test("schedule state validation covers missing, past, active, cancelled, superse
     evaluateScheduleState({
       releaseAt: future,
       now,
+      state: "scheduled",
+      active: true,
       platformVersionRevision: 2,
       currentPlatformVersionRevision: 3,
     }).code,
@@ -157,4 +160,27 @@ test("duplicate active schedule helper finds conflicts only for the same destina
   assert.ok(findActiveScheduleConflict(schedules, "version-1", 4));
   assert.equal(findActiveScheduleConflict(schedules, "version-1", 3), null);
   assert.equal(findActiveScheduleConflict(schedules, "version-2", 4), null);
+});
+
+test("only an active scheduled release can be rescheduled or cancelled before dispatch", () => {
+  assert.equal(
+    isScheduleMutable({ state: "scheduled", active: true, dispatchedAt: null }),
+    true,
+  );
+  assert.equal(
+    isScheduleMutable({ state: "dispatching", active: true, dispatchedAt: null }),
+    false,
+  );
+  assert.equal(
+    isScheduleMutable({
+      state: "scheduled",
+      active: true,
+      dispatchedAt: "2026-10-10T18:00:00.000Z",
+    }),
+    false,
+  );
+  assert.equal(
+    isScheduleMutable({ state: "cancelled", active: false, dispatchedAt: null }),
+    false,
+  );
 });

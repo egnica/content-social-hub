@@ -38,10 +38,16 @@ export default async function EditContentPage({ params }) {
       />
       <FacebookPlatformEditors
         masterContent={{
+          _id: content._id,
+          clientId: content.clientId,
           revision: content.revision,
           text: content.text,
           primaryUrl: content.primaryUrl,
           media: content.media || [],
+          defaultVideoThumbnail: content.defaultVideoThumbnail || null,
+          defaultReleaseAt: content.defaultReleaseAt || null,
+          defaultReleaseTimezone: content.defaultReleaseTimezone || null,
+          clientTimezone: content.clientTimezone || "",
         }}
         destinations={destinations}
         platformVersions={platformVersions}

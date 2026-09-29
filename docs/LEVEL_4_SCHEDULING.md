@@ -160,7 +160,7 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
 | L4-01 | `DONE` | Build scheduling data/timezone/revision foundation | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
-| L4-02 | `READY` | Add Schedule / Reschedule / Cancel controls | L4-01 persistence, timezone, and revision foundation is verified |
+| L4-02 | `MANUAL` | Add Schedule / Reschedule / Cancel controls | Implementation and automated checks complete; deployed live verification is required before `DONE` |
 | L4-03 | `WAITING` | Add EventBridge Scheduler + Lambda infrastructure | Depends on proven application schedule records; includes AWS IAM/environment checkpoint |
 | L4-04 | `WAITING` | Publish scheduled Facebook releases in the background | Depends on L4-03 worker path and must reuse Level 3 publishing safety |
 | L4-05 | `WAITING` | Add missed-schedule and controlled retry behavior | Depends on real background dispatch path |
@@ -366,5 +366,41 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
 - Decisions: L4-01 architecture remains unchanged; the live test confirms the schedule-only/publish-content revision boundary works in the deployed application.
 - Blockers/manual steps: none for L4-01.
 - Remaining work: implement only `L4-02` — destination Schedule / Reschedule / Cancel controls. Keep L4-03 and later tasks `WAITING`.
+
+### September 29, 2026: L4-02 implementation checkpoint
+
+- Task ID: `L4-02` — Schedule / Reschedule / Cancel controls.
+- Outcome: implementation and automated verification completed; task moved to `MANUAL` until the deployed live checkpoint is completed with `Nicholas_Egner -> GIGnovate`.
+- Files changed:
+  - `lib/scheduling-logic.js`
+  - `lib/scheduling.js`
+  - `app/api/platform-versions/[id]/schedule/route.js`
+  - `components/facebook-schedule-controls.js`
+  - `components/facebook-platform-editor.js`
+  - `app/(app)/content/[id]/page.js`
+  - `tests/scheduling-logic.test.js`
+  - `docs/LEVEL_4_SCHEDULING.md`
+- Implemented destination-level `Schedule`, `Reschedule`, and `Cancel Schedule` controls for saved Facebook revisions.
+- Scheduling can use the saved Master default release time or an explicit Facebook destination override without changing publish-content fields or destination revision solely for timing.
+- The UI displays the client IANA timezone, resolved client-local wall time, and resolved UTC instant and requires a final confirmation before Schedule, Reschedule, or Cancel.
+- Schedule state is persisted in `scheduled_releases` and reloaded through an authenticated destination schedule endpoint after refresh/reopen.
+- Rescheduling conditionally supersedes the prior active record, preserves linkage/history, and creates a new schedule bound to the current Facebook revision.
+- Cancellation is allowed only while the release remains active in `scheduled` state and dispatch has not begun.
+- Saving edited Facebook content increments the destination revision; an older active schedule is then evaluated and displayed as `stale_content_revision`, requiring deliberate rescheduling to bind the new revision.
+- Already-published destination revisions are blocked from scheduling again.
+- No browser timer, EventBridge schedule, Lambda worker, SQS path, Facebook provider submission, or full Calendar UI was added in L4-02.
+- Automated checks run before application to the repository:
+  - changed/new L4-02 JavaScript syntax checks — passed
+  - `node --experimental-default-type=module --test tests/scheduling-logic.test.js` — **9 tests passed, 0 failed**
+- Focused scheduling coverage now includes the rule that only an active `scheduled` release with no dispatch timestamp may be rescheduled or cancelled, in addition to the L4-01 timezone, DST, revision, state, and duplicate-schedule tests.
+- Live-test status: still required after Amplify deploy.
+- Required live checkpoint: using `Nicholas_Egner -> GIGnovate`, verify a future Master-default schedule persists after refresh, reschedule to a destination override, edit/save Facebook content and confirm the old schedule becomes stale, deliberately reschedule the current revision, cancel before dispatch, and confirm an already-published revision cannot be scheduled again. No Facebook post should be created by these timing-only checks.
+- Decisions made inside L4-02 scope:
+  - schedule controls live inside the existing Facebook destination editor rather than creating the Level 6 Calendar early
+  - reschedule creates a new durable schedule record and marks the prior one `superseded` rather than overwriting history
+  - cancel and reschedule use conditional MongoDB transitions so a release that has begun dispatch cannot be changed by a stale UI action
+  - L4-02 persists application schedule records only; AWS schedule identifiers remain null until L4-03
+- Blockers/manual steps: deployed Amplify verification is required before `L4-02` may become `DONE` and before `L4-03` becomes `READY`.
+- Remaining work: complete the L4-02 live checkpoint; keep `L4-03` and all later Level 4 tasks `WAITING` until that evidence is recorded.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.

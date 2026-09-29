@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import FacebookPublishControls from "@/components/facebook-publish-controls";
+import FacebookScheduleControls from "@/components/facebook-schedule-controls";
 import {
   isFacebookVersionOutOfSync,
   validateFacebookVersionDraft,
@@ -832,6 +833,14 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
               {saving ? "Saving" : dirty ? "Save Facebook Version" : "Saved"}
             </button>
           </div>
+
+          <FacebookScheduleControls
+            version={version}
+            destination={destination}
+            masterContent={masterContent}
+            dirty={dirty}
+            busy={saving || thumbnailUploading}
+          />
 
           <FacebookPublishControls
             version={version}
