@@ -137,8 +137,8 @@ Every publish must resolve the social connection by the platform version's saved
 | --- | --- | --- | --- |
 | L3-01 | `DONE` | Add destination / platform-version foundation | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; scoped selection, persistence, exclusion/reactivation, and no-publish behavior passed |
 | L3-02 | `DONE` | Build Facebook editor, inheritance, live validation, and preview | Deployed and live-verified with `This Test 1 -> GIGnovate`; customization persistence, Master-change protection, reset, validation, media/link preview, and no-publish behavior passed |
-| L3-03 | `READY` | Publish first real Facebook text/link post | L3-02 editor/validation/preview is verified; live checkpoint uses `Nicholas_Egner -> GIGnovate` |
-| L3-04 | `WAITING` | Add Facebook image publishing from private S3 | Depends on successful text/link publishing and provider result persistence |
+| L3-03 | `DONE` | Publish first real Facebook text/link post | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; text + link publish succeeded, durable provider result persisted, and `View Post` opened the exact remote post |
+| L3-04 | `READY` | Add Facebook image publishing from private S3 | L3-03 text/link publisher and provider-result persistence are verified end to end |
 | L3-05 | `WAITING` | Add Facebook video publishing from private S3 | Depends on stable publish pipeline; standard Page video first, not Reels |
 | L3-06 | `WAITING` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Depends on prior publishing tasks; requires deployed live evidence before Work review |
 
@@ -414,5 +414,43 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - selected uploaded media takes preview priority over URL Open Graph media
 - Blockers/manual steps: none remaining for L3-02
 - Remaining work: `L3-03` is now the only `READY` task; add the first real Facebook text/link Publish Now flow and stop for Nicholas's explicit confirmation of the exact test content before the provider call
+
+### September 29, 2026: L3-03 first real Facebook text/link publish
+
+- Task: `L3-03`
+- Outcome: **DONE**
+- Implementation commit: `d452056a9334b1df3ca2449448140b2e595086e0` (`Build first Facebook publish flow`)
+- Files changed:
+  - `components/facebook-platform-editor.js`
+  - `components/facebook-publish-controls.js`
+  - `lib/facebook-publish-logic.js`
+  - `lib/facebook-publisher.js`
+  - `lib/publishing.js`
+  - `app/api/platform-versions/[id]/publish/route.js`
+  - `tests/facebook-publish-logic.test.js`
+- Automated verification:
+  - full Node test suite passed `24/24`, including `7/7` focused Facebook publish-logic tests
+  - `git diff --check` completed cleanly
+  - targeted ESLint on the new L3-03 publisher files completed with no findings
+  - an earlier full local lint run still showed pre-existing React `set-state-in-effect` findings in `components/connections-manager.js` and `components/facebook-platform-editor.js`; the new publisher-specific files were clean
+  - an earlier local `next build` was blocked by missing local dependencies (`@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`, and `jose`), while the deployed Amplify environment built successfully
+  - Amplify deployment job `53` succeeded for commit `d452056a9334b1df3ca2449448140b2e595086e0`
+- Live verification completed with `Nicholas_Egner -> GIGnovate`:
+  - the deployed Facebook editor showed the new `Publish Now` section and rechecked destination publishability on the server
+  - selecting `first-post.png` correctly blocked L3-03 publishing with a message that image/video publishing is not enabled yet, proving media is not silently discarded
+  - the image was deselected and the saved destination version contained the approved text plus `https://nicholasegner.com`
+  - exact approved message: `Testing the first live post from Content Social Hub. This post was published directly from the tool as part of our Facebook publishing test. If you’re seeing this, it worked.`
+  - Nicholas explicitly approved that exact GIGnovate text + link payload before the provider call and confirmed the final browser publish dialog
+  - Meta accepted the post; Content Social Hub showed `Published live to GIGnovate`, changed the action state to `Published`, and exposed `View Post`
+  - the provider post result was persisted and the platform version was marked published only after the successful provider response
+  - `View Post` opened the exact remote GIGnovate post at `https://www.facebook.com/122112506037482828/posts/122112505863482828`
+  - the live Facebook post displayed the expected text and the `nicholasegner.com` link card
+- Decisions:
+  - L3-03 remains text/link only; selected media is a blocking condition rather than being ignored
+  - idempotency is keyed to the platform-version revision before the provider call
+  - definitive Graph API rejection may release the submission key for a future retry, while an ambiguous transport result remains locked as `unknown` to avoid creating a duplicate remote post
+  - publish attempts remain durable records and successful provider post ID/URL are persisted on both the result path and platform version state
+- Blockers/manual steps: none remaining for L3-03
+- Remaining work: `L3-04` is now the only `READY` task; extend the proven pipeline to Facebook image publishing from private S3 and verify a real GIGnovate image post
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 3 complete without Work review.
