@@ -65,6 +65,61 @@ test("Facebook publish validation accepts one supported video", () => {
   assert.deepEqual(result.blocking, []);
 });
 
+test("Facebook publish validation accepts an independent custom video thumbnail", () => {
+  const result = validateFacebookPublishDraft({
+    message: "Video post",
+    mediaIds: ["video-1"],
+    mediaAssets: [
+      { _id: "video-1", contentType: "video/mp4", size: 5_000_000 },
+    ],
+    videoThumbnailMediaId: "thumb-1",
+    videoThumbnailAsset: {
+      _id: "thumb-1",
+      contentType: "image/jpeg",
+      size: 400_000,
+    },
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(result.publishable, true);
+  assert.equal(result.publishMode, "video");
+  assert.deepEqual(result.blocking, []);
+});
+
+test("Facebook video publisher blocks missing or unsupported custom thumbnails", () => {
+  const missing = validateFacebookPublishDraft({
+    mediaIds: ["video-1"],
+    mediaAssets: [
+      { _id: "video-1", contentType: "video/mp4", size: 5_000_000 },
+    ],
+    videoThumbnailMediaId: "thumb-1",
+    videoThumbnailAsset: null,
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+  const unsupported = validateFacebookPublishDraft({
+    mediaIds: ["video-1"],
+    mediaAssets: [
+      { _id: "video-1", contentType: "video/mp4", size: 5_000_000 },
+    ],
+    videoThumbnailMediaId: "thumb-1",
+    videoThumbnailAsset: {
+      _id: "thumb-1",
+      contentType: "image/webp",
+      size: FACEBOOK_MAX_IMAGE_BYTES + 1,
+    },
+    healthStatus: "healthy",
+    canPublish: true,
+  });
+
+  assert.equal(missing.publishable, false);
+  assert.match(missing.blocking.join(" "), /thumbnail is no longer available/);
+  assert.equal(unsupported.publishable, false);
+  assert.match(unsupported.blocking.join(" "), /thumbnails must be JPEG/);
+  assert.match(unsupported.blocking.join(" "), /10 MB or smaller/);
+});
+
 test("Facebook video publisher blocks multiple videos", () => {
   const result = validateFacebookPublishDraft({
     mediaIds: ["video-1", "video-2"],
