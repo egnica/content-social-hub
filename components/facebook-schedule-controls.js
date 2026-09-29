@@ -180,7 +180,7 @@ export default function FacebookScheduleControls({
 
     lines.push(
       "",
-      "This saves the schedule in Content Social Hub. It does not publish now, and L4-02 does not create an AWS timed trigger yet.",
+      "This saves the durable schedule in Content Social Hub and creates or updates its AWS timed trigger. It does not publish now; L4-03 only wakes the placeholder worker.",
     );
 
     return lines.join("\n");
@@ -305,8 +305,8 @@ export default function FacebookScheduleControls({
         <h2>Schedule</h2>
         <p>
           Save a destination-level release time for this exact Facebook revision.
-          The client timezone is authoritative; background AWS execution is added
-          in the next Level 4 task.
+          The client timezone is authoritative; AWS can now wake the Level 4 worker
+          at the resolved UTC instant.
         </p>
       </div>
 
@@ -349,8 +349,8 @@ export default function FacebookScheduleControls({
           ) : null}
           {scheduleState?.stateCode === "past_release_time" ? (
             <div style={{ marginTop: 7 }}>
-              This release time has passed. Reschedule or cancel it; L4-02 does not
-              publish late automatically.
+              This release time has passed. Reschedule or cancel it; Content Social
+              Hub does not publish late automatically.
             </div>
           ) : null}
         </div>
