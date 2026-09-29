@@ -136,8 +136,8 @@ Every publish must resolve the social connection by the platform version's saved
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
 | L3-01 | `DONE` | Add destination / platform-version foundation | Deployed and live-verified with `Nicholas_Egner -> GIGnovate`; scoped selection, persistence, exclusion/reactivation, and no-publish behavior passed |
-| L3-02 | `READY` | Build Facebook editor, inheritance, live validation, and preview | L3-01 platform-version foundation is verified |
-| L3-03 | `WAITING` | Publish first real Facebook text/link post | Depends on L3-02; live checkpoint uses `Nicholas_Egner -> GIGnovate` |
+| L3-02 | `DONE` | Build Facebook editor, inheritance, live validation, and preview | Deployed and live-verified with `This Test 1 -> GIGnovate`; customization persistence, Master-change protection, reset, validation, media/link preview, and no-publish behavior passed |
+| L3-03 | `READY` | Publish first real Facebook text/link post | L3-02 editor/validation/preview is verified; live checkpoint uses `Nicholas_Egner -> GIGnovate` |
 | L3-04 | `WAITING` | Add Facebook image publishing from private S3 | Depends on successful text/link publishing and provider result persistence |
 | L3-05 | `WAITING` | Add Facebook video publishing from private S3 | Depends on stable publish pipeline; standard Page video first, not Reels |
 | L3-06 | `WAITING` | Verify failure handling, retry, idempotency, View Post, and final Level 3 checkpoint | Depends on prior publishing tasks; requires deployed live evidence before Work review |
@@ -368,5 +368,51 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - inherited source text, URL, media references, primary-media reference, and Master revision marker form the starting Facebook version state
 - Blockers/manual steps: none remaining for L3-01
 - Remaining work: `L3-02` is now the only `READY` task; build the Facebook-specific editor, inheritance/update behavior, continuous validation, and preview without publishing to Meta
+
+### September 29, 2026: L3-02 Facebook editor, inheritance, validation, and preview
+
+- Task: `L3-02`
+- Outcome: **DONE**
+- Implementation commits:
+  - `44bd878ec67560b7414615b12e8754f6d4c6c689` (`Build Facebook platform editor`)
+  - `6114a08c898aa0db1a3d75368b4f88c849a17da4` (`Add Facebook link preview metadata`)
+  - `4c2e90b015cd5ac17153b1f1f93cf5648cc55dc0` (`Finish Facebook link preview metadata`)
+- Files changed:
+  - `app/(app)/content/[id]/page.js`
+  - `app/api/platform-versions/[id]/route.js`
+  - `components/facebook-platform-editor.js`
+  - `lib/platform-version-logic.js`
+  - `lib/platform-versions.js`
+  - `tests/platform-version-logic.test.js`
+  - `app/api/link-preview/route.js`
+  - `lib/link-preview.js`
+  - `lib/link-preview-logic.js`
+  - `tests/link-preview-logic.test.js`
+- Automated verification:
+  - focused platform-version logic tests passed `8/8`
+  - link-preview metadata parser/security-shape tests passed `3/3`
+  - syntax checks passed for the editor, API routes, server-side persistence/preview logic, and tests
+  - Amplify deployment job `45` succeeded for the initial editor implementation
+  - Amplify deployment job `47` succeeded after the link-preview metadata correction; BUILD, DEPLOY, and VERIFY all succeeded
+- Live verification completed with `Nicholas_Egner -> This Test 1 -> GIGnovate`:
+  - active GIGnovate Facebook editor loaded with inherited Master message and destination URL
+  - changing the Facebook message, saving, and refreshing preserved the destination-specific override and customized state
+  - changing Master source text did not silently overwrite the customized Facebook message
+  - the editor surfaced `Master content changed` when the Master revision advanced
+  - `Update From Master` deliberately refreshed the Facebook version from current Master defaults and cleared the stale synchronization state
+  - clearing usable content produced an immediate blocking validation state without a separate Preflight action
+  - the Facebook preview updated live as destination fields changed
+  - link-only preview was corrected during live review to fetch public-page metadata and render the linked page's image, title, description, site identity, and canonical URL where available
+  - uploaded/selected Master media remains the higher-priority visual treatment; link metadata is used when no destination media is selected
+  - the deployed preview successfully rendered the `nicholasegner.com/blog/voice-to-markdown-workflow` Open Graph image and article metadata
+  - UI and implementation remained preview/edit-only; nothing was published to Facebook
+- Decisions:
+  - platform-specific edits remain durable on the existing `platform_versions` record and are protected from later Master edits
+  - Master synchronization is explicit after customization rather than automatic
+  - live validation remains continuous rather than button-triggered
+  - public link metadata is fetched server-side with public-address safeguards and is advisory preview data; Facebook still controls its final remote link scrape/render
+  - selected uploaded media takes preview priority over URL Open Graph media
+- Blockers/manual steps: none remaining for L3-02
+- Remaining work: `L3-03` is now the only `READY` task; add the first real Facebook text/link Publish Now flow and stop for Nicholas's explicit confirmation of the exact test content before the provider call
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 3 complete without Work review.
