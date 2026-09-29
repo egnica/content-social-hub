@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import styles from "@/components/ui.module.css";
 import { validateFacebookPublishDraft } from "@/lib/facebook-publish-logic";
+import { normalizeFacebookProviderUrl } from "@/lib/facebook-provider-url";
 
 function exactPublishConfirmation(
   destinationName,
@@ -80,7 +81,9 @@ export default function FacebookPublishControls({
     Number(version.publishedRevision || 0) === Number(version.revision || 0);
   const processing =
     attempt?.status === "processing" || version.lastPublishStatus === "processing";
-  const postUrl = attempt?.providerPostUrl || version.providerPostUrl || "";
+  const postUrl = normalizeFacebookProviderUrl(
+    attempt?.providerPostUrl || version.providerPostUrl || "",
+  );
   const hasSelectedMedia = Array.isArray(form.mediaIds) && form.mediaIds.length > 0;
 
   async function publishNow() {
