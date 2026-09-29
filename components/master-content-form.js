@@ -6,14 +6,11 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
-
-function toLocalDateTime(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
-}
+import {
+  formatUtcDateTimeForZone,
+  isValidIanaTimeZone,
+  resolveLocalDateTimeToUtc,
+} from "@/lib/scheduling-logic";
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 bytes";
@@ -110,7 +107,14 @@ function putFile(url, headers, file, onProgress = () => {}) {
   });
 }
 
-function initialForm(content) {
+function initialForm(content, clients) {
+  const client = clients.find((item) => item._id === content?.clientId);
+  const releaseTimezone =
+    client?.timezone ||
+    content?.clientTimezone ||
+    content?.defaultReleaseTimezone ||
+    "";
+
   return {
     internalTitle: content?.internalTitle || "",
     clientId: content?.clientId || "",
@@ -120,7 +124,10 @@ function initialForm(content) {
     reusable: Boolean(content?.reusable),
     defaultPrimaryMediaId: content?.defaultPrimaryMediaId || "",
     defaultVideoThumbnailMediaId: content?.defaultVideoThumbnailMediaId || "",
-    defaultReleaseAt: toLocalDateTime(content?.defaultReleaseAt),
+    defaultReleaseAt: formatUtcDateTimeForZone(
+      content?.defaultReleaseAt,
+      releaseTimezone,
+    ),
   };
 }
 
@@ -136,7 +143,7 @@ export default function MasterContentForm({ clients, content = null }) {
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const thumbnailInputRef = useRef(null);
-  const [form, setForm] = useState(() => initialForm(content));
+  const [form, setForm] = useState(() => initialForm(content, clients));
   const [media, setMedia] = useState(() =>
     (content?.media || []).map((asset) => ({
       ...asset,
@@ -160,6 +167,15 @@ export default function MasterContentForm({ clients, content = null }) {
   const [deleting, setDeleting] = useState(false);
   const isEditing = Boolean(content?._id);
 
+  const selectedClient = useMemo(
+    () => clients.find((client) => client._id === form.clientId) || null,
+    [clients, form.clientId],
+  );
+  const selectedTimezone =
+    selectedClient?.timezone ||
+    (form.clientId === content?.clientId ? content?.clientTimezone : "") ||
+    "";
+  const selectedTimezoneValid = isValidIanaTimeZone(selectedTimezone);
   const defaultMediaOptions = useMemo(
     () => media.filter((asset) => asset.status !== "error"),
     [media],
@@ -432,15 +448,25 @@ export default function MasterContentForm({ clients, content = null }) {
     setErrors({});
 
     try {
+      if (form.defaultReleaseAt) {
+        const releaseValidation = resolveLocalDateTimeToUtc(
+          form.defaultReleaseAt,
+          selectedTimezone,
+        );
+
+        if (!releaseValidation.ok) {
+          setErrors({ defaultReleaseAt: releaseValidation.error });
+          throw new Error(releaseValidation.error);
+        }
+      }
+
       const endpoint = isEditing ? `/api/content/${content._id}` : "/api/content";
       const response = await fetch(endpoint, {
         method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          defaultReleaseAt: form.defaultReleaseAt
-            ? new Date(form.defaultReleaseAt).toISOString()
-            : "",
+          defaultReleaseAt: form.defaultReleaseAt,
           mediaIds: media
             .filter((asset) => asset._id && asset.status !== "error")
             .map((asset) => asset._id),
@@ -654,6 +680,14 @@ export default function MasterContentForm({ clients, content = null }) {
               value={form.defaultReleaseAt}
               onChange={(event) => update("defaultReleaseAt", event.target.value)}
             />
+            <span className={styles.fieldHint}>
+              {selectedTimezoneValid
+                ? `Interpreted in ${selectedTimezone}. Saving this default does not schedule or publish anything.`
+                : "The selected client has an invalid timezone. Update the client before setting a release time."}
+            </span>
+            {errors.defaultReleaseAt ? (
+              <span className={styles.fieldError}>{errors.defaultReleaseAt}</span>
+            ) : null}
           </label>
         </div>
       </section>
