@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import FacebookPublishControls from "@/components/facebook-publish-controls";
@@ -21,6 +21,7 @@ function initialDraft(version) {
     destinationUrl: version?.destinationUrl || "",
     mediaIds: (version?.mediaIds || []).map(stringId),
     primaryMediaId: stringId(version?.primaryMediaId),
+    videoThumbnailMediaId: stringId(version?.videoThumbnailMediaId),
   };
 }
 
@@ -46,13 +47,34 @@ function previewableLink(value) {
 }
 
 function mediaPreviewUrl(asset) {
-  return asset?._id ? `/api/media/${asset._id}/url` : "";
+  if (!asset) return "";
+  return asset.previewUrl || (asset._id ? `/api/media/${asset._id}/url` : "");
+}
+
+function putFile(url, headers, file) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", url);
+
+    Object.entries(headers).forEach(([name, value]) => {
+      request.setRequestHeader(name, value);
+    });
+
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) resolve();
+      else reject(new Error("S3 rejected the thumbnail upload."));
+    };
+    request.onerror = () =>
+      reject(new Error("The thumbnail upload could not reach S3."));
+    request.send(file);
+  });
 }
 
 function FacebookPreview({
   destination,
   form,
   media,
+  videoThumbnailAsset,
   linkPreview,
   linkPreviewStatus,
 }) {
@@ -67,6 +89,12 @@ function FacebookPreview({
   const previewUrl = linkPreview?.url || form.destinationUrl;
   const previewTitle = linkPreview?.title || form.destinationUrl;
   const previewSource = linkPreview?.siteName || linkHost(previewUrl);
+  const useVideoThumbnail = Boolean(
+    primary?.contentType?.startsWith("video/") &&
+      form.videoThumbnailMediaId &&
+      videoThumbnailAsset &&
+      stringId(videoThumbnailAsset._id) === form.videoThumbnailMediaId,
+  );
 
   return (
     <div>
@@ -138,12 +166,45 @@ function FacebookPreview({
         {primary ? (
           <div style={{ background: "#f4f6f8" }}>
             {primary.contentType?.startsWith("video/") ? (
-              <video
-                src={mediaPreviewUrl(primary)}
-                muted
-                preload="metadata"
-                style={{ display: "block", width: "100%", maxHeight: 360 }}
-              />
+              useVideoThumbnail ? (
+                <div style={{ position: "relative" }}>
+                  <img
+                    src={mediaPreviewUrl(videoThumbnailAsset)}
+                    alt="Facebook video thumbnail preview"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      maxHeight: 360,
+                      objectFit: "cover",
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: "50%",
+                      transform: "translate(-50%, -50%)",
+                      display: "grid",
+                      width: 48,
+                      height: 48,
+                      placeItems: "center",
+                      borderRadius: "50%",
+                      background: "rgba(0,0,0,.68)",
+                      color: "white",
+                      fontSize: 20,
+                    }}
+                  >
+                    ▶
+                  </span>
+                </div>
+              ) : (
+                <video
+                  src={mediaPreviewUrl(primary)}
+                  muted
+                  preload="metadata"
+                  style={{ display: "block", width: "100%", maxHeight: 360 }}
+                />
+              )
             ) : (
               <img
                 src={mediaPreviewUrl(primary)}
@@ -260,8 +321,13 @@ function FacebookPreview({
 
 function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
   const router = useRouter();
+  const thumbnailInputRef = useRef(null);
   const [version, setVersion] = useState(initialVersion);
   const [form, setForm] = useState(() => initialDraft(initialVersion));
+  const [thumbnailAsset, setThumbnailAsset] = useState(
+    initialVersion.videoThumbnail || null,
+  );
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState("");
@@ -272,6 +338,50 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
   const masterChanged = isFacebookVersionOutOfSync(
     version,
     masterContent.revision,
+  );
+  const selectedMedia = useMemo(
+    () =>
+      media.filter((asset) => form.mediaIds.includes(stringId(asset._id))),
+    [form.mediaIds, media],
+  );
+  const primaryMedia = useMemo(
+    () =>
+      selectedMedia.find(
+        (asset) => stringId(asset._id) === stringId(form.primaryMediaId),
+      ) || selectedMedia[0] || null,
+    [form.primaryMediaId, selectedMedia],
+  );
+  const primaryIsVideo = Boolean(
+    primaryMedia?.contentType?.startsWith("video/"),
+  );
+  const thumbnailOptions = useMemo(() => {
+    const byId = new Map();
+
+    for (const asset of media) {
+      if (asset.contentType?.startsWith("image/") && asset._id) {
+        byId.set(stringId(asset._id), asset);
+      }
+    }
+
+    if (masterContent.defaultVideoThumbnail?._id) {
+      byId.set(
+        stringId(masterContent.defaultVideoThumbnail._id),
+        masterContent.defaultVideoThumbnail,
+      );
+    }
+
+    if (thumbnailAsset?._id) {
+      byId.set(stringId(thumbnailAsset._id), thumbnailAsset);
+    }
+
+    return [...byId.values()];
+  }, [masterContent.defaultVideoThumbnail, media, thumbnailAsset]);
+  const resolvedThumbnailAsset = useMemo(
+    () =>
+      thumbnailOptions.find(
+        (asset) => stringId(asset._id) === form.videoThumbnailMediaId,
+      ) || null,
+    [form.videoThumbnailMediaId, thumbnailOptions],
   );
   const validation = useMemo(
     () =>
@@ -356,6 +466,63 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
     setError("");
   }
 
+  async function uploadFacebookThumbnail(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    setMessage("");
+    setError("");
+
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Facebook video thumbnails must be image files.");
+      return;
+    }
+
+    setThumbnailUploading(true);
+
+    try {
+      const presignResponse = await fetch("/api/uploads/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: masterContent.clientId,
+          filename: file.name,
+          contentType: file.type,
+          size: file.size,
+        }),
+      });
+      const presignResult = await presignResponse.json();
+
+      if (!presignResponse.ok) {
+        throw new Error(
+          presignResult.error || "Unable to prepare the Facebook thumbnail upload.",
+        );
+      }
+
+      await putFile(presignResult.uploadUrl, presignResult.headers, file);
+
+      const completeResponse = await fetch(
+        `/api/media/${presignResult.media._id}/complete`,
+        { method: "POST" },
+      );
+      const completeResult = await completeResponse.json();
+
+      if (!completeResponse.ok) {
+        throw new Error(
+          completeResult.error || "Unable to confirm the Facebook thumbnail upload.",
+        );
+      }
+
+      const uploaded = completeResult.media;
+      setThumbnailAsset(uploaded);
+      update("videoThumbnailMediaId", stringId(uploaded._id));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setThumbnailUploading(false);
+    }
+  }
+
   async function requestUpdate(payload) {
     const response = await fetch(`/api/platform-versions/${version._id}`, {
       method: "PATCH",
@@ -408,6 +575,12 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
       const saved = await requestUpdate({ action: "reset_from_master" });
       setVersion(saved);
       setForm(initialDraft(saved));
+      setThumbnailAsset(
+        stringId(saved.videoThumbnailMediaId) ===
+          stringId(masterContent.defaultVideoThumbnail?._id)
+          ? masterContent.defaultVideoThumbnail
+          : saved.videoThumbnail || null,
+      );
       setDirty(false);
       setMessage("Facebook version updated from Master Content.");
       router.refresh();
@@ -561,17 +734,82 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
                       update("primaryMediaId", event.target.value)
                     }
                   >
-                    {media
-                      .filter((asset) =>
-                        form.mediaIds.includes(stringId(asset._id)),
-                      )
-                      .map((asset) => (
+                    {selectedMedia.map((asset) => (
+                      <option key={asset._id} value={asset._id}>
+                        {asset.originalName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              {primaryIsVideo ? (
+                <div style={{ marginTop: 16 }}>
+                  <div className={styles.sectionHeader}>
+                    <h2>Facebook video thumbnail / cover</h2>
+                    <p>
+                      Inherited from Master by default. Change it here only for
+                      Facebook.
+                    </p>
+                  </div>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Facebook thumbnail</span>
+                    <select
+                      className={styles.select}
+                      value={form.videoThumbnailMediaId}
+                      onChange={(event) =>
+                        update("videoThumbnailMediaId", event.target.value)
+                      }
+                    >
+                      <option value="">Let Facebook choose automatically</option>
+                      {thumbnailOptions.map((asset) => (
                         <option key={asset._id} value={asset._id}>
                           {asset.originalName}
                         </option>
                       ))}
-                  </select>
-                </label>
+                    </select>
+                  </label>
+                  {resolvedThumbnailAsset ? (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        width: 220,
+                        overflow: "hidden",
+                        border: "1px solid #d8dde3",
+                        borderRadius: 10,
+                      }}
+                    >
+                      <img
+                        src={mediaPreviewUrl(resolvedThumbnailAsset)}
+                        alt="Facebook video thumbnail"
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          maxHeight: 140,
+                          objectFit: "cover",
+                        }}
+                      />
+                    </div>
+                  ) : null}
+                  <input
+                    ref={thumbnailInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={uploadFacebookThumbnail}
+                    hidden
+                  />
+                  <button
+                    className={styles.buttonSecondary}
+                    type="button"
+                    style={{ marginTop: 10 }}
+                    onClick={() => thumbnailInputRef.current?.click()}
+                    disabled={thumbnailUploading || saving}
+                  >
+                    {thumbnailUploading
+                      ? "Uploading Thumbnail…"
+                      : "Upload Facebook Thumbnail"}
+                  </button>
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -581,7 +819,7 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
               className={styles.buttonSecondary}
               type="button"
               onClick={resetFromMaster}
-              disabled={saving}
+              disabled={saving || thumbnailUploading}
             >
               {masterChanged ? "Update From Master" : "Reset to Master"}
             </button>
@@ -589,7 +827,7 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
               className={styles.button}
               type="button"
               onClick={saveVersion}
-              disabled={saving || !dirty}
+              disabled={saving || thumbnailUploading || !dirty}
             >
               {saving ? "Saving" : dirty ? "Save Facebook Version" : "Saved"}
             </button>
@@ -599,8 +837,10 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
             version={version}
             destination={destination}
             form={form}
+            media={media}
+            videoThumbnailAsset={resolvedThumbnailAsset}
             dirty={dirty}
-            busy={saving}
+            busy={saving || thumbnailUploading}
             masterChanged={masterChanged}
             onPublished={handlePublished}
           />
@@ -610,6 +850,7 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
           destination={destination}
           form={form}
           media={media}
+          videoThumbnailAsset={resolvedThumbnailAsset}
           linkPreview={linkPreview}
           linkPreviewStatus={linkPreviewStatus}
         />
