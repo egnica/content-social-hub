@@ -160,8 +160,8 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
 | L4-01 | `DONE` | Build scheduling data/timezone/revision foundation | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
-| L4-02 | `MANUAL` | Add Schedule / Reschedule / Cancel controls | Implementation and automated checks complete; deployed live verification is required before `DONE` |
-| L4-03 | `WAITING` | Add EventBridge Scheduler + Lambda infrastructure | Depends on proven application schedule records; includes AWS IAM/environment checkpoint |
+| L4-02 | `DONE` | Add Schedule / Reschedule / Cancel controls | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
+| L4-03 | `READY` | Add EventBridge Scheduler + Lambda infrastructure | Application schedule records and controls are verified; proceed to the AWS IAM/environment checkpoint |
 | L4-04 | `WAITING` | Publish scheduled Facebook releases in the background | Depends on L4-03 worker path and must reuse Level 3 publishing safety |
 | L4-05 | `WAITING` | Add missed-schedule and controlled retry behavior | Depends on real background dispatch path |
 | L4-06 | `WAITING` | Run final browser-closed GIGnovate scheduling checkpoint | Depends on all prior Level 4 tasks; requires real deployed evidence before Work review |
@@ -402,5 +402,26 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - L4-02 persists application schedule records only; AWS schedule identifiers remain null until L4-03
 - Blockers/manual steps: deployed Amplify verification is required before `L4-02` may become `DONE` and before `L4-03` becomes `READY`.
 - Remaining work: complete the L4-02 live checkpoint; keep `L4-03` and all later Level 4 tasks `WAITING` until that evidence is recorded.
+
+### September 29, 2026: L4-02 live checkpoint passed
+
+- Task ID: `L4-02` — Schedule / Reschedule / Cancel controls.
+- Outcome: deployed live verification passed with `Nicholas_Egner -> GIGnovate`; task is `DONE` and `L4-03` is now the sole `READY` task.
+- Live verification completed:
+  - an unpublished Facebook Revision 5 showed `America/Chicago` as the authoritative client timezone and resolved the Master default `2026-09-30 08:15` to `2026-09-30T13:15:00.000Z`
+  - the Schedule confirmation explicitly bound Revision 5, release time, timezone, UTC instant, and Master-default source before persistence
+  - the destination was rescheduled from the Master default to a Facebook-specific `08:30` override, resolving to `2026-09-30T13:30:00.000Z`
+  - editing and saving Facebook-specific text advanced the destination to Revision 6 while the Revision 5 schedule became visibly `Stale schedule` and warned that the older schedule would not release the edited content
+  - deliberately rescheduling bound the `08:30` destination override to Revision 6 and returned the schedule to an active `Scheduled` state
+  - cancelling Revision 6 returned the destination to a `Cancelled` state; after refresh/reopen the cancellation remained persisted and the normal `Schedule` action was available again
+  - a previously published Facebook revision displayed the already-published blocking message and disabled scheduling
+  - Publish History remained empty for the scheduling-only test item; no Facebook post was created by Schedule, Reschedule, stale-revision handling, or Cancel
+- Automated evidence remains: changed/new L4-02 JavaScript syntax checks passed and the focused scheduling suite is **9 passed, 0 failed**.
+- Files changed for this completion record: `docs/LEVEL_4_SCHEDULING.md` only.
+- Decisions:
+  - the revision-binding safety model is validated: publish-content edits require a deliberate reschedule rather than silently retargeting an existing schedule
+  - the current scheduling UI is functionally acceptable for the working version, but it is visually more complex than desired; defer simplification/polish until the end-to-end scheduling path is proven so UI changes do not interrupt Level 4 infrastructure work
+- Blockers/manual steps: none for L4-02.
+- Remaining work: implement only `L4-03` — EventBridge Scheduler + Lambda infrastructure. Stop at any AWS IAM/environment configuration checkpoint requiring Nicholas; keep `L4-04` and later tasks `WAITING`.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
