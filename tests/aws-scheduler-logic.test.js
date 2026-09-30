@@ -6,6 +6,7 @@ import {
   buildOneTimeScheduleExpression,
   buildScheduledReleasePayload,
   buildSchedulerManagerRequest,
+  isMissingSchedulerManagerResource,
 } from "../lib/aws-scheduler-logic.js";
 
 test("AWS schedule names are stable and destination-specific", () => {
@@ -91,5 +92,30 @@ test("scheduler manager delete request contains only the stable AWS schedule nam
       action: "delete",
       scheduleName: "csh-facebook-66f00a1234567890abcdef12",
     },
+  );
+});
+
+test("missing one-time AWS schedules are recognized for safe reschedule recreation", () => {
+  assert.equal(
+    isMissingSchedulerManagerResource({
+      name: "ResourceNotFoundException",
+      message: "schedule does not exist",
+    }),
+    true,
+  );
+  assert.equal(
+    isMissingSchedulerManagerResource({
+      name: "SchedulerManagerError",
+      message:
+        "ResourceNotFoundException: Schedule csh-facebook-66f00a1234567890abcdef12 does not exist.",
+    }),
+    true,
+  );
+  assert.equal(
+    isMissingSchedulerManagerResource({
+      name: "AccessDeniedException",
+      message: "not authorized",
+    }),
+    false,
   );
 });
