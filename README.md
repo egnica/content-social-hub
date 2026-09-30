@@ -18,15 +18,15 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 ## Implementation Status
 
-Levels 0, 1, 2, and 3 are implemented, deployed, and verified in the live application.
+Levels 0, 1, 2, 3, and 4 are implemented, deployed, and verified in the live application.
 
 **Level 2 — First Social Connection was reviewed and closed on September 28, 2026.** Facebook Pages direct Connect and emailed Request Connection are both proven with real accounts. The selected-Page capability cleanup passed production verification, the Resend client setup flow passed end to end, and completed/replaced secure setup links were verified to become unusable as designed.
 
 **Level 3 — First Publisher was reviewed and closed on September 29, 2026.** The Facebook destination-version editor, continuous validation and preview, real text/link publishing, private-S3 image publishing, private-S3 standard video publishing, durable Publish History, duplicate protection, retry-state handling, remote result persistence, and exact `View Post` behavior were verified with `Nicholas_Egner -> GIGnovate`.
 
-**Level 4 — Scheduling is now the active phase.** The phase plan is `docs/LEVEL_4_SCHEDULING.md`. Its first bounded task, `L4-01`, is `READY`; no later Level 4 task should begin until the scheduling data/timezone/revision foundation is completed and documented.
+**Level 4 — Scheduling was reviewed and closed on September 30, 2026.** Client-timezone scheduling, Master defaults and destination overrides, revision-safe schedule records, EventBridge Scheduler, the scheduler-manager Lambda, the background release worker, missed-schedule handling, bounded certainty-aware retries, pre-dispatch cancellation, browser-closed publishing, durable Publish History, exact `View Post`, and duplicate-safe worker re-entry were verified with `Nicholas_Egner -> GIGnovate`.
 
-Level 4 continues to use `Nicholas_Egner -> GIGnovate` as the preferred live Facebook scheduling test destination because that Page is already connected, verified `Healthy`, and proven through the Level 3 publisher.
+**Level 5 — Multi-Platform is next, but it has not been opened yet.** The first additional social provider has not been selected, so no Level 5 implementation task is currently `READY`. Work must select the first network with Nicholas and create the Level 5 phase document before implementation begins.
 
 Implemented:
 
@@ -54,6 +54,13 @@ Implemented:
 - durable publish attempts/results, provider post IDs/URLs, and Publish History
 - duplicate-submission protection, conservative ambiguous-result locking, and deliberate known-failure retry behavior
 - exact `View Post` handling for verified Facebook text/link, image, and video results
+- client-timezone scheduling with Master-default and destination-override release times
+- durable destination/revision-bound schedule records with safe reschedule and pre-dispatch cancellation
+- EventBridge Scheduler one-time triggers managed through a scoped scheduler-manager Lambda
+- browser-independent background publishing through the scheduled-release worker and the proven Facebook publisher
+- missed-schedule handling for stale/human/content blockers without silently publishing late
+- bounded certainty-aware technical retries and locked ambiguous-provider outcomes
+- duplicate-safe worker re-entry after a successful scheduled publish
 - placeholder screens that clearly identify later implementation levels
 
 Deployment checkpoint passed on September 17, 2026:
@@ -117,6 +124,24 @@ Create / open Master Content
 -> View Post opens the exact live Facebook result
 ```
 
+Level 4 scheduling closure checkpoint passed on September 30, 2026:
+
+```text
+Create / open clean GIGnovate Facebook destination
+-> choose client-local release time
+-> Schedule and persist exact revision + UTC instant
+-> create one EventBridge Scheduler trigger
+-> close browser before release
+-> EventBridge wakes Lambda worker
+-> worker reloads MongoDB schedule/version
+-> worker reuses proven Facebook publisher and safety checks
+-> Facebook publishes exactly one post
+-> schedule reaches Succeeded and Publish History persists
+-> View Post opens exact scheduled result
+-> deliberate worker re-entry is a no-op
+-> pre-dispatch Cancel removes AWS trigger and creates no publish attempt
+```
+
 Verified in the deployed application:
 
 - MongoDB health, reads, and writes
@@ -145,6 +170,15 @@ Verified in the deployed application:
 - durable Facebook Publish History after refresh/reopen
 - successful-revision duplicate lockout and destination-specific publish state
 - exact `View Post` for the verified text/link, image, and video flows
+- `America/Chicago` client-timezone release interpretation and UTC persistence
+- schedule-only changes preserved the publish-content revision boundary
+- destination Schedule / Reschedule / Cancel state persisted after refresh/reopen
+- EventBridge Scheduler create/update/delete through the scheduler-manager Lambda
+- scheduled text/link, private-S3 image, and private-S3 video background publishing
+- stale scheduled revisions become Missed Schedule and do not silently publish edited content late
+- browser-closed scheduled publishing to GIGnovate with one worker invocation and zero Lambda errors
+- successful scheduled worker re-entry returns a no-op and does not create a duplicate Facebook post
+- pre-dispatch cancellation removes the EventBridge schedule and creates no Publish History attempt
 
 Verified live Facebook mappings as of September 29, 2026:
 
@@ -162,6 +196,7 @@ Nicholas_Egner
 -> Healthy
 -> Connected through Request Connection / Resend client flow
 -> Level 3 text/link, image, and video publishing verified
+-> Level 4 browser-closed scheduling verified September 30, 2026
 ```
 
 Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
@@ -170,7 +205,7 @@ The closed Level 2 Meta, Resend, OAuth, token-encryption, and live-verification 
 
 The closed Level 3 Facebook publisher plan and completion record is `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`.
 
-The active Level 4 Scheduling implementation plan and progress record is `docs/LEVEL_4_SCHEDULING.md`.
+The closed Level 4 Scheduling plan, implementation log, live evidence, and completion record is `docs/LEVEL_4_SCHEDULING.md`.
 
 ---
 
@@ -1721,13 +1756,25 @@ Pass condition:
 
 - schedule a real post, close the browser, and verify background publishing occurs correctly
 
-**Status: IN PROGRESS — phase opened September 29, 2026.**
+**Status: PASSED and CLOSED September 30, 2026.**
 
-Active plan: `docs/LEVEL_4_SCHEDULING.md`
+Verified closure evidence includes:
 
-Current implementation task: `L4-01` — scheduling data, timezone, and revision foundation.
+- client IANA timezone is authoritative for human-entered release times and the resolved UTC instant is persisted
+- schedule-only metadata changes do not falsely increment publish-content revisions
+- Master default and destination override scheduling both work without creating implicit schedules on save
+- durable `scheduled_releases` records bind the exact destination revision and prevent duplicate active schedules
+- Schedule / Reschedule / Cancel state survives refresh and already-published revisions cannot be rescheduled
+- EventBridge Scheduler one-time triggers are managed through the scoped scheduler-manager Lambda and auto-delete after execution
+- the background worker reuses the Level 3 Facebook publisher, validation, Account Health, idempotency, private-S3 media transfer, publish attempts, and exact result persistence
+- background text/link, image, and standard-video publishing are verified with GIGnovate
+- stale scheduled revisions become `Missed Schedule` and do not silently publish late
+- controlled technical retry is limited to definitive transient failures; ambiguous outcomes remain locked for review
+- final browser-closed GIGnovate release published exactly once with one Lambda invocation, zero Lambda errors, durable `Succeeded` state, one Publish History entry, and exact `View Post`
+- deliberate worker re-entry on the succeeded release returned `noop / succeeded` without creating a duplicate post
+- a separate pre-dispatch cancellation removed the AWS schedule and produced no publish attempt
 
-Preferred live scheduling checkpoint: `Nicholas_Egner -> GIGnovate`.
+Detailed evidence is in `docs/LEVEL_4_SCHEDULING.md`.
 
 ### Level 5 — Multi-Platform
 
@@ -1752,6 +1799,10 @@ Credential checkpoint:
 Pass condition:
 
 - each network must connect and publish independently before another adapter is treated as complete
+
+**Status: NEXT — planning pending provider selection.**
+
+No additional provider has been selected yet. Do not open implementation work by guessing the network. Work should select the first Level 5 provider with Nicholas, create the Level 5 phase document, define its task queue and live-test destination, and mark only the first bounded task `READY`.
 
 ### Level 6 — Workflow + Calendar
 
@@ -1917,18 +1968,19 @@ The user does not need to write a separate assignment. Start the new Chat with t
 
 Current delegation state:
 
-- Completed product stage: **Level 3, First Publisher — closed September 29, 2026**
-- Active product stage: **Level 4, Scheduling — in progress**
-- Active phase document: `docs/LEVEL_4_SCHEDULING.md`
-- Verified Level 3 results:
-  - Facebook destination-specific platform versions and editor are live
-  - text/link, image, and standard video publishing to GIGnovate are verified
-  - private S3 remains private during image/video provider transfer
-  - durable Publish History and duplicate protection are verified after refresh/reopen
-  - exact `View Post` behavior is verified for text/link, image, and video
-- Current implementation task: **L4-01 — Scheduling Data, Timezone, and Revision Foundation (`READY`)**
-- Progress must be documented in: `docs/LEVEL_4_SCHEDULING.md`
-- Preferred Level 4 live-test destination: `Nicholas_Egner -> GIGnovate`
+- Completed product stage: **Level 4, Scheduling — reviewed and closed September 30, 2026**
+- Next product stage: **Level 5, Multi-Platform — planning pending provider selection**
+- Active phase document: `docs/LEVEL_4_SCHEDULING.md` (**closed completion record; no `READY` tasks**)
+- Verified Level 4 results:
+  - client-timezone Master-default and destination-override scheduling are live
+  - schedule records bind exact destination revisions and preserve publish-content idempotency boundaries
+  - EventBridge Scheduler + scheduler-manager Lambda + scheduled-release worker are deployed and verified
+  - background Facebook text/link, image, and standard-video publishing are verified
+  - stale revisions become Missed Schedule instead of publishing late
+  - browser-closed GIGnovate publishing is verified with durable Succeeded state, one Publish History entry, and exact `View Post`
+  - successful worker re-entry is a duplicate-safe no-op and pre-dispatch cancellation removes the AWS trigger
+- Current implementation task: **none — no task is `READY` until Level 5 is planned**
+- Next Work action: choose the first additional social provider with Nicholas, create the Level 5 phase document, define its live checkpoint and ordered task queue, and mark only its first bounded task `READY`
 
 ---
 
@@ -1941,10 +1993,10 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_4_scheduling_in_progress
+  status: level_4_scheduling_closed_level_5_planning_pending
   source_of_truth: README.md
   active_phase_document: docs/LEVEL_4_SCHEDULING.md
-  active_phase_document_status: in_progress
+  active_phase_document_status: closed
 
 current_infrastructure:
   framework: Next.js
@@ -1958,10 +2010,12 @@ current_infrastructure:
     public_access: blocked
     encryption: SSE-S3
   email: Resend
-  scheduled_publishing_planned:
-    - EventBridge Scheduler
-    - Lambda
-    - SQS only where retries or queue reliability demonstrate a concrete need
+  scheduled_publishing:
+    eventbridge_scheduler: deployed_verified
+    scheduler_manager_lambda: deployed_verified
+    scheduled_release_worker: deployed_verified
+    worker_configuration: Secrets Manager
+    sqs: not_used_not_currently_required
 
 product_model:
   hierarchy:
@@ -2124,12 +2178,12 @@ content_and_publishing:
   platform_versions_separate_records: true
   publish_attempts_durable_records: true
   level_3_complete: true
+  level_4_complete: true
   facebook_text_link_publish_verified: true
   facebook_image_publish_verified: true
   facebook_video_publish_verified: true
   publish_history_live_verified: true
   level_3_approval_gate_enabled: false
-  level_3_scheduling_enabled: false
   workflow_status_manual: false
   status_is_derived: true
   approval_scope: destination_revision
@@ -2140,7 +2194,13 @@ content_and_publishing:
   final_publish_confirmation_required: true
   live_validation_not_preflight_button: true
   schedule_default_on_master_with_destination_overrides: true
-  scheduling_phase_active: true
+  scheduling_phase_active: false
+  client_timezone_scheduling_verified: true
+  background_scheduled_publishing_verified: true
+  browser_closed_scheduling_verified: true
+  missed_schedule_behavior_verified: true
+  pre_dispatch_cancel_verified: true
+  worker_reentry_duplicate_noop_verified: true
   human_blocker_at_schedule_time: mark_missed_schedule_do_not_publish_late
   temporary_technical_failure: controlled_automatic_retry
 
@@ -2190,20 +2250,23 @@ implementation:
     - level_1_client_content_foundation
     - level_2_first_social_connection
     - level_3_first_publisher
-  current_stage: level_4_scheduling
-  current_task: L4-01_scheduling_data_timezone_revision_foundation
-  current_task_status: READY
-  preferred_live_test_destination:
+    - level_4_scheduling
+  current_stage: level_5_multi_platform_planning_pending
+  current_task: none
+  current_task_status: no_ready_task
+  level_5_provider_selected: false
+  level_5_phase_document_created: false
+  preferred_level_4_live_test_destination:
     client: Nicholas_Egner
     platform: facebook
     page: GIGnovate
   level_4_task_order:
-    - L4-01 scheduling data/timezone/revision foundation
-    - L4-02 Schedule/Reschedule/Cancel controls
-    - L4-03 EventBridge Scheduler and Lambda infrastructure
-    - L4-04 background Facebook scheduled publishing
-    - L4-05 missed-schedule and controlled retry behavior
-    - L4-06 browser-closed GIGnovate final checkpoint
+    - L4-01 DONE scheduling data/timezone/revision foundation
+    - L4-02 DONE Schedule/Reschedule/Cancel controls
+    - L4-03 DONE EventBridge Scheduler and Lambda infrastructure
+    - L4-04 DONE background Facebook scheduled publishing
+    - L4-05 DONE missed-schedule and controlled retry behavior
+    - L4-06 DONE browser-closed GIGnovate final checkpoint
   first_major_end_to_end_milestone:
     status: completed_level_3
     steps:
@@ -2220,7 +2283,7 @@ implementation:
     level_0: MongoDB connection
     level_1: S3 and Amplify permissions
     level_2: first social provider OAuth credentials plus Resend
-    level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS only if used
+    level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS not required by the completed implementation
     level_5: each additional provider added individually
 
 architecture_rules:
@@ -2250,45 +2313,41 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Implement only L4-01, the scheduling data/timezone/revision foundation, using the active Level 4 plan.
-  task_source: docs/LEVEL_4_SCHEDULING.md
-  selection_rule: select_the_first_task_marked_READY
-  active_task: L4-01
-  live_test_destination: Nicholas_Egner -> GIGnovate
+  goal: Work selects the first Level 5 social provider with Nicholas, then creates and opens the Level 5 phase document before implementation.
+  task_source: README.md
+  selection_rule: do_not_guess_the_provider_and_do_not_begin_implementation_without_a_READY_task
+  active_task: none
+  last_closed_phase_document: docs/LEVEL_4_SCHEDULING.md
   do_not_jump_ahead_to:
-    - EventBridge or Lambda infrastructure before L4-01 application scheduling semantics are proven
-    - background provider publishing before durable schedule records and Schedule/Cancel behavior are proven
+    - a Level 5 provider implementation before the provider is selected and the phase plan is opened
+    - a second new social provider before the first Level 5 adapter passes its independent connect-and-publish checkpoint
     - full visual Calendar before Level 6
-    - additional social-provider integrations before Level 4 scheduling is closed
     - client approvals before Level 7
     - analytics before Level 8
     - optional AI
   level_2_checkpoint: passed_and_closed_2026_09_28
   level_3_checkpoint: passed_and_closed_2026_09_29
+  level_4_checkpoint: passed_and_closed_2026_09_30
 ```
 
 ### Instructions for the next work session
 
 Read this README in full before beginning implementation. Follow **Project Management and Chat Delegation Workflow**. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
 
-Levels 2 and 3 are closed. Do not reopen or rebuild the working Facebook connection or publisher architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, destination-specific Facebook editor, private-S3 provider transfer, provider-result persistence, Publish History, duplicate protection, and exact `View Post` behavior have all been verified with real Pages/posts.
+Levels 2, 3, and 4 are closed. Do not reopen or rebuild the working Facebook connection, publisher, or scheduling architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, destination-specific Facebook editor, private-S3 provider transfer, provider-result persistence, Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing have all been verified with real Pages/posts.
 
-Level 4 is active. Open `docs/LEVEL_4_SCHEDULING.md`, select its first `READY` task, and complete only that bounded task. At phase open, that task is `L4-01` — Scheduling Data, Timezone, and Revision Foundation.
+Level 5 is the next product stage, but it is not yet opened for implementation. The first additional social provider has not been selected and no task is `READY`. A Work session should choose the first network with Nicholas, create the Level 5 phase document, define the ordered task queue and live checkpoint, update `active_phase_document`, and mark only the first bounded task `READY`.
 
-For Level 4 live scheduling experiments, prefer the verified `Nicholas_Egner -> GIGnovate` Facebook Page. Do not schedule experimental content to another client's Page unless Nicholas explicitly chooses it for that live test.
+An implementation Chat must not guess which provider comes next. If this README still points to the closed Level 4 record and no Level 5 task is `READY`, stop and ask for the Work/provider-selection step rather than changing code.
 
-Build incrementally and stop at implementation checkpoints for real testing. When AWS EventBridge Scheduler, Lambda roles, environment values, or other external infrastructure become necessary, explain exactly what is required and walk the user through that setup at that point rather than collecting configuration before the phase reaches it.
+Add social networks one at a time. A provider is not considered complete merely because an OAuth screen or UI exists; its relevant checkpoint must connect and publish end to end before expanding to the next provider.
 
-Preserve the Level 3 idempotency boundary. Schedule-time edits must not create a loophole that republishes an already successful destination revision, and the background worker must reuse the proven publishing safety checks rather than creating a second Facebook publisher.
+Preserve the proven Facebook and scheduling architecture while adding new adapters. New provider work should reuse the existing client scoping, platform-version revision rules, publishing-result/idempotency concepts, private-media boundaries, scheduling records, and background release semantics where they are genuinely provider-independent rather than duplicating them unnecessarily.
 
-Do not build the full visual Calendar in Level 4; that remains Level 6. Do not invent fake approval state; client approvals remain Level 7.
-
-Add social networks one at a time. A provider is not considered complete merely because an OAuth screen or UI exists; its relevant checkpoint must work end to end before expanding to the next provider.
-
-If a future Facebook connection or publish problem appears, preserve the proven architecture and diagnose the narrow failing layer first. In particular, verify provider authorization, Page discovery/capability data, server-side `clientId` scoping, platform-version revision state, publish-attempt idempotency, and client-side React state independently before redesigning the connection or publishing model.
+Do not build the full visual Calendar before Level 6. Do not invent fake approval state; client approvals remain Level 7. Do not pull analytics forward from Level 8 merely because a new provider exposes metrics during OAuth.
 
 Do not introduce new infrastructure solely because it is available. Prefer the architecture already established here unless a concrete implementation problem requires a change.
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected implementation work:** complete `L4-01` from `docs/LEVEL_4_SCHEDULING.md`, record its evidence there, and stop before L4-02 until the task-status transition is supported by verification.
+**Next expected Work action:** choose the first Level 5 provider with Nicholas, open its phase document, and create the first `READY` implementation task. There is currently no authorized Level 5 implementation assignment.
