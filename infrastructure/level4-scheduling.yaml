@@ -62,23 +62,127 @@ Resources:
       Runtime: nodejs24.x
       Handler: index.handler
       Role: !GetAtt ScheduledReleaseWorkerRole.Arn
-      Timeout: 30
-      MemorySize: 256
+      Timeout: 900
+      MemorySize: 512
       Environment:
         Variables:
           WORKER_CONFIG_SECRET_ARN: !Ref ScheduledReleaseWorkerConfig
       Code:
         ZipFile: |
-          exports.handler = async (event) => {
-            const scheduledReleaseId = String(event?.scheduledReleaseId || '').trim();
-            if (!scheduledReleaseId) {
-              throw new Error('scheduledReleaseId is required');
+          const {
+            GetSecretValueCommand,
+            SecretsManagerClient,
+          } = require('@aws-sdk/client-secrets-manager');
+
+          const secrets = new SecretsManagerClient({});
+          const objectIdPattern = /^[0-9a-f]{24}$/;
+          let cachedConfig = null;
+
+          function requiredString(value, label) {
+            const normalized = String(value || '').trim();
+            if (!normalized) throw new Error(`${label} is required`);
+            return normalized;
+          }
+
+          function boundedNumber(value, fallback, minimum, maximum) {
+            const parsed = Number(value);
+            const normalized = Number.isFinite(parsed) ? parsed : fallback;
+            return Math.max(minimum, Math.min(maximum, normalized));
+          }
+
+          async function loadConfig() {
+            if (cachedConfig) return cachedConfig;
+            const secretArn = requiredString(
+              process.env.WORKER_CONFIG_SECRET_ARN,
+              'WORKER_CONFIG_SECRET_ARN',
+            );
+            const response = await secrets.send(
+              new GetSecretValueCommand({ SecretId: secretArn }),
+            );
+            const parsed = JSON.parse(requiredString(response.SecretString, 'Worker config'));
+            const dispatchUrl = requiredString(parsed.dispatchUrl, 'dispatchUrl');
+            const dispatchToken = requiredString(parsed.dispatchToken, 'dispatchToken');
+            const processingPollSeconds = boundedNumber(
+              parsed.processingPollSeconds,
+              5,
+              2,
+              30,
+            );
+            const maxProcessingWaitSeconds = boundedNumber(
+              parsed.maxProcessingWaitSeconds,
+              600,
+              30,
+              780,
+            );
+
+            cachedConfig = {
+              dispatchUrl,
+              dispatchToken,
+              processingPollSeconds,
+              maxProcessingWaitSeconds,
+            };
+            return cachedConfig;
+          }
+
+          async function invokeDispatch(config, scheduledReleaseId) {
+            const response = await fetch(config.dispatchUrl, {
+              method: 'POST',
+              headers: {
+                authorization: `Bearer ${config.dispatchToken}`,
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({ scheduledReleaseId }),
+            });
+            const text = await response.text();
+            let payload = null;
+            try {
+              payload = text ? JSON.parse(text) : {};
+            } catch {
+              payload = { error: text || 'Invalid dispatch response' };
             }
-            console.log(JSON.stringify({
-              message: 'L4-03 scheduled release wake-up received',
-              scheduledReleaseId,
-            }));
-            return { accepted: true, scheduledReleaseId };
+
+            if (!response.ok) {
+              throw new Error(
+                `Scheduled release dispatch failed (${response.status}): ${String(
+                  payload?.error || 'unknown error',
+                )}`,
+              );
+            }
+            return payload;
+          }
+
+          function sleep(milliseconds) {
+            return new Promise((resolve) => setTimeout(resolve, milliseconds));
+          }
+
+          exports.handler = async (event) => {
+            const scheduledReleaseId = String(event?.scheduledReleaseId || '')
+              .trim()
+              .toLowerCase();
+            if (!objectIdPattern.test(scheduledReleaseId)) {
+              throw new Error('scheduledReleaseId must be a MongoDB ObjectId');
+            }
+
+            const config = await loadConfig();
+            const deadline = Date.now() + config.maxProcessingWaitSeconds * 1000;
+
+            while (true) {
+              const result = await invokeDispatch(config, scheduledReleaseId);
+              console.log(JSON.stringify({
+                message: 'L4-04 scheduled release dispatch result',
+                scheduledReleaseId,
+                outcome: result?.outcome || 'unknown',
+                reason: result?.reason || '',
+              }));
+
+              if (result?.outcome !== 'processing') return result;
+              if (Date.now() + config.processingPollSeconds * 1000 >= deadline) {
+                throw new Error(
+                  'Facebook video is still processing beyond the worker polling window.',
+                );
+              }
+              await sleep(config.processingPollSeconds * 1000);
+            }
           };
 
   SchedulerTargetRole:
