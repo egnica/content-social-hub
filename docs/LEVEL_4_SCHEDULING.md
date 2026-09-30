@@ -163,7 +163,7 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | L4-02 | `DONE` | Add Schedule / Reschedule / Cancel controls | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-03 | `DONE` | Add EventBridge Scheduler + Lambda infrastructure | Deployed create/wake/reschedule/cancel verification passed September 29, 2026 |
 | L4-04 | `DONE` | Publish scheduled Facebook releases in the background | Deployed GIGnovate text/link, image, video, View Post, processing, and stale-revision no-op verification passed September 29, 2026 |
-| L4-05 | `READY` | Add missed-schedule and controlled retry behavior | Real background dispatch path is now proven and duplicate-safe |
+| L4-05 | `MANUAL` | Add missed-schedule and controlled retry behavior | Repository implementation and focused 16/16 tests passed; deployed GIGnovate missed-schedule checkpoint still required |
 | L4-06 | `WAITING` | Run final browser-closed GIGnovate scheduling checkpoint | Depends on all prior Level 4 tasks; requires real deployed evidence before Work review |
 
 There should normally be only one `READY` task.
@@ -623,5 +623,49 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
 - Decisions: the L4-04 architecture remains unchanged; Lambda is only the wake/execution wrapper and the existing Level 3 publisher remains the single Facebook provider implementation. Missed-schedule classification and controlled retry remain explicitly owned by L4-05.
 - Blockers/manual steps: none remaining for L4-04.
 - Remaining work: implement only `L4-05` — Missed Schedules and Controlled Retry. Keep `L4-06` `WAITING` until L4-05 is complete.
+
+### September 29, 2026: L4-05 implementation checkpoint
+
+- Task ID: `L4-05` — Missed Schedules and Controlled Retry.
+- Outcome: repository implementation and focused automated verification completed; task moved to `MANUAL` pending deployed verification with `Nicholas_Egner -> GIGnovate`. `L4-06` remains `WAITING`.
+- Files changed:
+  - `lib/scheduled-release-dispatch-logic.js`
+  - `lib/scheduled-release-dispatch.js`
+  - `lib/scheduling-logic.js`
+  - `components/facebook-schedule-controls.js`
+  - `tests/scheduled-release-dispatch-logic.test.js`
+  - `docs/LEVEL_4_SCHEDULING.md`
+- Human, permission, content, destination, and revision blockers at release time now transition the durable schedule into `missed` / `Missed Schedule` instead of leaving a past active schedule or silently publishing late. The stale-revision path remains a no-provider-submit path and now records the missed outcome.
+- Definitive provider failures remain visible and duplicate-safe. A definitive non-transient failure becomes `failed` and deactivates the schedule so the operator may deliberately retry later after fixing the issue under the existing Level 3 submission-key rules.
+- Automatic retry is intentionally narrow: only a `PublishProviderError` whose recorded attempt is definitively `failed`, whose provider error is explicitly transient, and whose Level 3 submission key was therefore safely released may retry automatically.
+- The automatic technical retry window is bounded to **2 retries**, **5 seconds apart**, inside the already claimed worker dispatch. The schedule remains `dispatching` during that window, so stale UI actions cannot cancel/reschedule the destination while an automatic retry is in progress.
+- Ambiguous/unknown provider outcomes and publish conflicts become `review_required`, remain active as a lock, preserve the recorded publish-attempt/provider references, and are no-ops on worker re-entry. They are never blindly retried, protecting against duplicate Facebook posts when the provider may already have accepted the request.
+- Runtime transition history is now appended for release-time claim, automatic retry scheduled/started, and terminal `succeeded`, `missed`, `failed`, or `review_required` outcomes. Existing reschedule/cancel history remains preserved through the durable schedule-record chain from L4-02.
+- The Facebook scheduling UI now distinguishes `Publishing`, `Missed Schedule`, `Publish failed`, `Review required`, and `Succeeded`, surfaces retry count plus missed/failure details, and explains that ambiguous outcomes are locked rather than automatically retried.
+- No SQS, second scheduler, second Facebook publisher, Level 6 Calendar work, or Level 7 approval state was added. EventBridge target retries remain zero; the bounded retry policy lives beside the proven provider-result/idempotency semantics in the application dispatch path.
+- Existing Level 3 `publish_attempts`, deterministic submission key, private-S3 provider transfer, and provider-result handling were not changed.
+- Automated checks run:
+  - `node --check /tmp/l405/lib/scheduled-release-dispatch-logic.js` — passed
+  - `node --check /tmp/l405/lib/scheduled-release-dispatch.js` — passed
+  - `node --check /tmp/l405/lib/scheduling-logic.js` — passed
+  - `node --check /tmp/l405/components/facebook-schedule-controls.js` — passed
+  - `node --check /tmp/l405/tests/scheduled-release-dispatch-logic.test.js` — passed
+  - `node --experimental-default-type=module --test /tmp/l405/tests/scheduled-release-dispatch-logic.test.js` — **16 tests passed, 0 failed**
+- Focused coverage includes stale/unavailable missed classification, review-required worker re-entry lock, human/validation blockers, definitive transient retry eligibility, retry exhaustion, definitive non-transient failure, ambiguous-provider locking, terminal schedule-state presentation, existing video-processing refresh, and success persistence.
+- Full `npm run lint`, full repository `npm test`, and `npm run build` were not run because the execution container cannot resolve GitHub to clone the repository and does not contain the application's installed dependency tree. The changed JavaScript passed syntax checks and the focused pure suite passed independently.
+- Live-test status: **still required after Amplify deploy**. Use `Nicholas_Egner -> GIGnovate` to verify:
+  1. a normal near-future unpublished Facebook release still succeeds through the background path after this change
+  2. a scheduled revision edited before release becomes `Missed Schedule` with a stale-revision reason when the worker wakes and creates no Facebook post
+  3. the missed state and transition details survive refresh/reopen and the current corrected revision can be deliberately scheduled again
+  4. if a real definitive provider failure or transient provider error occurs naturally, confirm the resulting `failed` or bounded-retry history matches the recorded certainty; do not intentionally manufacture an ambiguous remote-provider submission solely for testing
+  5. confirm no duplicate Facebook post occurs through worker re-entry or refresh
+- Decisions made inside L4-05 scope:
+  - no SQS is justified yet; the bounded retry fits safely inside the single already-claimed worker invocation
+  - retry maximum is two automatic retries with a five-second delay
+  - provider certainty governs retry eligibility, not merely whether an HTTP/API error occurred
+  - `review_required` deliberately remains an active lock until the uncertain provider result is reviewed; it cannot be rescheduled or automatically retried
+  - video status-read uncertainty is not converted into a fresh video submission; the existing provider attempt remains the source of truth
+- Blockers/manual steps: Amplify deployment and the deployed GIGnovate missed-schedule regression checkpoint are required before `L4-05` may become `DONE`.
+- Remaining work: complete only the L4-05 live checkpoint. If it passes, record that evidence, mark `L4-05` `DONE`, and make `L4-06` the sole `READY` task. Do not begin L4-06 in this implementation chat.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
