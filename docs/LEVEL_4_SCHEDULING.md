@@ -162,7 +162,7 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | L4-01 | `DONE` | Build scheduling data/timezone/revision foundation | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-02 | `DONE` | Add Schedule / Reschedule / Cancel controls | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-03 | `DONE` | Add EventBridge Scheduler + Lambda infrastructure | Deployed create/wake/reschedule/cancel verification passed September 29, 2026 |
-| L4-04 | `READY` | Publish scheduled Facebook releases in the background | L4-03 background wake-up path is proven; must reuse Level 3 publishing safety |
+| L4-04 | `MANUAL` | Publish scheduled Facebook releases in the background | Repository implementation and automated checks complete; AWS/Amplify configuration and deployed Facebook verification remain |
 | L4-05 | `WAITING` | Add missed-schedule and controlled retry behavior | Depends on real background dispatch path |
 | L4-06 | `WAITING` | Run final browser-closed GIGnovate scheduling checkpoint | Depends on all prior Level 4 tasks; requires real deployed evidence before Work review |
 
@@ -417,7 +417,7 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - a previously published Facebook revision displayed the already-published blocking message and disabled scheduling
   - Publish History remained empty for the scheduling-only test item; no Facebook post was created by Schedule, Reschedule, stale-revision handling, or Cancel
 - Automated evidence remains: changed/new L4-02 JavaScript syntax checks passed and the focused scheduling suite is **9 passed, 0 failed**.
-- Files changed for this completion record: `docs/LEVEL_4_SCHEDULING.md` only.
+- Files changed for the completion record: `docs/LEVEL_4_SCHEDULING.md` only.
 - Decisions:
   - the revision-binding safety model is validated: publish-content edits require a deliberate reschedule rather than silently retargeting an existing schedule
   - the current scheduling UI is functionally acceptable for the working version, but it is visually more complex than desired; defer simplification/polish until the end-to-end scheduling path is proven so UI changes do not interrupt Level 4 infrastructure work
@@ -527,5 +527,64 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
 - Live-test status: complete for L4-03.
 - Blockers/manual steps: none remaining for L4-03.
 - Remaining work: implement only `L4-04` — Background Facebook Scheduled Publishing. Keep `L4-05` and `L4-06` `WAITING`.
+
+### September 29, 2026: L4-04 implementation checkpoint
+
+- Task ID: `L4-04` — Background Facebook Scheduled Publishing.
+- Outcome: repository implementation and focused automated verification completed; task moved to `MANUAL` until the AWS/Amplify configuration and deployed Facebook background-publishing checkpoint are completed. `L4-05` remains `WAITING`.
+- Files changed:
+  - `.env.example`
+  - `app/api/internal/scheduled-releases/dispatch/route.js`
+  - `app/api/platform-versions/[id]/route.js`
+  - `infrastructure/level4-scheduling.yaml`
+  - `lib/scheduled-release-dispatch-logic.js`
+  - `lib/scheduled-release-dispatch.js`
+  - `lib/scheduled-release-guard.js`
+  - `tests/scheduled-release-dispatch-logic.test.js`
+  - `docs/LEVEL_4_SCHEDULING.md`
+- Implemented an authenticated server-side scheduled-release dispatch path that reloads the durable `scheduled_releases` record and Facebook platform version from MongoDB before doing provider work.
+- The dispatch path treats missing/inactive, cancelled, superseded, stale-revision, already-published, destination-mismatch, and concurrent-claim cases as no-op outcomes rather than remote Facebook submissions.
+- A release is atomically claimed from `scheduled` to `dispatching` before provider work. The platform version is reloaded after the claim and its revision is checked again before entering the proven Level 3 publisher.
+- Platform-version edits and Reset From Master are blocked while that destination has an active `dispatching` release. An edit that wins before the claim advances the revision and is caught by the post-claim stale-revision check, closing the normal application edit race without creating a second Facebook publisher.
+- The background path calls the existing `publishFacebookTextLinkVersion` and `checkFacebookVideoPublishStatus` services. Account Health, live publish validation, deterministic submission-key idempotency, durable `publish_attempts`, private-S3 image/video transfer, provider IDs/URLs, and `View Post` persistence therefore remain the Level 3 code path rather than being duplicated inside Lambda.
+- Successful provider completion marks the schedule `succeeded`, deactivates it, and copies the publish-attempt/provider references onto the schedule only after the existing publisher reports success.
+- Standard video processing is handled without resubmission: a `processing` result leaves the schedule `dispatching`, and the worker polls the existing video attempt through `checkFacebookVideoPublishStatus` until success/failure or the bounded worker polling window ends.
+- The internal dispatch route uses a bearer token whose raw value is expected only in the existing worker Secrets Manager configuration. Amplify stores only `SCHEDULED_RELEASE_DISPATCH_TOKEN_SHA256`, and the route compares the presented token using SHA-256 plus `timingSafeEqual`.
+- Updated the inline Node.js 24 scheduled-release worker to load `dispatchUrl` and `dispatchToken` from the retained worker secret, call the authenticated application dispatch route, poll only recorded video-processing state, log outcome/reason, and return on `succeeded`/`noop`. Worker timeout is 900 seconds and memory is 512 MB to allow bounded standard-video processing checks.
+- EventBridge Scheduler target retries remain at zero in L4-04. General missed-schedule classification and controlled automatic technical retries remain intentionally deferred to `L4-05`.
+- SQS remains deferred because L4-04 still does not demonstrate a concrete queue requirement.
+- Automated checks run in the isolated environment:
+  - `node --check /mnt/data/l404/lib/scheduled-release-dispatch-logic.js` — passed
+  - `node --check /mnt/data/l404/lib/scheduled-release-dispatch.js` — passed
+  - `node --check /mnt/data/l404/lib/scheduled-release-guard.js` — passed
+  - `node --check /mnt/data/l404/app/api/internal/scheduled-releases/dispatch/route.js` — passed
+  - `node --check` on the updated platform-version route — passed
+  - extracted CloudFormation inline scheduled-worker JavaScript `node --check` — passed
+  - `node --experimental-default-type=module --test /mnt/data/l404/tests/scheduled-release-dispatch-logic.test.js` — **8 tests passed, 0 failed**
+  - CloudFormation YAML parse/sanity check — passed; the worker definition resolves to timeout `900`, memory `512`, and contains the authenticated dispatch configuration path
+- Focused tests cover valid schedule IDs, atomic-claim eligibility, cancelled/superseded no-op behavior, stale revision no-op, already-published no-op, video-processing refresh rather than resubmission, publish-result classification, and successful schedule result persistence fields.
+- Full `npm run lint`, full repository `npm test`, and `npm run build` were not run because the execution container could not resolve GitHub to clone the repository and did not contain the application's installed dependency tree. The new/changed JavaScript available in the isolated workspace passed syntax checks and the focused pure suite passed independently.
+- Read-only AWS preflight before any L4-04 infrastructure mutation confirmed:
+  - CloudFormation stack `content-social-hub-level4-scheduling` is currently `UPDATE_COMPLETE`
+  - the deployed scheduled-release worker is still the L4-03 30-second placeholder until this template update is deployed
+  - the retained worker configuration secret exists
+  - there were zero active EventBridge schedules at the preflight check
+- Live-test status: **not yet complete**. No AWS resources or secret values were modified during L4-04 implementation, and no Facebook provider request was triggered by this implementation chat.
+- Required manual/AWS checkpoint before `L4-04` may become `DONE`:
+  1. generate a strong random worker bearer token and compute its SHA-256 hex digest
+  2. add `SCHEDULED_RELEASE_DISPATCH_TOKEN_SHA256=<digest>` to the Amplify app and ensure the build specification copies it into the server `.env.production` alongside the other server variables
+  3. populate the existing `content-social-hub/scheduled-release-worker` Secrets Manager value with JSON containing `dispatchUrl` set to the production internal dispatch endpoint and the raw `dispatchToken`; optional `processingPollSeconds` and `maxProcessingWaitSeconds` may retain the documented defaults
+  4. deploy the updated `infrastructure/level4-scheduling.yaml` stack in `us-east-2` so the scheduled worker is replaced with the L4-04 dispatcher
+  5. redeploy Amplify so the protected internal route and dispatch-token hash are live together
+  6. with `Nicholas_Egner -> GIGnovate`, schedule a clean unpublished Facebook text/link release for the near future and verify one remote post, schedule `succeeded`, durable Publish History, provider ID/URL, and exact `View Post`
+  7. repeat the background path with private-S3 image content and a standard private-S3 video so the L4-04 media acceptance boundary is proven through the same Level 3 publisher; video must refresh the existing processing attempt rather than submit a duplicate
+  8. safely exercise stale, cancelled, and already-published scheduled records and confirm the worker returns a no-op without a new Facebook post
+- Decisions made inside L4-04 scope:
+  - the Lambda remains an AWS wake/execution wrapper; Facebook provider logic remains exclusively in the proven application publisher
+  - the raw dispatch bearer token belongs only in Secrets Manager; Amplify stores only its SHA-256 digest
+  - destination editing is blocked only while the release is actually `dispatching`; schedule/reschedule/cancel semantics before dispatch remain unchanged
+  - generic retry/missed classification is not being pulled forward from L4-05
+- Blockers/manual steps: AWS secret configuration, Amplify environment/build-spec update, CloudFormation deployment, Amplify deployment, and real GIGnovate background publishing verification are still required.
+- Remaining work: complete only the L4-04 manual checkpoint and record live evidence here. Keep `L4-05` and `L4-06` `WAITING` until that evidence supports the status transition.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
