@@ -104,6 +104,194 @@ Resources:
                 Action: lambda:InvokeFunction
                 Resource: !GetAtt ScheduledReleaseWorker.Arn
 
+  SchedulerManagerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SchedulerManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: SchedulerManagerLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Sid: SchedulerManagerLogEvents
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/content-social-hub-scheduler-manager:*
+              - Sid: ManageContentSocialHubSchedules
+                Effect: Allow
+                Action:
+                  - scheduler:CreateSchedule
+                  - scheduler:UpdateSchedule
+                  - scheduler:DeleteSchedule
+                Resource: !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-facebook-*
+              - Sid: PassSchedulerTargetRoleOnly
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt SchedulerTargetRole.Arn
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: scheduler.amazonaws.com
+
+  SchedulerManager:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: content-social-hub-scheduler-manager
+      Runtime: python3.13
+      Handler: index.handler
+      Role: !GetAtt SchedulerManagerRole.Arn
+      Timeout: 15
+      MemorySize: 128
+      Environment:
+        Variables:
+          SCHEDULE_GROUP_NAME: !Ref ScheduledReleaseGroup
+          SCHEDULED_RELEASE_WORKER_ARN: !GetAtt ScheduledReleaseWorker.Arn
+          SCHEDULER_TARGET_ROLE_ARN: !GetAtt SchedulerTargetRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import re
+          from datetime import datetime, timezone
+          import boto3
+          from botocore.exceptions import ClientError
+
+          scheduler = boto3.client("scheduler")
+          group_name = os.environ["SCHEDULE_GROUP_NAME"]
+          worker_arn = os.environ["SCHEDULED_RELEASE_WORKER_ARN"]
+          target_role_arn = os.environ["SCHEDULER_TARGET_ROLE_ARN"]
+          object_id_pattern = re.compile(r"^[0-9a-f]{24}$")
+          schedule_name_pattern = re.compile(r"^csh-facebook-[0-9a-f]{24}$")
+
+          def required_string(value, label):
+              normalized = str(value or "").strip()
+              if not normalized:
+                  raise ValueError(f"{label} is required")
+              return normalized
+
+          def schedule_name(platform, platform_version_id):
+              normalized_platform = required_string(platform, "platform").lower()
+              normalized_version_id = required_string(
+                  platform_version_id,
+                  "platformVersionId",
+              ).lower()
+              if normalized_platform != "facebook":
+                  raise ValueError("Only Facebook schedules are supported")
+              if not object_id_pattern.fullmatch(normalized_version_id):
+                  raise ValueError("platformVersionId must be a MongoDB ObjectId")
+              return f"csh-facebook-{normalized_version_id}"
+
+          def release_expression(value):
+              normalized = required_string(value, "releaseAt")
+              parsed = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+              if parsed.tzinfo is None:
+                  raise ValueError("releaseAt must include a timezone")
+              utc_value = parsed.astimezone(timezone.utc)
+              return f"at({utc_value.strftime('%Y-%m-%dT%H:%M:%S')})"
+
+          def schedule_definition(event, name):
+              scheduled_release_id = required_string(
+                  event.get("scheduledReleaseId"),
+                  "scheduledReleaseId",
+              ).lower()
+              if not object_id_pattern.fullmatch(scheduled_release_id):
+                  raise ValueError("scheduledReleaseId must be a MongoDB ObjectId")
+
+              return {
+                  "Name": name,
+                  "GroupName": group_name,
+                  "Description": (
+                      "Content Social Hub scheduled release "
+                      f"{scheduled_release_id}"
+                  ),
+                  "ScheduleExpression": release_expression(event.get("releaseAt")),
+                  "ScheduleExpressionTimezone": "UTC",
+                  "FlexibleTimeWindow": {"Mode": "OFF"},
+                  "ActionAfterCompletion": "DELETE",
+                  "State": "ENABLED",
+                  "Target": {
+                      "Arn": worker_arn,
+                      "RoleArn": target_role_arn,
+                      "Input": json.dumps(
+                          {"scheduledReleaseId": scheduled_release_id},
+                          separators=(",", ":"),
+                      ),
+                      "RetryPolicy": {
+                          "MaximumEventAgeInSeconds": 60,
+                          "MaximumRetryAttempts": 0,
+                      },
+                  },
+              }
+
+          def handler(event, context):
+              action = required_string(event.get("action"), "action").lower()
+
+              if action == "delete":
+                  name = required_string(event.get("scheduleName"), "scheduleName")
+                  if not schedule_name_pattern.fullmatch(name):
+                      raise ValueError("Invalid Content Social Hub schedule name")
+                  try:
+                      scheduler.delete_schedule(
+                          GroupName=group_name,
+                          Name=name,
+                      )
+                  except ClientError as error:
+                      if error.response["Error"]["Code"] != "ResourceNotFoundException":
+                          raise
+                  return {"ok": True, "name": name, "deleted": True}
+
+              if action not in ("create", "update"):
+                  raise ValueError("Unsupported scheduler manager action")
+
+              expected_name = schedule_name(
+                  event.get("platform"),
+                  event.get("platformVersionId"),
+              )
+              requested_name = str(event.get("scheduleName") or "").strip()
+              if requested_name and requested_name != expected_name:
+                  raise ValueError("scheduleName does not match the destination")
+              name = expected_name
+              definition = schedule_definition(event, name)
+
+              if action == "create":
+                  try:
+                      response = scheduler.create_schedule(
+                          **definition,
+                          ClientToken=required_string(
+                              event.get("scheduledReleaseId"),
+                              "scheduledReleaseId",
+                          ),
+                      )
+                      return {
+                          "ok": True,
+                          "name": name,
+                          "arn": response.get("ScheduleArn"),
+                          "created": True,
+                      }
+                  except ClientError as error:
+                      if error.response["Error"]["Code"] != "ConflictException":
+                          raise
+
+              scheduler.update_schedule(**definition)
+              return {
+                  "ok": True,
+                  "name": name,
+                  "arn": None,
+                  "updated": True,
+              }
+
   AmplifySchedulerPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -113,20 +301,11 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: ManageContentSocialHubSchedules
+          - Sid: InvokeSchedulerManagerOnly
             Effect: Allow
             Action:
-              - scheduler:CreateSchedule
-              - scheduler:UpdateSchedule
-              - scheduler:DeleteSchedule
-            Resource: !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-facebook-*
-          - Sid: PassSchedulerTargetRoleOnly
-            Effect: Allow
-            Action: iam:PassRole
-            Resource: !GetAtt SchedulerTargetRole.Arn
-            Condition:
-              StringEquals:
-                iam:PassedToService: scheduler.amazonaws.com
+              - lambda:InvokeFunction
+            Resource: !GetAtt SchedulerManager.Arn
 
 Outputs:
   ScheduleGroupName:
@@ -137,3 +316,7 @@ Outputs:
     Value: !GetAtt SchedulerTargetRole.Arn
   WorkerConfigSecretArn:
     Value: !Ref ScheduledReleaseWorkerConfig
+  SchedulerManagerFunctionName:
+    Value: !Ref SchedulerManager
+  SchedulerManagerFunctionArn:
+    Value: !GetAtt SchedulerManager.Arn
