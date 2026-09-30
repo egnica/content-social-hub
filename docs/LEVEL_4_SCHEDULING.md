@@ -163,8 +163,8 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | L4-02 | `DONE` | Add Schedule / Reschedule / Cancel controls | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-03 | `DONE` | Add EventBridge Scheduler + Lambda infrastructure | Deployed create/wake/reschedule/cancel verification passed September 29, 2026 |
 | L4-04 | `DONE` | Publish scheduled Facebook releases in the background | Deployed GIGnovate text/link, image, video, View Post, processing, and stale-revision no-op verification passed September 29, 2026 |
-| L4-05 | `MANUAL` | Add missed-schedule and controlled retry behavior | Repository implementation and focused 16/16 tests passed; deployed GIGnovate missed-schedule checkpoint still required |
-| L4-06 | `WAITING` | Run final browser-closed GIGnovate scheduling checkpoint | Depends on all prior Level 4 tasks; requires real deployed evidence before Work review |
+| L4-05 | `DONE` | Add missed-schedule and controlled retry behavior | Deployed GIGnovate stale-revision release became Missed Schedule; CloudWatch confirmed `missed / stale_content_revision` September 30, 2026 |
+| L4-06 | `READY` | Run final browser-closed GIGnovate scheduling checkpoint | All prior Level 4 tasks are complete; final browser-closed evidence and Work review remain |
 
 There should normally be only one `READY` task.
 
@@ -667,5 +667,27 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - video status-read uncertainty is not converted into a fresh video submission; the existing provider attempt remains the source of truth
 - Blockers/manual steps: Amplify deployment and the deployed GIGnovate missed-schedule regression checkpoint are required before `L4-05` may become `DONE`.
 - Remaining work: complete only the L4-05 live checkpoint. If it passes, record that evidence, mark `L4-05` `DONE`, and make `L4-06` the sole `READY` task. Do not begin L4-06 in this implementation chat.
+
+### September 30, 2026: L4-05 live checkpoint passed
+
+- Task ID: `L4-05` — Missed Schedules and Controlled Retry.
+- Outcome: deployed live verification passed with `Nicholas_Egner -> GIGnovate`; task is `DONE` and `L4-06` is now the sole `READY` task.
+- Files changed for the completion record: `docs/LEVEL_4_SCHEDULING.md` only.
+- Deployment evidence:
+  - Amplify job `91` for commit `1c7c5bbf1ad68a278b176aa3d213f1e08ca8835d` passed build, deploy, and verify with the L4-05 implementation
+  - Amplify job `92` for the then-current documentation checkpoint also passed build, deploy, and verify
+- Live missed-schedule checkpoint:
+  - a GIGnovate Facebook Revision 1 release was scheduled for `2026-09-30 09:14 America/Chicago` / `2026-09-30T14:14:00Z`
+  - Facebook-specific content was edited and saved before release, advancing the current destination to Revision 2 while the schedule remained bound to Revision 1; the UI showed `Stale schedule` before release
+  - after the scheduled time, the deployed UI changed the durable state to `Missed Schedule` and displayed `Reason: stale_content_revision`
+  - CloudWatch recorded the worker at `2026-09-30T14:14:24Z` with `outcome: missed` and `reason: stale_content_revision`, followed by a normal Lambda completion
+  - the stale-revision path terminated before provider submission, so the edited Revision 2 was not silently posted late under the old Revision 1 schedule
+  - refreshing/reopening the deployed destination showed the persisted terminal missed state rather than reverting to an active stale schedule
+- Automated evidence remains: L4-05 JavaScript syntax checks passed and `tests/scheduled-release-dispatch-logic.test.js` is **16 passed, 0 failed**.
+- Retry/ambiguity safety remains covered by the focused tests: only definitive transient failures with released Level 3 submission keys may enter the two-retry/five-second automatic window; ambiguous provider outcomes remain `review_required` and locked against blind resubmission.
+- Decisions: no SQS or infrastructure change is required for L4-05; the existing single-worker invocation plus Level 3 idempotency remains the retry/duplicate-safety boundary.
+- Live-test status: complete for L4-05.
+- Blockers/manual steps: none remaining for L4-05.
+- Remaining work: run only `L4-06` — the final browser-closed GIGnovate scheduling checkpoint. Do not mark Level 4 complete or update the README implementation status until Work reviews that final evidence.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
