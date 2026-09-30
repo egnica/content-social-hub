@@ -395,16 +395,16 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
   - `node --check app/api/connections/instagram/start/route.js`: **passed**
   - `node --check app/api/connections/instagram/callback/route.js`: **passed**
   - `node --check app/api/connections/instagram/confirm/route.js`: **passed**
-- Full local repository lint/build could not run because the execution container could not resolve `github.com` to clone the repository; the implementation therefore uses the repository connector plus focused local syntax/unit checks. Deployment build status must be verified after the authorized push.
+- Full local repository lint/build could not run because the execution container could not resolve `github.com` to clone the repository; the implementation therefore used the repository connector plus focused local syntax/unit checks.
+- Amplify production job `99` for commit `3bb7ce32952e5b321322b84ef9c2144812a7282a`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**. This provides the full deployed Next.js build verification for the implementation.
 - Live-test status: **not yet completed**. No Instagram account has been saved and no Instagram post has been created by this task.
 - Manual Meta / deployment checkpoint now required:
   1. enable/configure Instagram API with Instagram Login on the Meta app
   2. add the production redirect URI `https://main.d1yfjibipwjpld.amplifyapp.com/api/connections/instagram/callback`
   3. obtain the Instagram App ID and Instagram App Secret without posting either secret in chat or source control
-  4. add `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` to Amplify environment variables; `INSTAGRAM_GRAPH_VERSION=v26.0` is optional because the adapter defaults to v26.0
+  4. add `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` to Amplify environment variables; `INSTAGRAM_GRAPH_VERSION=v26.0` is optional because the adapter defaults to v26.0. Production inspection after deploy confirmed the two required Instagram variables are currently absent while `APP_BASE_URL` and `OAUTH_TOKEN_ENCRYPTION_KEY` are already present.
   5. deploy, then run the L5-01 live/manual verification with `Nicholas_Egner`
 - Remaining work before L5-01 can be marked `DONE`:
-  - confirm the deployment build succeeds
   - complete real Instagram authorization
   - confirm the exact GIGnovate Instagram Professional identity before save
   - verify the saved connection becomes Healthy/publishable
