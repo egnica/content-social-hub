@@ -26,7 +26,7 @@ Levels 0, 1, 2, 3, and 4 are implemented, deployed, and verified in the live app
 
 **Level 4 — Scheduling was reviewed and closed on September 30, 2026.** Client-timezone scheduling, Master defaults and destination overrides, revision-safe schedule records, EventBridge Scheduler, the scheduler-manager Lambda, the background release worker, missed-schedule handling, bounded certainty-aware retries, pre-dispatch cancellation, browser-closed publishing, durable Publish History, exact `View Post`, and duplicate-safe worker re-entry were verified with `Nicholas_Egner -> GIGnovate`.
 
-**Level 5 — Multi-Platform is next, but it has not been opened yet.** The first additional social provider has not been selected, so no Level 5 implementation task is currently `READY`. Work must select the first network with Nicholas and create the Level 5 phase document before implementation begins.
+**Level 5 — Multi-Platform is now active with Instagram as the first additional provider.** The active phase plan is `docs/LEVEL_5_INSTAGRAM.md`. `L5-01` — Instagram Connection / OAuth / Account Health Foundation — is the sole `READY` task. No later Instagram task or second Level 5 provider should begin until that connection foundation is implemented, live-verified, and documented.
 
 Implemented:
 
@@ -206,6 +206,8 @@ The closed Level 2 Meta, Resend, OAuth, token-encryption, and live-verification 
 The closed Level 3 Facebook publisher plan and completion record is `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`.
 
 The closed Level 4 Scheduling plan, implementation log, live evidence, and completion record is `docs/LEVEL_4_SCHEDULING.md`.
+
+The active Level 5 Instagram adapter plan and progress record is `docs/LEVEL_5_INSTAGRAM.md`.
 
 ---
 
@@ -1800,9 +1802,17 @@ Pass condition:
 
 - each network must connect and publish independently before another adapter is treated as complete
 
-**Status: NEXT — planning pending provider selection.**
+**Status: IN PROGRESS — Instagram phase opened September 30, 2026.**
 
-No additional provider has been selected yet. Do not open implementation work by guessing the network. Work should select the first Level 5 provider with Nicholas, create the Level 5 phase document, define its task queue and live-test destination, and mark only the first bounded task `READY`.
+First additional provider: **Instagram Professional accounts**.
+
+Active plan: `docs/LEVEL_5_INSTAGRAM.md`.
+
+Current implementation task: `L5-01` — Instagram Connection / OAuth / Account Health Foundation (`READY`).
+
+The Instagram phase will prove direct connection, Request Connection, platform-specific editing/validation, single-image publishing, carousel publishing, Reels/video publishing, exact `View Post`, durable result/idempotency behavior, and finally integration with the existing Level 4 browser-independent scheduling path before another Level 5 provider is opened.
+
+Do not pull the Level 6 Calendar, Level 7 approvals, or Level 8 analytics/engagement UI into the Instagram adapter merely because Meta exposes those capabilities.
 
 ### Level 6 — Workflow + Calendar
 
@@ -1969,18 +1979,13 @@ The user does not need to write a separate assignment. Start the new Chat with t
 Current delegation state:
 
 - Completed product stage: **Level 4, Scheduling — reviewed and closed September 30, 2026**
-- Next product stage: **Level 5, Multi-Platform — planning pending provider selection**
-- Active phase document: `docs/LEVEL_4_SCHEDULING.md` (**closed completion record; no `READY` tasks**)
-- Verified Level 4 results:
-  - client-timezone Master-default and destination-override scheduling are live
-  - schedule records bind exact destination revisions and preserve publish-content idempotency boundaries
-  - EventBridge Scheduler + scheduler-manager Lambda + scheduled-release worker are deployed and verified
-  - background Facebook text/link, image, and standard-video publishing are verified
-  - stale revisions become Missed Schedule instead of publishing late
-  - browser-closed GIGnovate publishing is verified with durable Succeeded state, one Publish History entry, and exact `View Post`
-  - successful worker re-entry is a duplicate-safe no-op and pre-dispatch cancellation removes the AWS trigger
-- Current implementation task: **none — no task is `READY` until Level 5 is planned**
-- Next Work action: choose the first additional social provider with Nicholas, create the Level 5 phase document, define its live checkpoint and ordered task queue, and mark only its first bounded task `READY`
+- Active product stage: **Level 5, Multi-Platform — Instagram adapter in progress**
+- Active phase document: `docs/LEVEL_5_INSTAGRAM.md`
+- Provider selected: **Instagram Professional accounts**
+- Preferred live-test client: `Nicholas_Egner`; exact GIGnovate Instagram account/handle must be confirmed during the L5-01 live checkpoint rather than guessed
+- Current implementation task: **L5-01 — Instagram Connection / OAuth / Account Health Foundation (`READY`)**
+- Progress must be documented in: `docs/LEVEL_5_INSTAGRAM.md`
+- Later Instagram tasks remain `WAITING` until the preceding checkpoint is supported by evidence
 
 ---
 
@@ -1993,10 +1998,10 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_4_scheduling_closed_level_5_planning_pending
+  status: level_5_instagram_in_progress
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_4_SCHEDULING.md
-  active_phase_document_status: closed
+  active_phase_document: docs/LEVEL_5_INSTAGRAM.md
+  active_phase_document_status: in_progress
 
 current_infrastructure:
   framework: Next.js
@@ -2171,6 +2176,15 @@ social_connections:
       - 0c66f338 Document L2-05 Request Connection verification
       - d4b569c1 Sync revoked connection request status
       - 446374e6 Document L2-06 token lifecycle verification
+  instagram:
+    phase_active: true
+    professional_accounts_only: true
+    planned_login_path: Instagram Login / Business Login for Instagram
+    linked_facebook_page_required_by_plan: false
+    direct_connect_status: L5-01_READY
+    request_connection_status: L5-02_WAITING
+    publishing_status: waiting
+    analytics_ui_status: deferred_level_8
 
 content_and_publishing:
   client_delete_with_saved_content: blocked
@@ -2215,7 +2229,7 @@ media:
   separate_bucket_per_client: false
   cloudfront_v1: false
   lifecycle_auto_delete_v1: false
-  publishing_rule: transfer media server-side to providers; do not make S3 public
+  publishing_rule: transfer media server-side or provide short-lived signed provider access; do not make S3 public
 
 tracking_and_analytics:
   standard_utm_tracking: true
@@ -2251,22 +2265,21 @@ implementation:
     - level_2_first_social_connection
     - level_3_first_publisher
     - level_4_scheduling
-  current_stage: level_5_multi_platform_planning_pending
-  current_task: none
-  current_task_status: no_ready_task
-  level_5_provider_selected: false
-  level_5_phase_document_created: false
-  preferred_level_4_live_test_destination:
-    client: Nicholas_Egner
-    platform: facebook
-    page: GIGnovate
-  level_4_task_order:
-    - L4-01 DONE scheduling data/timezone/revision foundation
-    - L4-02 DONE Schedule/Reschedule/Cancel controls
-    - L4-03 DONE EventBridge Scheduler and Lambda infrastructure
-    - L4-04 DONE background Facebook scheduled publishing
-    - L4-05 DONE missed-schedule and controlled retry behavior
-    - L4-06 DONE browser-closed GIGnovate final checkpoint
+  current_stage: level_5_instagram
+  current_task: L5-01_instagram_connection_oauth_account_health_foundation
+  current_task_status: READY
+  level_5_provider_selected: instagram
+  level_5_phase_document_created: true
+  preferred_level_5_live_test_client: Nicholas_Egner
+  preferred_level_5_live_test_destination: GIGnovate Instagram Professional account exact handle to be confirmed during L5-01
+  level_5_instagram_task_order:
+    - L5-01 READY Instagram connection / OAuth / Account Health foundation
+    - L5-02 WAITING Instagram Request Connection + client-scoped live verification
+    - L5-03 WAITING Instagram destination/platform version/validation/preview
+    - L5-04 WAITING single-image Instagram publishing
+    - L5-05 WAITING Instagram carousel publishing
+    - L5-06 WAITING Instagram Reels/video publishing
+    - L5-07 WAITING Instagram background scheduling + final checkpoint
   first_major_end_to_end_milestone:
     status: completed_level_3
     steps:
@@ -2284,7 +2297,7 @@ implementation:
     level_1: S3 and Amplify permissions
     level_2: first social provider OAuth credentials plus Resend
     level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS not required by the completed implementation
-    level_5: each additional provider added individually
+    level_5_instagram: Meta Instagram Login product/configuration and required redirect/scopes when L5-01 reaches the manual checkpoint
 
 architecture_rules:
   application_source_of_truth: MongoDB
@@ -2313,17 +2326,21 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Work selects the first Level 5 social provider with Nicholas, then creates and opens the Level 5 phase document before implementation.
-  task_source: README.md
-  selection_rule: do_not_guess_the_provider_and_do_not_begin_implementation_without_a_READY_task
-  active_task: none
-  last_closed_phase_document: docs/LEVEL_4_SCHEDULING.md
+  goal: Implement only L5-01, the Instagram connection / OAuth / Account Health foundation, using the active Level 5 Instagram plan.
+  task_source: docs/LEVEL_5_INSTAGRAM.md
+  selection_rule: select_the_first_task_marked_READY
+  active_task: L5-01
+  live_test_client: Nicholas_Egner
+  live_test_destination: GIGnovate Instagram Professional account exact identity to be confirmed during live authorization
   do_not_jump_ahead_to:
-    - a Level 5 provider implementation before the provider is selected and the phase plan is opened
-    - a second new social provider before the first Level 5 adapter passes its independent connect-and-publish checkpoint
+    - Instagram Request Connection before the direct connection/account model is proven
+    - Instagram platform versions or publishing before a real Healthy Instagram connection exists
+    - carousel/Reels before single-image publishing proves the Instagram result/idempotency boundary
+    - Instagram scheduling before direct Instagram publishing modes are proven
+    - a second Level 5 social provider before Instagram passes Work review
     - full visual Calendar before Level 6
     - client approvals before Level 7
-    - analytics before Level 8
+    - analytics/engagement UI before Level 8
     - optional AI
   level_2_checkpoint: passed_and_closed_2026_09_28
   level_3_checkpoint: passed_and_closed_2026_09_29
@@ -2336,18 +2353,20 @@ Read this README in full before beginning implementation. Follow **Project Manag
 
 Levels 2, 3, and 4 are closed. Do not reopen or rebuild the working Facebook connection, publisher, or scheduling architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, destination-specific Facebook editor, private-S3 provider transfer, provider-result persistence, Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing have all been verified with real Pages/posts.
 
-Level 5 is the next product stage, but it is not yet opened for implementation. The first additional social provider has not been selected and no task is `READY`. A Work session should choose the first network with Nicholas, create the Level 5 phase document, define the ordered task queue and live checkpoint, update `active_phase_document`, and mark only the first bounded task `READY`.
+Level 5 Instagram is active. Open `docs/LEVEL_5_INSTAGRAM.md`, select its first `READY` task, and complete only that bounded task. At phase open, that task is `L5-01` — Instagram Connection / OAuth / Account Health Foundation.
 
-An implementation Chat must not guess which provider comes next. If this README still points to the closed Level 4 record and no Level 5 task is `READY`, stop and ask for the Work/provider-selection step rather than changing code.
+The initial Instagram connection plan uses Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection. If live Meta configuration contradicts the planned auth path, stop at that manual checkpoint and document the provider constraint before changing architecture.
 
-Add social networks one at a time. A provider is not considered complete merely because an OAuth screen or UI exists; its relevant checkpoint must connect and publish end to end before expanding to the next provider.
+Preserve private media. Do not make `content-social-hub-media` public for Instagram. Later publishing tasks should use short-lived signed provider access or another documented provider upload path while the database continues storing private S3 references.
 
-Preserve the proven Facebook and scheduling architecture while adding new adapters. New provider work should reuse the existing client scoping, platform-version revision rules, publishing-result/idempotency concepts, private-media boundaries, scheduling records, and background release semantics where they are genuinely provider-independent rather than duplicating them unnecessarily.
+Preserve the Level 3 idempotency/result boundary and Level 4 schedule safety. Instagram should eventually reuse those provider-independent concepts, but do not perform a speculative broad refactor in L5-01. Extract shared seams only where the second adapter demonstrates a concrete need.
 
-Do not build the full visual Calendar before Level 6. Do not invent fake approval state; client approvals remain Level 7. Do not pull analytics forward from Level 8 merely because a new provider exposes metrics during OAuth.
+Do not build the full visual Calendar before Level 6. Do not invent fake approval state; client approvals remain Level 7. Do not pull analytics, follower metrics, comment management, messaging, or reporting forward from Level 8/9 merely because Instagram exposes those APIs.
+
+Add social networks one at a time. Instagram is not considered complete merely because an OAuth screen or UI exists; the phase must connect and publish end to end, then prove scheduled background publishing, before another provider is opened.
 
 Do not introduce new infrastructure solely because it is available. Prefer the architecture already established here unless a concrete implementation problem requires a change.
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected Work action:** choose the first Level 5 provider with Nicholas, open its phase document, and create the first `READY` implementation task. There is currently no authorized Level 5 implementation assignment.
+**Next expected implementation work:** complete `L5-01` from `docs/LEVEL_5_INSTAGRAM.md`, record its evidence there, and stop before L5-02 until the task-status transition is supported by verification.
