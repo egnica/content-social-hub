@@ -161,8 +161,8 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | --- | --- | --- | --- |
 | L4-01 | `DONE` | Build scheduling data/timezone/revision foundation | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-02 | `DONE` | Add Schedule / Reschedule / Cancel controls | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
-| L4-03 | `MANUAL` | Add EventBridge Scheduler + Lambda infrastructure | Implementation and automated/AWS validation complete; deploy/configure the AWS stack and verify real create/reschedule/cancel + Lambda wake-up before marking DONE |
-| L4-04 | `WAITING` | Publish scheduled Facebook releases in the background | Depends on L4-03 worker path and must reuse Level 3 publishing safety |
+| L4-03 | `DONE` | Add EventBridge Scheduler + Lambda infrastructure | Deployed create/wake/reschedule/cancel verification passed September 29, 2026 |
+| L4-04 | `READY` | Publish scheduled Facebook releases in the background | L4-03 background wake-up path is proven; must reuse Level 3 publishing safety |
 | L4-05 | `WAITING` | Add missed-schedule and controlled retry behavior | Depends on real background dispatch path |
 | L4-06 | `WAITING` | Run final browser-closed GIGnovate scheduling checkpoint | Depends on all prior Level 4 tasks; requires real deployed evidence before Work review |
 
@@ -490,5 +490,42 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - current repository lockfile constraints prevent adding a new direct Scheduler SDK dependency without safely regenerating `package-lock.json`; the isolated Scheduler transport therefore uses the AWS credential-provider and SigV4 packages already pinned transitively by the existing AWS SDK dependency tree. This boundary is isolated in `lib/aws-scheduler.js`.
 - Blockers/manual steps: AWS stack deployment, Amplify environment/build-spec configuration, application redeploy, and real Scheduler/Lambda verification are required before `L4-03` can become `DONE`.
 - Remaining work: complete only the L4-03 manual checkpoint. Keep `L4-04`, `L4-05`, and `L4-06` `WAITING` until the infrastructure evidence above is recorded.
+
+### September 29, 2026: L4-03 live checkpoint passed
+
+- Task ID: `L4-03` — EventBridge Scheduler and Lambda Infrastructure.
+- Outcome: deployed infrastructure and application-path verification passed with `Nicholas_Egner -> GIGnovate`; task is `DONE` and `L4-04` is now the sole `READY` task.
+- Files changed during the live correction/checkpoint:
+  - `.env.example`
+  - `infrastructure/level4-scheduling.yaml`
+  - `lib/aws-scheduler-logic.js`
+  - `lib/aws-scheduler.js`
+  - `tests/aws-scheduler-logic.test.js`
+  - `docs/LEVEL_4_SCHEDULING.md`
+- AWS infrastructure deployed in `us-east-2` with CloudFormation stack `content-social-hub-level4-scheduling`; stack reached `CREATE_COMPLETE` and later `UPDATE_COMPLETE` after the manager-Lambda correction.
+- The initial direct Amplify -> EventBridge Scheduler design failed live because Amplify's SSR session policy explicitly denied `iam:PassRole` even though the compute-role policy allowed it. The architecture was corrected to `Amplify -> scheduler-manager Lambda -> EventBridge Scheduler`, with Amplify limited to `lambda:InvokeFunction` on that one manager function. The manager role alone owns scoped Scheduler Create/Update/Delete plus `iam:PassRole` for the one Scheduler target role.
+- The worker Lambda remains an L4-03 placeholder: it validates/logs only `scheduledReleaseId` and contains no Facebook submission logic.
+- Live verification completed:
+  - Amplify deployment job `81` succeeded after the manager-Lambda correction, and job `82` succeeded after the expired one-time reschedule fallback fix
+  - scheduling Facebook Revision 6 for `2026-09-29 20:56 America/Chicago` created exactly one AWS schedule named `csh-facebook-6abc356c9b523f147ecbf422`
+  - the AWS schedule resolved to `at(2026-09-30T01:56:00)`, targeted `content-social-hub-scheduled-release-worker`, carried only `{"scheduledReleaseId":"6abc6bc04703f32fd49bf19b"}`, used zero automatic retries, and auto-deleted after execution
+  - the placeholder worker was invoked at `2026-09-30T01:56:30Z` and logged the exact scheduled-release ID; no Facebook post or Publish History entry was created, as required for L4-03
+  - because one-time schedules auto-delete after firing, rescheduling the past application record initially produced `ResourceNotFoundException`; the app transport was corrected so only that specific missing-schedule case recreates the same stable schedule name
+  - rescheduling Revision 6 to `2026-09-29 21:20 America/Chicago` then created exactly one schedule with the same stable AWS name, updated expression `at(2026-09-30T02:20:00)`, and replacement Mongo schedule ID `6abc7081e14044c0e1f6ea65`
+  - cancelling the 9:20 PM release returned the application state to `Cancelled` and AWS `ListSchedules` confirmed **0 remaining schedules**
+- Automated and infrastructure checks:
+  - focused Scheduler/manager suite reached **7 tests passed, 0 failed** after the reschedule fallback coverage was added
+  - changed JavaScript syntax checks passed
+  - CloudFormation `ValidateTemplate` passed for the corrected manager-Lambda template
+  - the scheduler-manager direct create -> update -> delete infrastructure test passed with one stable schedule and zero remaining schedules after delete
+  - Amplify job `82` passed build, deploy, and verify for commit `6cf763b0d478ceab5be723ca3130d61256902826`
+- Decisions:
+  - the scheduler-manager Lambda is now the permanent least-privilege boundary for application schedule management because Amplify SSR session credentials cannot perform the required `iam:PassRole`
+  - EventBridge still directly wakes the scheduled-release worker at release time; the manager is only the control-plane path for create/update/delete
+  - a missing AWS schedule during deliberate reschedule is recoverable by recreating the same stable schedule name; other manager/AWS errors still fail and preserve the compensating MongoDB rollback behavior
+  - no Facebook publishing behavior was added in L4-03; provider submission remains entirely owned by `L4-04`
+- Live-test status: complete for L4-03.
+- Blockers/manual steps: none remaining for L4-03.
+- Remaining work: implement only `L4-04` — Background Facebook Scheduled Publishing. Keep `L4-05` and `L4-06` `WAITING`.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
