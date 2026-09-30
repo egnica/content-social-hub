@@ -162,8 +162,8 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | L4-01 | `DONE` | Build scheduling data/timezone/revision foundation | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-02 | `DONE` | Add Schedule / Reschedule / Cancel controls | Automated checks plus deployed Nicholas_Egner -> GIGnovate live verification passed September 29, 2026 |
 | L4-03 | `DONE` | Add EventBridge Scheduler + Lambda infrastructure | Deployed create/wake/reschedule/cancel verification passed September 29, 2026 |
-| L4-04 | `MANUAL` | Publish scheduled Facebook releases in the background | Repository implementation and automated checks complete; AWS/Amplify configuration and deployed Facebook verification remain |
-| L4-05 | `WAITING` | Add missed-schedule and controlled retry behavior | Depends on real background dispatch path |
+| L4-04 | `DONE` | Publish scheduled Facebook releases in the background | Deployed GIGnovate text/link, image, video, View Post, processing, and stale-revision no-op verification passed September 29, 2026 |
+| L4-05 | `READY` | Add missed-schedule and controlled retry behavior | Real background dispatch path is now proven and duplicate-safe |
 | L4-06 | `WAITING` | Run final browser-closed GIGnovate scheduling checkpoint | Depends on all prior Level 4 tasks; requires real deployed evidence before Work review |
 
 There should normally be only one `READY` task.
@@ -217,7 +217,7 @@ Planned acceptance boundary:
 - clear display of client timezone and resolved release time
 - final confirmation before scheduling
 - durable schedule state visible after refresh/reopen
-- reschedule safely replaces/supersedes the current active time
+- reschedule safely replaces/supersede the current active time
 - cancel works only before dispatch begins
 - editing publishable content after scheduling marks the schedule stale and prevents background release until deliberately rescheduled
 - already-published revisions cannot be scheduled again
@@ -417,7 +417,7 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - a previously published Facebook revision displayed the already-published blocking message and disabled scheduling
   - Publish History remained empty for the scheduling-only test item; no Facebook post was created by Schedule, Reschedule, stale-revision handling, or Cancel
 - Automated evidence remains: changed/new L4-02 JavaScript syntax checks passed and the focused scheduling suite is **9 passed, 0 failed**.
-- Files changed for the completion record: `docs/LEVEL_4_SCHEDULING.md` only.
+- Files changed for this completion record: `docs/LEVEL_4_SCHEDULING.md` only.
 - Decisions:
   - the revision-binding safety model is validated: publish-content edits require a deliberate reschedule rather than silently retargeting an existing schedule
   - the current scheduling UI is functionally acceptable for the working version, but it is visually more complex than desired; defer simplification/polish until the end-to-end scheduling path is proven so UI changes do not interrupt Level 4 infrastructure work
@@ -586,5 +586,42 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
   - generic retry/missed classification is not being pulled forward from L4-05
 - Blockers/manual steps: AWS secret configuration, Amplify environment/build-spec update, CloudFormation deployment, Amplify deployment, and real GIGnovate background publishing verification are still required.
 - Remaining work: complete only the L4-04 manual checkpoint and record live evidence here. Keep `L4-05` and `L4-06` `WAITING` until that evidence supports the status transition.
+
+### September 29, 2026: L4-04 live checkpoint passed
+
+- Task ID: `L4-04` — Background Facebook Scheduled Publishing.
+- Outcome: deployed AWS/Amplify configuration and real `Nicholas_Egner -> GIGnovate` verification passed; task is `DONE` and `L4-05` is now the sole `READY` task.
+- Files changed for this completion record: `docs/LEVEL_4_SCHEDULING.md` only.
+- Deployment/configuration evidence:
+  - the existing `content-social-hub/scheduled-release-worker` secret was populated with the production dispatch URL and raw bearer token; no secret value was committed or exposed in the repository
+  - Amplify received only `SCHEDULED_RELEASE_DISPATCH_TOKEN_SHA256`, and deployment job `89` succeeded for the L4-04 application commit
+  - CloudFormation stack `content-social-hub-level4-scheduling` updated successfully to the L4-04 worker; deployed Lambda configuration is Node.js 24, timeout `900`, memory `512`
+- Live text/link checkpoint:
+  - Facebook Revision 6 was scheduled for `2026-09-29 22:28 America/Chicago` / `2026-09-30T03:28:00Z`
+  - EventBridge invoked the worker once; CloudWatch recorded zero Lambda errors and the worker logged `outcome: succeeded`, `reason: published` at `03:28:46Z`
+  - after refresh, Content Social Hub showed `Succeeded`, durable Publish History, and `View Post`; the link opened the exact GIGnovate Facebook post
+- Live image checkpoint:
+  - a clean Revision 1 image destination was scheduled for `2026-09-29 22:36 America/Chicago` / `2026-09-30T03:36:00Z`
+  - EventBridge invoked the worker once with zero Lambda errors; the worker logged `outcome: succeeded`, `reason: published` at `03:36:22Z`
+  - Publish History recorded `Succeeded Revision 1 image`, and `View Post` opened the exact Facebook image post, proving the private-S3 image background path
+- Live standard-video checkpoint:
+  - a clean Revision 1 video destination was scheduled for `2026-09-29 22:43 America/Chicago` / `2026-09-30T03:43:00Z`
+  - the worker submitted exactly one recorded video attempt, then logged `processing / video_processing` at `03:43:27Z`, `03:43:33Z`, and `03:43:38Z` without resubmitting
+  - the same invocation logged `succeeded / published` at `03:43:44Z`; Lambda completed with zero errors in about 25 seconds
+  - after refresh, Content Social Hub showed `Facebook video is live on GIGnovate`, `Succeeded Revision 1 video`, and `View Post` opened the exact live Facebook video
+- Live stale-revision safety checkpoint:
+  - Facebook Revision 3 was scheduled for `2026-09-29 22:52 America/Chicago` / `2026-09-30T03:52:00Z`
+  - Facebook-specific content was edited and saved before release, advancing the current destination to Revision 4 while leaving the schedule bound to Revision 3; the UI displayed `Stale schedule`
+  - at `03:52:09Z` the worker woke and logged `outcome: noop`, `reason: stale_content_revision`
+  - Content Social Hub still showed no Facebook Publish History attempt for that item, and EventBridge auto-deleted the one-time schedule; no remote post was submitted
+- Additional no-op/duplicate-safety evidence:
+  - focused L4-04 tests cover cancelled/superseded and already-published no-op behavior
+  - the prior deployed L4-02/L4-03 checkpoints already proved cancellation removes the AWS schedule before dispatch and already-published revisions cannot be scheduled again through the application
+  - deterministic Level 3 publish-attempt idempotency remained the provider-submission duplicate barrier throughout all successful background tests
+- Automated evidence remains: changed/new L4-04 JavaScript syntax checks passed, CloudFormation worker sanity checks passed, and `tests/scheduled-release-dispatch-logic.test.js` remains **8 passed, 0 failed**.
+- Live-test status: complete for L4-04. Text/link, private-S3 image, private-S3 standard video, exact `View Post`, video processing without duplicate submission, and stale-revision no-op behavior are all proven in the deployed path.
+- Decisions: the L4-04 architecture remains unchanged; Lambda is only the wake/execution wrapper and the existing Level 3 publisher remains the single Facebook provider implementation. Missed-schedule classification and controlled retry remain explicitly owned by L4-05.
+- Blockers/manual steps: none remaining for L4-04.
+- Remaining work: implement only `L4-05` — Missed Schedules and Controlled Retry. Keep `L4-06` `WAITING` until L4-05 is complete.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
