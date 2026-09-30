@@ -3,6 +3,7 @@ import {
   resetFacebookPlatformVersionFromMaster,
   saveFacebookPlatformVersion,
 } from "@/lib/platform-versions";
+import { assertDestinationNotDispatching } from "@/lib/scheduled-release-guard";
 import { requireApiSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export async function PATCH(request, { params }) {
 
   try {
     const { id } = await params;
+    await assertDestinationNotDispatching(id);
     const body = await readJson(request);
 
     if (body?.action === "reset_from_master") {
