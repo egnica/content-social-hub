@@ -164,7 +164,7 @@ Level 4 may show schedule controls and destination scheduling state inside Maste
 | L4-03 | `DONE` | Add EventBridge Scheduler + Lambda infrastructure | Deployed create/wake/reschedule/cancel verification passed September 29, 2026 |
 | L4-04 | `DONE` | Publish scheduled Facebook releases in the background | Deployed GIGnovate text/link, image, video, View Post, processing, and stale-revision no-op verification passed September 29, 2026 |
 | L4-05 | `DONE` | Add missed-schedule and controlled retry behavior | Deployed GIGnovate stale-revision release became Missed Schedule; CloudWatch confirmed `missed / stale_content_revision` September 30, 2026 |
-| L4-06 | `READY` | Run final browser-closed GIGnovate scheduling checkpoint | All prior Level 4 tasks are complete; final browser-closed evidence and Work review remain |
+| L4-06 | `DONE` | Run final browser-closed GIGnovate scheduling checkpoint | Browser-closed GIGnovate publish, exact View Post, worker re-entry no-op, and pre-dispatch cancel verification passed September 30, 2026; Work review remains |
 
 There should normally be only one `READY` task.
 
@@ -689,5 +689,49 @@ When this task is complete, Work reviews the evidence. Only Work may mark Level 
 - Live-test status: complete for L4-05.
 - Blockers/manual steps: none remaining for L4-05.
 - Remaining work: run only `L4-06` — the final browser-closed GIGnovate scheduling checkpoint. Do not mark Level 4 complete or update the README implementation status until Work reviews that final evidence.
+
+### September 30, 2026: L4-06 final browser-closed checkpoint passed
+
+- Task ID: `L4-06` — Final Level 4 Live Checkpoint.
+- Outcome: the deployed `Nicholas_Egner -> GIGnovate` browser-closed scheduling checkpoint passed; `L4-06` is `DONE`. All Level 4 implementation tasks now have recorded completion evidence, but Level 4 remains **IN PROGRESS** until Work reviews this evidence and updates the README.
+- Files changed: `docs/LEVEL_4_SCHEDULING.md` only. No application code or infrastructure definition changed for L4-06.
+- Preflight evidence:
+  - CloudFormation stack `content-social-hub-level4-scheduling` was `UPDATE_COMPLETE`
+  - the schedule group initially had zero active schedules
+  - Amplify job `93` for commit `f4f9c0850f593b7fe637790d28d73f453ef274d2` passed build, deploy, and verify before the checkpoint
+- Browser-closed live publish:
+  - a clean unpublished GIGnovate Facebook Revision 1 was scheduled for `2026-09-30 15:49 America/Chicago` / `2026-09-30T20:49:00Z` using a destination-specific release-time override
+  - the deployed UI showed the durable `Scheduled` state before the browser was closed
+  - AWS contained exactly one enabled schedule, `csh-facebook-6abd74829b523f147ecd227a`, targeting `content-social-hub-scheduled-release-worker` at `at(2026-09-30T20:49:00)` with input containing only scheduled-release ID `6abd74937481509264c3603f`, zero EventBridge retry attempts, and `ActionAfterCompletion: DELETE`
+  - Nicholas closed the Content Social Hub browser before the release time and reopened it only after the scheduled time
+  - CloudWatch recorded exactly one scheduled worker invocation in the release minute and zero Lambda errors
+  - the worker logged `outcome: succeeded` and `reason: published` at `2026-09-30T20:49:37Z`
+  - the one-time EventBridge schedule auto-deleted after execution; `ListSchedules` returned zero remaining schedules
+  - after reopening, Content Social Hub showed `Succeeded`, `Published`, and exactly one Publish History entry for Revision 1 at 3:49:37 PM
+  - Nicholas confirmed `View Post` opened the exact GIGnovate Facebook post produced by this scheduled release
+- Duplicate-safety / worker re-entry verification:
+  - with explicit approval, the same scheduled-release worker was invoked once more using already-succeeded scheduled-release ID `6abd74937481509264c3603f`
+  - the worker returned `outcome: noop` and `reason: succeeded`
+  - the durable release remained `succeeded`, `active: false`, `retryCount: 0`, and retained the same publish-attempt ID and Facebook provider post ID/URL
+  - the deployed UI still showed only one Publish History entry, and no EventBridge schedule was recreated
+- Safe pre-dispatch cancellation verification:
+  - a separate clean unpublished GIGnovate Facebook Revision 1 was scheduled for `2026-09-30 16:15 America/Chicago` / `2026-09-30T21:15:00Z` using the Master default
+  - it was cancelled immediately before dispatch
+  - the deployed UI showed durable `Cancelled` state, `Facebook release schedule cancelled.`, and no Facebook Publish History attempts
+  - AWS `ListSchedules` confirmed zero remaining schedules after cancellation
+  - CloudWatch showed no scheduled worker invocation for the cancelled release; the only nearby invocation was the deliberate duplicate-safety re-entry test above
+- Checks and tests run for L4-06:
+  - read-only CloudFormation stack status check — passed (`UPDATE_COMPLETE`)
+  - EventBridge `ListSchedules` / `GetSchedule` verification before release — passed; exactly one expected schedule was present
+  - CloudWatch Logs verification after release — passed; one normal invocation logged `succeeded / published`
+  - CloudWatch Lambda metrics for the release minute — **1 invocation, 0 errors**
+  - deliberate Lambda worker re-entry against the succeeded release — passed with `noop / succeeded`
+  - EventBridge `ListSchedules` after successful one-time execution — passed; **0 schedules** remained
+  - EventBridge `ListSchedules` after safe cancellation — passed; **0 schedules** remained
+  - no application code changed in L4-06, so no new syntax/lint/unit suite was required; the previously recorded L4-05 focused suite remains **16 passed, 0 failed**
+- Live-test status: complete. All ten required L4-06 live-verification items are supported by deployed application, AWS, Facebook, and user-confirmed `View Post` evidence.
+- Decisions: no architecture or retry-policy changes were needed. The proven EventBridge Scheduler -> Lambda -> existing application publisher path remains the Level 4 implementation, with MongoDB as source of truth and Level 3 idempotency as the provider-submission duplicate barrier.
+- Blockers/manual steps: no L4-06 blocker remains. The only remaining checkpoint is Work review of the complete Level 4 evidence.
+- Remaining work: Work should review Level 4, decide whether its phase pass condition is satisfied, update the README implementation status if accepted, and open the next phase. Do not mark Level 4 complete or begin Level 5 from this implementation record alone.
 
 Future implementation agents must append a dated entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare Level 4 complete without Work review.
