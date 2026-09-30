@@ -180,7 +180,7 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
-| L5-01 | `READY` | Build Instagram connection / OAuth / Account Health foundation | Level 4 is closed; Instagram is selected as the first Level 5 provider |
+| L5-01 | `MANUAL` | Build Instagram connection / OAuth / Account Health foundation | Code implemented; waiting on Meta Instagram Login configuration, deployment env, and live Nicholas_Egner connection proof |
 | L5-02 | `WAITING` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Depends on L5-01 direct connection/account model |
 | L5-03 | `WAITING` | Add Instagram destination selection, platform version, validation, and preview | Requires a real Healthy Instagram connection |
 | L5-04 | `WAITING` | Publish single-image Instagram posts with durable results and duplicate protection | Requires L5-03 editor/validation foundation |
@@ -352,5 +352,64 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Preserved the private-S3 rule; signed provider access or provider upload is allowed, public bucket access is not.
 - Marked only `L5-01` as `READY`.
 - No Instagram OAuth credentials, Meta product configuration, provider posts, or application code were changed while opening this plan.
+
+### September 30, 2026: L5-01 implementation checkpoint
+
+- Task: `L5-01` — Instagram Connection / OAuth / Account Health Foundation.
+- Outcome: application implementation completed to the external Meta configuration checkpoint; task moved to `MANUAL` pending deployed OAuth configuration and live account verification.
+- Provider verification before implementation:
+  - reviewed Meta's maintained Instagram API Postman workspace and current Business Login guidance
+  - confirmed Instagram Login supports Professional accounts without requiring a linked Facebook Page
+  - confirmed the current scope names used by this adapter are `instagram_business_basic` and `instagram_business_content_publish`
+  - confirmed the Instagram Login path uses Instagram authorization, `api.instagram.com` code exchange, and `graph.instagram.com` for long-lived token/profile access
+- Files changed:
+  - `.env.example`
+  - `app/(app)/connections/page.js`
+  - `app/api/connections/instagram/start/route.js`
+  - `app/api/connections/instagram/callback/route.js`
+  - `app/api/connections/instagram/confirm/route.js`
+  - `app/connect/instagram/confirm/page.js`
+  - `app/connect/instagram/error/page.js`
+  - `components/connections-manager.js`
+  - `components/instagram-account-confirm.js`
+  - `lib/connections.js`
+  - `lib/instagram.js`
+  - `lib/instagram-connection-logic.js`
+  - `tests/instagram-connection-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions inside L5-01:
+  - added a separate `lib/instagram.js` provider adapter; no Instagram provider calls were placed inside `lib/facebook.js`
+  - direct Connect only; the Facebook-only Request Connection behavior is intentionally unchanged for L5-02
+  - Instagram OAuth state is client-scoped, one-time, expiring, and tagged `platform: "instagram"`
+  - OAuth returns to a private account-confirmation step that displays the exact username/account ID before persistence
+  - the temporary access token is encrypted immediately in the server-side selection flow and is never returned to browser JSON or logged
+  - final persistence uses the existing client + platform + provider-account unique identity with `platform: "instagram"`
+  - saved Instagram metadata includes username/account type/profile image, encrypted long-lived token, token expiration when provided, granted scopes, capability, health state, and health timestamps
+  - shared Account Health dispatch now selects Facebook or Instagram verification by the saved connection platform; Facebook behavior remains on the existing provider path
+  - Instagram health requires a Business/Creator account plus both required granted scopes; missing permission/account type blocks `canPublish`
+- Checks run in the available execution environment:
+  - `node --experimental-default-type=module --test tests/instagram-connection-logic.test.js` against the new focused test file: **7 passed, 0 failed**
+  - `node --check lib/instagram.js`: **passed**
+  - `node --check lib/instagram-connection-logic.js`: **passed**
+  - `node --check lib/connections.js`: **passed**
+  - `node --check app/api/connections/instagram/start/route.js`: **passed**
+  - `node --check app/api/connections/instagram/callback/route.js`: **passed**
+  - `node --check app/api/connections/instagram/confirm/route.js`: **passed**
+- Full local repository lint/build could not run because the execution container could not resolve `github.com` to clone the repository; the implementation therefore uses the repository connector plus focused local syntax/unit checks. Deployment build status must be verified after the authorized push.
+- Live-test status: **not yet completed**. No Instagram account has been saved and no Instagram post has been created by this task.
+- Manual Meta / deployment checkpoint now required:
+  1. enable/configure Instagram API with Instagram Login on the Meta app
+  2. add the production redirect URI `https://main.d1yfjibipwjpld.amplifyapp.com/api/connections/instagram/callback`
+  3. obtain the Instagram App ID and Instagram App Secret without posting either secret in chat or source control
+  4. add `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` to Amplify environment variables; `INSTAGRAM_GRAPH_VERSION=v26.0` is optional because the adapter defaults to v26.0
+  5. deploy, then run the L5-01 live/manual verification with `Nicholas_Egner`
+- Remaining work before L5-01 can be marked `DONE`:
+  - confirm the deployment build succeeds
+  - complete real Instagram authorization
+  - confirm the exact GIGnovate Instagram Professional identity before save
+  - verify the saved connection becomes Healthy/publishable
+  - verify cross-client isolation and persistence after reopening
+  - confirm L5-01 created no Instagram post
+- `L5-02` remains `WAITING`; do not start it until this direct-connect checkpoint is supported by live evidence.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.

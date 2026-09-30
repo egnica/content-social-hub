@@ -15,6 +15,12 @@ function labelHealth(status) {
   }[status] || "Not checked";
 }
 
+function labelConnectionPlatform(connection) {
+  return connection.platform === "instagram"
+    ? "Instagram Professional"
+    : "Facebook Page";
+}
+
 function formatDate(value) {
   if (!value) return "Not yet";
 
@@ -164,6 +170,12 @@ export default function ConnectionsManager({
               <strong>{configuration.missingFacebook.join(", ")}</strong>
             </div>
           ) : null}
+          {!configuration.instagramReady ? (
+            <div className={styles.notice}>
+              Instagram setup is waiting for these Amplify variables:{" "}
+              <strong>{configuration.missingInstagram.join(", ")}</strong>
+            </div>
+          ) : null}
 
           <article className={styles.connectionProviderCard}>
             <div className={styles.providerMark}>f</div>
@@ -203,10 +215,35 @@ export default function ConnectionsManager({
             </div>
           </article>
 
+          <article className={styles.connectionProviderCard}>
+            <div className={styles.providerMark}>ig</div>
+            <div className={styles.connectionProviderBody}>
+              <strong>Instagram Professional</strong>
+              <p>
+                Connect a Business or Creator account directly with Instagram.
+                Client email connection is the next Level 5 checkpoint.
+              </p>
+            </div>
+            <div className={styles.connectionActions}>
+              <button
+                className={styles.button}
+                type="button"
+                disabled={!configuration.instagramReady}
+                onClick={() =>
+                  window.location.assign(
+                    `/api/connections/instagram/start?clientId=${selectedClient._id}`,
+                  )
+                }
+              >
+                Connect
+              </button>
+            </div>
+          </article>
+
           {!selectedClient.approvalReportEmail ? (
             <p className={styles.fieldHint}>
               Add an Approval / Report Email to this client before requesting
-              access by email.
+              Facebook access by email.
             </p>
           ) : null}
           {!configuration.emailReady ? (
@@ -247,7 +284,7 @@ export default function ConnectionsManager({
                   </div>
                   <div className={styles.connectionIdentity}>
                     <strong>{connection.accountName}</strong>
-                    <span>Facebook Page</span>
+                    <span>{labelConnectionPlatform(connection)}</span>
                     {connection.healthMessage ? (
                       <p>{connection.healthMessage}</p>
                     ) : null}
@@ -279,7 +316,7 @@ export default function ConnectionsManager({
             </div>
           ) : (
             <div className={styles.notice}>
-              No Facebook Pages are connected to this client yet.
+              No social accounts are connected to this client yet.
             </div>
           )}
         </div>
@@ -290,7 +327,7 @@ export default function ConnectionsManager({
           <div>
             <h2>Connection requests</h2>
             <p className={styles.statNote}>
-              New requests revoke any older unfinished link for this client.
+              New Facebook requests revoke any older unfinished link for this client.
             </p>
           </div>
         </div>
