@@ -19,9 +19,14 @@ function wallClockLabel(value) {
 function scheduleStateLabel(code) {
   const labels = {
     active_schedule: "Scheduled",
+    dispatching: "Publishing",
     stale_content_revision: "Stale schedule",
     already_published_revision: "Already published",
     past_release_time: "Scheduled time passed",
+    missed_schedule: "Missed Schedule",
+    failed: "Publish failed",
+    review_required: "Review required",
+    succeeded: "Succeeded",
     cancelled: "Cancelled",
     superseded: "Superseded",
     ready: "Ready to schedule",
@@ -50,6 +55,17 @@ function releaseChoiceError(resolved, version) {
   };
 
   return messages[evaluation.code] || "This release time cannot be scheduled.";
+}
+
+function scheduleNeedsAttention(code) {
+  return [
+    "stale_content_revision",
+    "already_published_revision",
+    "past_release_time",
+    "missed_schedule",
+    "failed",
+    "review_required",
+  ].includes(code);
 }
 
 export default function FacebookScheduleControls({
@@ -180,7 +196,7 @@ export default function FacebookScheduleControls({
 
     lines.push(
       "",
-      "This saves the durable schedule in Content Social Hub and creates or updates its AWS timed trigger. It does not publish now; L4-03 only wakes the placeholder worker.",
+      "This saves the durable schedule in Content Social Hub and creates or updates its AWS timed trigger. At release time the background worker will revalidate the exact saved revision before publishing.",
     );
 
     return lines.join("\n");
@@ -208,9 +224,11 @@ export default function FacebookScheduleControls({
     const action = activeSchedule ? "reschedule" : "schedule";
     if (!canSubmit) {
       setError(
-        activeSchedule
-          ? "This scheduled release cannot be changed in its current state."
-          : "This Facebook revision cannot be scheduled in its current state.",
+        scheduleState?.stateCode === "review_required"
+          ? "This Facebook revision is locked for review because the provider result is uncertain. Do not resubmit it until the recorded publish attempt is reviewed."
+          : activeSchedule
+            ? "This scheduled release cannot be changed in its current state."
+            : "This Facebook revision cannot be scheduled in its current state.",
       );
       return;
     }
@@ -305,8 +323,8 @@ export default function FacebookScheduleControls({
         <h2>Schedule</h2>
         <p>
           Save a destination-level release time for this exact Facebook revision.
-          The client timezone is authoritative; AWS can now wake the Level 4 worker
-          at the resolved UTC instant.
+          The client timezone is authoritative; AWS wakes the background worker at
+          the resolved UTC instant.
         </p>
       </div>
 
@@ -319,11 +337,9 @@ export default function FacebookScheduleControls({
       {currentSchedule ? (
         <div
           className={
-            scheduleState?.stale ||
-            scheduleState?.stateCode === "already_published_revision" ||
-            scheduleState?.stateCode === "past_release_time"
+            scheduleNeedsAttention(scheduleState?.stateCode)
               ? styles.errorNotice
-              : currentSchedule.active
+              : scheduleState?.stateCode === "succeeded" || currentSchedule.active
                 ? styles.successNotice
                 : styles.notice
           }
@@ -340,6 +356,11 @@ export default function FacebookScheduleControls({
               : "Master default"}{" "}
             · UTC {currentSchedule.releaseAt}
           </div>
+          {Number(currentSchedule.retryCount || 0) > 0 ? (
+            <div style={{ marginTop: 4, fontSize: 12 }}>
+              Automatic technical retries used: {currentSchedule.retryCount}
+            </div>
+          ) : null}
           {scheduleState?.stale ? (
             <div style={{ marginTop: 7 }}>
               The Facebook content is now revision {version.revision}. This older
@@ -351,6 +372,36 @@ export default function FacebookScheduleControls({
             <div style={{ marginTop: 7 }}>
               This release time has passed. Reschedule or cancel it; Content Social
               Hub does not publish late automatically.
+            </div>
+          ) : null}
+          {scheduleState?.stateCode === "missed_schedule" ? (
+            <div style={{ marginTop: 7 }}>
+              The scheduled release was blocked at publish time and was not posted.
+              Fix the issue, then deliberately schedule the current revision again.
+            </div>
+          ) : null}
+          {scheduleState?.stateCode === "failed" ? (
+            <div style={{ marginTop: 7 }}>
+              Facebook returned a definitive failure. The schedule stopped instead of
+              posting late. After fixing the issue, this revision can be deliberately
+              scheduled again under the existing duplicate-safety rules.
+            </div>
+          ) : null}
+          {scheduleState?.stateCode === "review_required" ? (
+            <div style={{ marginTop: 7 }}>
+              Facebook may have received this publish request, but the final result is
+              uncertain. Automatic retry is locked to prevent a duplicate post. Review
+              the recorded publish attempt before taking further action.
+            </div>
+          ) : null}
+          {currentSchedule.missedReason ? (
+            <div style={{ marginTop: 6, fontSize: 12 }}>
+              Reason: {currentSchedule.missedReason}
+            </div>
+          ) : null}
+          {currentSchedule.failure?.message ? (
+            <div style={{ marginTop: 6, fontSize: 12 }}>
+              Last error: {currentSchedule.failure.message}
             </div>
           ) : null}
         </div>
