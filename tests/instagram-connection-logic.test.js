@@ -38,6 +38,24 @@ test("Instagram profile identity safely falls back to id when user_id is unavail
   );
 });
 
+test("Instagram persisted Professional identity does not depend on Meta's OAuth subject identifier", () => {
+  const oauthSubjectId = "oauth-subject-123";
+  const professionalAccountId = getInstagramProviderAccountId({
+    id: "graph-scoped-456",
+    user_id: "17841400123456789",
+  });
+
+  assert.notEqual(oauthSubjectId, professionalAccountId);
+  assert.deepEqual(
+    buildInstagramConnectionIdentity("client-a", professionalAccountId),
+    {
+      clientId: "client-a",
+      platform: "instagram",
+      providerAccountId: "17841400123456789",
+    },
+  );
+});
+
 test("Instagram connection identity stays isolated by client, platform, and provider account", () => {
   assert.deepEqual(buildInstagramConnectionIdentity("client-a", "1789"), {
     clientId: "client-a",

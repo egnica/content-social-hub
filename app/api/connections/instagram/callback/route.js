@@ -49,10 +49,9 @@ export async function GET(request) {
     const token = await exchangeInstagramCode(code);
     const profile = await getInstagramProfile(token.accessToken);
 
-    if (profile.providerAccountId !== token.providerAccountId) {
-      return errorRedirect("identity");
-    }
-
+    // The one-time OAuth state binds this authorization to the selected client.
+    // Persist Instagram's authenticated Professional-account identity from /me;
+    // do not require Meta's OAuth subject ID to equal that Professional account ID.
     const confirmationToken = await createInstagramSelectionFlow({
       clientId: state.clientId,
       mode: state.mode,
