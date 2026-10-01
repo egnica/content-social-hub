@@ -184,8 +184,8 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | L5-02 | `DONE` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Real emailed `@nicholasegner` request completed under `Nicholas_Egner`; connection persisted Healthy in production |
 | L5-03 | `DONE` | Add Instagram destination selection, platform version, validation, and preview | Real `@nicholasegner` destination/version inheritance, customization preservation, reset behavior, validation, and carousel preview verified in production |
 | L5-04 | `DONE` | Publish single-image Instagram posts with durable results and duplicate protection | Real `@nicholasegner` single-image post published from revision 9; Succeeded history, Published lock, and exact View Post verified in production |
-| L5-05 | `READY` | Add Instagram carousel publishing | L5-04 live single-image publisher/result model is proven |
-| L5-06 | `WAITING` | Add Instagram Reels/video publishing and processing-state handling | Requires proven Instagram publish/idempotency boundary |
+| L5-05 | `DONE` | Add Instagram carousel publishing | Real `@nicholasegner` multi-image carousel published; Succeeded history and exact live `View Post` verified in production |
+| L5-06 | `READY` | Add Instagram Reels/video publishing and processing-state handling | L5-05 live carousel publisher/result model is proven |
 | L5-07 | `WAITING` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Requires all direct Instagram publishing modes to be proven |
 
 There should normally be only one `READY` task.
@@ -694,5 +694,46 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Blockers/manual actions: none remain for L5-04.
 - Remaining work: `L5-05` is now the sole `READY` task. `L5-06` and `L5-07` remain `WAITING`.
 - Status transition: `L5-04` -> `DONE`; `L5-05` -> `READY`.
+
+### October 1, 2026: L5-05 carousel publishing implemented and live-verified
+
+- Task: `L5-05` — Instagram Carousel Publishing.
+- Outcome: `DONE`. The deployed carousel path was verified with a real multi-image post on `@nicholasegner` and the saved Content Social Hub attempt reached `Succeeded`.
+- Files changed across implementation, UI cleanup, live safeguard, and closure:
+  - `app/api/platform-versions/[id]/publish/route.js`
+  - `components/instagram-platform-editor.js`
+  - `components/instagram-publish-controls.js`
+  - `lib/instagram-carousel-publish-logic.js`
+  - `lib/instagram-carousel-publish-state.js`
+  - `lib/instagram-carousel-publishing.js`
+  - `lib/instagram-publisher.js`
+  - `tests/instagram-carousel-publish-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions:
+  - preserved the saved Instagram platform-version `mediaIds` order when resolving carousel children and presenting the final confirmation
+  - added 2–10 item carousel validation with JPEG image constraints plus supported MP4/MOV video-child constraints; standalone Reel/video publishing remains deferred to `L5-06`
+  - private S3 remains private; each child receives a short-lived provider-accessible media URL without persisting the signed URL
+  - carousel publishing creates ordered child containers, waits/checks their readiness, creates one `CAROUSEL` parent container, and publishes exactly that recorded parent
+  - child and parent preparation states are persisted so `Check Instagram Status` resumes the same attempt instead of creating replacement children or a second parent
+  - the final parent publish uses an atomic claim so overlapping status checks cannot both invoke Instagram `media_publish`
+  - preparation failures before the final parent publish remain retry-safe; once final parent publish acceptance becomes uncertain, the attempt is locked rather than blindly retried
+  - successful carousel results use the same exact provider media ID/permalink, Publish History, Published lock, and `View Post` behavior proven in L5-04
+  - during live testing, the processing UI exposed the previous successful revision's `View Post` fallback while the carousel was still processing; commit `696fcaad3a04200b047bb3114200a049ad79a3d5` now renders the top-level `View Post` only when the current revision is actually in Published state
+- Checks/tests and deployment evidence:
+  - combined existing single-image + new carousel publish-logic tests: **17 passed, 0 failed**
+  - syntax checks for the new carousel provider/orchestration modules and provider-aware publish route: **passed**
+  - Amplify production job `116` for implementation commit `a11d61e0d8168f29df9d15070f6cc5cace7ce1a0`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - Amplify production job `117` for editor-copy cleanup commit `66d9a89560406ac40127e892499e7ba4e4027e1c`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - Amplify production job `118` for stale-link safeguard commit `696fcaad3a04200b047bb3114200a049ad79a3d5`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+- Live verification evidence:
+  - the saved Instagram version showed `Detected Instagram format: Carousel` with the intended multiple JPEG assets selected
+  - after real submission, the application correctly retained one recorded carousel attempt while Instagram processed the provider containers; the UI directed Nicholas to `Check Instagram Status` instead of resubmitting
+  - status refresh advanced the recorded carousel attempt to `Succeeded`, changed the current revision to the locked Published state, and exposed `View Post`
+  - `View Post` opened the exact real `@nicholasegner` Instagram result, and the live Instagram UI showed the multi-image/carousel affordance with the expected post caption
+  - no second carousel submission was made during processing or after success
+- Live-test status: **completed**. The real carousel, exact post link, persisted success state, and duplicate-safe resume behavior were verified in production.
+- Blockers/manual actions: none remain for L5-05.
+- Remaining work: `L5-06` is now the sole `READY` task. `L5-07` remains `WAITING`.
+- Status transition: `L5-05` -> `DONE`; `L5-06` -> `READY`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
