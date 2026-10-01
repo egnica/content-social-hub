@@ -181,7 +181,7 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
 | L5-01 | `DONE` | Build Instagram connection / OAuth / Account Health foundation | Real `@nicholasegner` Professional account connected to `Nicholas_Egner`; persisted and Healthy in production |
-| L5-02 | `READY` | Extend Request Connection flow to Instagram and prove client-scoped live connection | L5-01 direct connection/account model is live and Healthy |
+| L5-02 | `MANUAL` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Implementation deployed; waiting on real emailed Instagram Request Connection verification |
 | L5-03 | `WAITING` | Add Instagram destination selection, platform version, validation, and preview | Requires L5-02 client-facing connection checkpoint |
 | L5-04 | `WAITING` | Publish single-image Instagram posts with durable results and duplicate protection | Requires L5-03 editor/validation foundation |
 | L5-05 | `WAITING` | Add Instagram carousel publishing | Requires proven single-image publisher/result model |
@@ -447,5 +447,53 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Blockers/manual actions: none remain for L5-01.
 - Remaining Level 5 work begins with `L5-02`; Request Connection support for Instagram has not been implemented yet.
 - Status transition: `L5-01` -> `DONE`; `L5-02` -> `READY`. All later Level 5 tasks remain `WAITING`.
+
+### October 1, 2026: L5-02 implementation and deployment checkpoint
+
+- Task: `L5-02` — Instagram Request Connection.
+- Outcome: application implementation completed and deployed successfully; task moved to `MANUAL` pending the required real client-facing Instagram Request Connection verification.
+- Files changed:
+  - `app/api/connection-requests/route.js`
+  - `app/api/connections/facebook/start/route.js`
+  - `app/api/connections/instagram/callback/route.js`
+  - `app/api/connections/instagram/confirm/route.js`
+  - `app/api/connections/instagram/start/route.js`
+  - `app/connect/[token]/page.js`
+  - `app/connect/instagram/error/page.js`
+  - `components/connections-manager.js`
+  - `components/instagram-account-confirm.js`
+  - `lib/connection-request-logic.js`
+  - `lib/connections.js`
+  - `lib/email.js`
+  - `tests/connection-request-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions:
+  - connection requests are now provider-aware instead of being hard-coded to Facebook; the request record stores `requestedPlatforms` and independent `platformStatus` entries
+  - the owner UI can send separate Facebook or Instagram Request Connection emails; creating a replacement request revokes unfinished requests only for the same requested network, so an Instagram request does not invalidate an unrelated Facebook request
+  - the Resend email and limited-purpose setup page identify the requested network and never expose owner-workspace navigation
+  - Instagram request-mode OAuth carries both the request ID and client ID through one-time expiring OAuth state and account-confirmation state
+  - Instagram confirmation may complete without an owner session only when the saved selection flow is explicitly `mode: "request"`; direct owner Connect still requires the owner session
+  - final Facebook and Instagram request-mode saves re-check that the bound request is still pending, unexpired, for the same client, and includes the provider being connected before persisting completion
+  - request completion is provider-aware: if a request includes multiple networks, the overall request remains pending until every requested network is connected
+  - reconnect uses the same client + platform + provider-account upsert identity, so the existing Healthy Instagram connection can be safely reauthorized through the client-facing flow during live verification
+  - no L5-03 destination/version, publishing, scheduling, Calendar, approval, or analytics work was added
+- Checks and tests run:
+  - `node --experimental-default-type=module --test /mnt/data/connection-request-logic.test.js`: **7 passed, 0 failed**
+  - `node --check /mnt/data/connection-request-logic.js`: **passed**
+  - production Amplify job `106` for commit `a3a784a30881195f79f3bc085affee9de6d5c3fd` (`Implement L5-02 Instagram request connection`): **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - the local execution container still cannot resolve `github.com`, so a separate local full-repository clone/lint/build was unavailable; Amplify job 106 supplies the deployed full Next.js build/deploy verification
+- Live-test status: **required / not yet completed**. No L5-02 client-facing Instagram authorization has been completed yet.
+- Required live/manual checkpoint using `Nicholas_Egner`:
+  1. select `Nicholas_Egner` in Social Accounts and click Instagram `Request Connection`
+  2. confirm the real Resend email arrives and clearly identifies the Instagram Professional connection request
+  3. open the secure setup link in a private/incognito browser and confirm no owner workspace navigation is exposed
+  4. choose Continue with Instagram, authorize the real `@nicholasegner` Professional account, and confirm the exact Instagram identity before saving
+  5. confirm the completion screen stays limited-purpose and reports the account connected to `Nicholas_Egner`
+  6. return to the owner Social Accounts view, confirm the Instagram connection persists and Account Health is Healthy/publishable, and verify it does not appear under another client
+  7. reopen the completed setup link and confirm it cannot start another authorization
+  8. create a fresh unfinished Instagram Request Connection, then create a replacement before completing the first; confirm the older Instagram link is unavailable while the newest replacement remains usable
+  9. confirm existing Facebook Request Connection behavior and the existing GIGnovate Facebook connection remain unaffected
+- Blockers/manual actions: only the live client-facing verification above. No external Meta configuration or new secret is expected for L5-02 because L5-01 already proved the Instagram app credentials and production redirect URI.
+- Remaining work: do not begin `L5-03`. After the live Request Connection, completed-link, replacement-link, client-isolation, and Healthy-account evidence is recorded, change `L5-02` to `DONE` and make `L5-03` the sole `READY` task.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
