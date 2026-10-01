@@ -41,10 +41,21 @@ function orderedSelectedMedia(form, media) {
 
 function exactPublishConfirmation(destinationName, form, media, publishMode) {
   const selected = orderedSelectedMedia(form, media);
-  const mediaLabel = publishMode === "carousel" ? "Carousel items" : "Image";
+  const mediaLabel =
+    publishMode === "carousel"
+      ? "Carousel items"
+      : publishMode === "reel"
+        ? "Video"
+        : "Image";
+  const postLabel =
+    publishMode === "carousel"
+      ? "carousel"
+      : publishMode === "reel"
+        ? "Reel"
+        : "post";
 
   return [
-    `Publish this exact Instagram ${publishMode === "carousel" ? "carousel" : "post"} to ${destinationName}?`,
+    `Publish this exact Instagram ${postLabel} to ${destinationName}?`,
     "",
     "Caption:",
     String(form.caption || "").trim() || "(none)",
@@ -57,8 +68,38 @@ function exactPublishConfirmation(destinationName, form, media, publishMode) {
         )
       : ["(missing)"]),
     "",
-    "This creates one real live Instagram post.",
+    `This creates one real live Instagram ${publishMode === "reel" ? "Reel" : "post"}.`,
   ].join("\n");
+}
+
+function processingMessage(publishMode, destinationName) {
+  if (publishMode === "carousel") {
+    return `Instagram accepted the carousel containers for ${destinationName} and is still processing them.`;
+  }
+  if (publishMode === "reel") {
+    return `Instagram accepted the Reel container for ${destinationName} and is still processing the video.`;
+  }
+  return `Instagram accepted the image for ${destinationName} and is still processing it.`;
+}
+
+function failedMessage(publishMode) {
+  if (publishMode === "carousel") {
+    return "Instagram reported that carousel preparation failed before the final publish step. The saved revision can be retried.";
+  }
+  if (publishMode === "reel") {
+    return "Instagram reported that the Reel container failed processing before the final publish step. The saved revision can be retried.";
+  }
+  return "Instagram reported that the image container failed processing. The saved revision can be retried.";
+}
+
+function stillProcessingMessage(publishMode) {
+  if (publishMode === "carousel") {
+    return "Instagram is still processing the carousel. Check again shortly.";
+  }
+  if (publishMode === "reel") {
+    return "Instagram is still processing the recorded Reel container. Check again shortly; do not submit another Reel.";
+  }
+  return "Instagram is still processing the image. Check again shortly.";
 }
 
 export default function InstagramPublishControls({
@@ -211,9 +252,7 @@ export default function InstagramPublishControls({
 
       if (result.attempt?.status === "processing") {
         setMessage(
-          result.attempt?.publishMode === "carousel"
-            ? `Instagram accepted the carousel containers for ${destinationName} and is still processing them.`
-            : `Instagram accepted the image for ${destinationName} and is still processing it.`,
+          processingMessage(result.attempt?.publishMode, destinationName),
         );
       } else {
         setMessage(`Published live to ${destinationName}.`);
@@ -254,17 +293,9 @@ export default function InstagramPublishControls({
             : "Instagram reports the post is live. The exact permalink is not available yet; refresh the post link again shortly.",
         );
       } else if (result.attempt?.status === "failed") {
-        setError(
-          result.attempt?.publishMode === "carousel"
-            ? "Instagram reported that carousel preparation failed before the final publish step. The saved revision can be retried."
-            : "Instagram reported that the image container failed processing. The saved revision can be retried.",
-        );
+        setError(failedMessage(result.attempt?.publishMode));
       } else {
-        setMessage(
-          result.attempt?.publishMode === "carousel"
-            ? "Instagram is still processing the carousel. Check again shortly."
-            : "Instagram is still processing the image. Check again shortly.",
-        );
+        setMessage(stillProcessingMessage(result.attempt?.publishMode));
       }
     } catch (requestError) {
       setError(requestError.message);
@@ -278,12 +309,22 @@ export default function InstagramPublishControls({
       <div className={styles.sectionHeader}>
         <h2>Publish Now</h2>
         <p>
-          Instagram accepts compatible Master images without manual format work:
-          JPEGs can publish directly, while PNG, WebP, and AVIF images are converted
-          to a private reusable JPEG derivative automatically. Single-image and
-          ordered 2–10 item carousel publishing keep the same duplicate-safety rules.
+          Instagram supports single images, ordered 2–10 item carousels, and
+          single-video Reels. Private S3 media is exposed to Meta only through
+          short-lived provider access, and each saved revision keeps the same
+          duplicate-safety and durable Publish History rules.
         </p>
       </div>
+
+      {validation.publishMode === "reel" ? (
+        <div className={styles.notice}>
+          Reel source checks require MP4/MOV, 1 GB or smaller, 3 seconds–15
+          minutes, and at most 1920 horizontal pixels. Meta also requires H.264
+          or HEVC video, AAC 48 kHz audio, 23–60 FPS, up to 25 Mbps video and
+          128 kbps audio; those codec/bitrate properties are confirmed by Meta
+          while the recorded Reel container processes.
+        </div>
+      ) : null}
 
       {dirty ? (
         <div className={styles.notice}>
@@ -305,9 +346,9 @@ export default function InstagramPublishControls({
 
       {providerProcessing ? (
         <div className={styles.notice}>
-          Instagram already has this revision as provider containers. Do not
-          submit it again; use Check Instagram Status so the recorded attempt
-          continues without creating duplicate child or parent posts.
+          Instagram already has provider container state for this revision. Do
+          not submit it again; use Check Instagram Status so the recorded attempt
+          continues without creating duplicate containers or posts.
         </div>
       ) : null}
 
