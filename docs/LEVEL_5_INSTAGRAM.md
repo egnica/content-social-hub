@@ -181,8 +181,8 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
 | L5-01 | `DONE` | Build Instagram connection / OAuth / Account Health foundation | Real `@nicholasegner` Professional account connected to `Nicholas_Egner`; persisted and Healthy in production |
-| L5-02 | `MANUAL` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Implementation deployed; waiting on real emailed Instagram Request Connection verification |
-| L5-03 | `WAITING` | Add Instagram destination selection, platform version, validation, and preview | Requires L5-02 client-facing connection checkpoint |
+| L5-02 | `DONE` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Real emailed `@nicholasegner` request completed under `Nicholas_Egner`; connection persisted Healthy in production |
+| L5-03 | `READY` | Add Instagram destination selection, platform version, validation, and preview | L5-02 client-facing connection checkpoint is complete |
 | L5-04 | `WAITING` | Publish single-image Instagram posts with durable results and duplicate protection | Requires L5-03 editor/validation foundation |
 | L5-05 | `WAITING` | Add Instagram carousel publishing | Requires proven single-image publisher/result model |
 | L5-06 | `WAITING` | Add Instagram Reels/video publishing and processing-state handling | Requires proven Instagram publish/idempotency boundary |
@@ -495,5 +495,52 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
   9. confirm existing Facebook Request Connection behavior and the existing GIGnovate Facebook connection remain unaffected
 - Blockers/manual actions: only the live client-facing verification above. No external Meta configuration or new secret is expected for L5-02 because L5-01 already proved the Instagram app credentials and production redirect URI.
 - Remaining work: do not begin `L5-03`. After the live Request Connection, completed-link, replacement-link, client-isolation, and Healthy-account evidence is recorded, change `L5-02` to `DONE` and make `L5-03` the sole `READY` task.
+
+### October 1, 2026: L5-02 live Request Connection closed
+
+- Task: `L5-02` — Instagram Request Connection.
+- Outcome: `DONE`. The real client-facing Instagram Request Connection completed successfully for `Nicholas_Egner` using the existing Professional account `@nicholasegner`.
+- Live verification evidence:
+  - the production Social Accounts UI exposed separate Facebook and Instagram `Request Connection` actions
+  - a real Resend email arrived and clearly identified the requested Instagram Professional account connection for `Nicholas_Egner`
+  - the secure setup link was opened in a limited-purpose browser flow with no owner-workspace navigation exposed
+  - Instagram authorization recognized the existing `nicholasegner` account and returned to the app's explicit confirmation screen
+  - the confirmation screen showed `@nicholasegner`, Instagram Creator, the exact provider account ID, and client `Nicholas_Egner` before persistence
+  - final confirmation returned `Instagram account connected`, named `@nicholasegner` and `Nicholas_Egner`, reported Account Health as healthy, and stated the setup page could be safely closed
+  - returning to the owner Social Accounts view showed `@nicholasegner` persisted as `Instagram Professional` with `Healthy` status and a fresh October 1 health timestamp
+  - the connection-request history showed the completed Instagram request plus the older Instagram request as `Revoked`, preserving the replacement lifecycle
+  - existing Facebook request history still showed completed/revoked/expired lifecycle states, and the existing GIGnovate Facebook Page connection remained `Healthy`
+  - production CloudWatch logs for the final save window contained no application error/exception events
+- Email-send diagnostic during the live checkpoint:
+  - the first live request attempt created the request but the email send returned a generic Resend failure
+  - production configuration inspection confirmed `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `APP_BASE_URL`, and Instagram credentials were present; the sender domain was verified and sending-enabled in Resend
+  - commit `ea078d4156c17eb5e8d6233e2f8460d692e17b01` added safe Resend HTTP-status/error diagnostics without exposing credentials
+  - Amplify job `108` for that commit: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - the subsequent production email request succeeded with Resend HTTP `200` and the email was delivered; no credential rotation or secret change was required
+- Automated/deployment evidence remains:
+  - focused provider-aware request tests: **7 passed, 0 failed**
+  - request-logic syntax check: **passed**
+  - Amplify job `106` for the L5-02 implementation: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+- Files changed across L5-02 implementation, live diagnostic, and closure:
+  - `app/api/connection-requests/route.js`
+  - `app/api/connections/facebook/start/route.js`
+  - `app/api/connections/instagram/callback/route.js`
+  - `app/api/connections/instagram/confirm/route.js`
+  - `app/api/connections/instagram/start/route.js`
+  - `app/connect/[token]/page.js`
+  - `app/connect/instagram/error/page.js`
+  - `components/connections-manager.js`
+  - `components/instagram-account-confirm.js`
+  - `lib/connection-request-logic.js`
+  - `lib/connections.js`
+  - `lib/email.js`
+  - `tests/connection-request-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Decisions:
+  - no L5-03 destination/platform-version work was started in this chat
+  - L5-02 is closed on the combined automated, deployed, Resend, and live UI evidence above
+- Blockers/manual actions: none remain for L5-02.
+- Remaining work: `L5-03` is now the sole `READY` task. All later Level 5 tasks remain `WAITING`.
+- Status transition: `L5-02` -> `DONE`; `L5-03` -> `READY`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
