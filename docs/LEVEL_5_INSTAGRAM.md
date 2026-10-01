@@ -182,8 +182,8 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | --- | --- | --- | --- |
 | L5-01 | `DONE` | Build Instagram connection / OAuth / Account Health foundation | Real `@nicholasegner` Professional account connected to `Nicholas_Egner`; persisted and Healthy in production |
 | L5-02 | `DONE` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Real emailed `@nicholasegner` request completed under `Nicholas_Egner`; connection persisted Healthy in production |
-| L5-03 | `MANUAL` | Add Instagram destination selection, platform version, validation, and preview | Implementation deployed; awaiting real destination/editor validation in production |
-| L5-04 | `WAITING` | Publish single-image Instagram posts with durable results and duplicate protection | Requires L5-03 editor/validation foundation |
+| L5-03 | `DONE` | Add Instagram destination selection, platform version, validation, and preview | Real `@nicholasegner` destination/version inheritance, customization preservation, reset behavior, validation, and carousel preview verified in production |
+| L5-04 | `READY` | Publish single-image Instagram posts with durable results and duplicate protection | L5-03 live editor/validation checkpoint is complete |
 | L5-05 | `WAITING` | Add Instagram carousel publishing | Requires proven single-image publisher/result model |
 | L5-06 | `WAITING` | Add Instagram Reels/video publishing and processing-state handling | Requires proven Instagram publish/idempotency boundary |
 | L5-07 | `WAITING` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Requires all direct Instagram publishing modes to be proven |
@@ -588,5 +588,33 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Blockers/manual actions: only the deployed L5-03 UI/version verification above.
 - Remaining work: do not begin `L5-04` until the live destination/version/validation/reset evidence is recorded and `L5-03` is moved to `DONE`.
 - Status transition: `L5-03` -> `MANUAL`; `L5-04` remains `WAITING`.
+
+### October 1, 2026: L5-03 live destination/editor verification closed
+
+- Task: `L5-03` — Instagram Platform Version, Validation, and Preview.
+- Outcome: `DONE`. Nicholas completed the deployed production editor checkpoint using the real `@nicholasegner` Instagram Professional destination under `Nicholas_Egner`.
+- Live verification evidence:
+  - a real image (`first-post-gram.png`) was attached to Master Content after the Instagram platform version already existed; the Instagram editor correctly reported that Master Content had changed and did not silently overwrite the existing destination version
+  - before updating from Master, the Instagram draft visibly blocked publishing because no compatible media had yet been inherited into that version
+  - `Update From Master` copied the current Master media into the Instagram version and cleared the incompatible-media state
+  - a second image was added to Master Content and inherited into Instagram; both images were selected and the editor correctly detected `Carousel`
+  - the approximate Instagram preview displayed both carousel items with `1/2` and `2/2` indicators
+  - Nicholas customized the Instagram caption, saved it, and the version displayed `Revision 5 · Customized`
+  - after the Master caption changed, the Instagram version displayed `Master content changed`, preserved the Instagram-specific caption/media, and continued to show no blocking validation issues
+  - `Update From Master` then replaced the Instagram-specific caption with the current Master caption, preserved the inherited media set, cleared the Master-change warning, and displayed `Revision 6 · Inherited from Master`
+  - the resulting version remained a valid `Carousel` with both images selected and the preview updated to the current Master caption
+  - the Instagram editor exposed no Publish Now or Schedule action in L5-03, and the preview explicitly stated that L5-03 does not send anything to Instagram; no Instagram post was created by this task
+- Automated/deployment evidence remains:
+  - combined Facebook + Instagram platform-version logic tests: **16 passed, 0 failed**
+  - focused Instagram platform-version logic tests: **8 passed, 0 failed**
+  - Amplify production job `110` for implementation commit `0d38e5fac2022fd40a3d940aacad6802da6012f8`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+- Files changed for task closure:
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Decisions:
+  - L5-03 is closed on the combined automated, deployed, and real production editor evidence above
+  - the first real Instagram provider submission remains intentionally deferred to L5-04
+- Blockers/manual actions: none remain for L5-03.
+- Remaining work: `L5-04` is now the sole `READY` task. `L5-05`, `L5-06`, and `L5-07` remain `WAITING`.
+- Status transition: `L5-03` -> `DONE`; `L5-04` -> `READY`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
