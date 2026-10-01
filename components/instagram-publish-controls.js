@@ -366,7 +366,7 @@ export default function InstagramPublishControls({
           </button>
         ) : null}
 
-        {postUrl ? (
+        {controlState.mode === "published" && postUrl ? (
           <a
             className={styles.buttonSecondary}
             href={postUrl}
