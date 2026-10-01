@@ -182,7 +182,7 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | --- | --- | --- | --- |
 | L5-01 | `DONE` | Build Instagram connection / OAuth / Account Health foundation | Real `@nicholasegner` Professional account connected to `Nicholas_Egner`; persisted and Healthy in production |
 | L5-02 | `DONE` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Real emailed `@nicholasegner` request completed under `Nicholas_Egner`; connection persisted Healthy in production |
-| L5-03 | `READY` | Add Instagram destination selection, platform version, validation, and preview | L5-02 client-facing connection checkpoint is complete |
+| L5-03 | `MANUAL` | Add Instagram destination selection, platform version, validation, and preview | Implementation deployed; awaiting real destination/editor validation in production |
 | L5-04 | `WAITING` | Publish single-image Instagram posts with durable results and duplicate protection | Requires L5-03 editor/validation foundation |
 | L5-05 | `WAITING` | Add Instagram carousel publishing | Requires proven single-image publisher/result model |
 | L5-06 | `WAITING` | Add Instagram Reels/video publishing and processing-state handling | Requires proven Instagram publish/idempotency boundary |
@@ -542,5 +542,51 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Blockers/manual actions: none remain for L5-02.
 - Remaining work: `L5-03` is now the sole `READY` task. All later Level 5 tasks remain `WAITING`.
 - Status transition: `L5-02` -> `DONE`; `L5-03` -> `READY`.
+
+### October 1, 2026: L5-03 implementation and deployment checkpoint
+
+- Task: `L5-03` — Instagram Platform Version, Validation, and Preview.
+- Outcome: implementation completed and deployed successfully; task moved to `MANUAL` pending the real production destination/editor verification below.
+- Files changed:
+  - `app/(app)/content/[id]/page.js`
+  - `app/api/content/[id]/destinations/route.js`
+  - `app/api/platform-versions/[id]/route.js`
+  - `components/instagram-platform-editor.js`
+  - `components/platform-destination-selector.js`
+  - `lib/platform-version-logic.js`
+  - `lib/platform-versions.js`
+  - `tests/instagram-platform-version-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions:
+  - publishing-destination loading and selection now supports Healthy Facebook and Instagram connections under the same client while retaining explicit provider labels and client-scoped eligibility
+  - Instagram platform versions persist separately with `platform: "instagram"`, caption, compatible selected media, primary media, detected media mode, Master revision marker, customized state, and the existing destination identity fields
+  - Instagram creation/reset inherits the Master caption and compatible image/video media in Master order; unsupported Master media is excluded from the Instagram inherited selection rather than being treated as publishable
+  - Instagram media mode is derived as `single_image`, `carousel`, `reel`, or `incompatible`; text-only / URL-only content receives blocking validation instead of becoming publishable
+  - the existing platform-version PATCH route now dispatches saves/resets by the persisted platform while Facebook save/reset behavior remains on the existing Facebook functions
+  - the Instagram editor supports destination-specific caption/media customization, live validation, detected format, Master-change warning, Reset/Update From Master, and an approximate Instagram preview
+  - no Instagram Publish Now or Schedule controls are rendered in L5-03, and no Meta publishing API call was added
+  - no Calendar, approval, analytics, engagement, or second-provider work was pulled into this task
+- Checks and tests run:
+  - combined existing Facebook + new Instagram platform-version logic tests: **16 passed, 0 failed**
+  - focused new Instagram platform-version logic tests: **8 passed, 0 failed**
+  - `node --check` for `lib/platform-version-logic.js`: **passed**
+  - `node --check` for `lib/platform-versions.js`: **passed**
+  - `node --check` for `app/api/platform-versions/[id]/route.js`: **passed**
+  - `node --check` for `app/api/content/[id]/destinations/route.js`: **passed**
+  - Amplify production job `110` for commit `0d38e5fac2022fd40a3d940aacad6802da6012f8` (`Implement L5-03 Instagram platform versions`): **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - a separate local full-repository clone/lint/build remains unavailable because the execution container cannot resolve `github.com`; Amplify job 110 supplies the deployed full Next.js build/deploy verification
+- Live-test status: **required / not yet completed**. L5-03 contains no Instagram provider submission path, so this checkpoint must verify persisted UI/version behavior without creating an Instagram post.
+- Required live/manual checkpoint using `Nicholas_Egner` and the existing Healthy `@nicholasegner` connection:
+  1. open or create Master Content under `Nicholas_Egner` with at least one attached image
+  2. in Publishing Destinations, confirm both the GIGnovate Facebook Page and `@nicholasegner` Instagram Professional destination are shown with distinct provider labels
+  3. select/save Instagram and confirm a separate Instagram-specific editor appears, inherits the Master caption/media, and shows `Single image` for one selected image
+  4. change the Instagram caption and/or selected media, save it, refresh/reopen the Master Content, and confirm the Instagram customization persists without changing the Facebook version
+  5. change and save the Master Content, then confirm the customized Instagram version warns that Master changed while preserving its edits; use `Update From Master` and confirm the current Master caption/media replaces the Instagram-specific customization
+  6. remove all Instagram media selections and confirm live validation visibly blocks the draft as incompatible; add compatible media back and confirm validation clears
+  7. where the Master has suitable assets, confirm media-mode detection changes between single image, carousel, and Reel/video as selections change
+  8. confirm the Instagram editor exposes no Publish Now or Schedule action yet and verify no Instagram post was created by this task
+- Blockers/manual actions: only the deployed L5-03 UI/version verification above.
+- Remaining work: do not begin `L5-04` until the live destination/version/validation/reset evidence is recorded and `L5-03` is moved to `DONE`.
+- Status transition: `L5-03` -> `MANUAL`; `L5-04` remains `WAITING`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
