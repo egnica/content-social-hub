@@ -36,6 +36,18 @@ test("carousel validation accepts 2 ordered JPEG items", () => {
   assert.deepEqual(result.selectedAssets.map((item) => item._id), ["image-2", "image-1"]);
 });
 
+test("carousel validation accepts convertible PNG and WebP children", () => {
+  const result = validateInstagramCarouselPublishDraft({
+    mediaIds: ["png", "webp"],
+    mediaAssets: [
+      { ...jpeg, _id: "png", contentType: "image/png" },
+      { ...jpeg, _id: "webp", contentType: "image/webp" },
+    ],
+  });
+
+  assert.equal(result.publishable, true);
+});
+
 test("carousel validation accepts mixed image and video children", () => {
   const result = validateInstagramCarouselPublishDraft({
     mediaIds: ["image-1", "video-1"],
@@ -67,15 +79,15 @@ test("carousel validation enforces the 2 to 10 item boundary", () => {
 
 test("carousel validation blocks unsupported image and video children", () => {
   const result = validateInstagramCarouselPublishDraft({
-    mediaIds: ["png", "bad-video"],
+    mediaIds: ["gif", "bad-video"],
     mediaAssets: [
-      { ...jpeg, _id: "png", contentType: "image/png" },
+      { ...jpeg, _id: "gif", contentType: "image/gif" },
       { ...video, _id: "bad-video", contentType: "video/webm" },
     ],
   });
 
   assert.equal(result.publishable, false);
-  assert.match(result.blocking.join(" "), /JPEG/);
+  assert.match(result.blocking.join(" "), /JPEG, PNG, WebP, AVIF/);
   assert.match(result.blocking.join(" "), /MP4 or MOV/);
 });
 

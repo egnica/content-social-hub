@@ -31,41 +31,33 @@ test("single-image Instagram publish validation accepts a healthy JPEG", () => {
   assert.equal(result.publishable, true);
   assert.equal(result.publishMode, "single_image");
   assert.equal(result.selectedAsset._id, "image-1");
+  assert.equal(result.needsJpegDerivative, false);
 });
 
-test("single-image validation blocks PNG, oversized, and invalid ratio files", () => {
+test("single-image validation accepts PNG and marks it for automatic JPEG conversion", () => {
   const result = validateInstagramSingleImagePublishDraft({
-    mediaIds: ["bad"],
-    mediaAssets: [{
-      _id: "bad",
-      contentType: "image/png",
-      size: 9 * 1024 * 1024,
-      width: 2000,
-      height: 500,
-    }],
+    mediaIds: ["png"],
+    mediaAssets: [{ ...jpeg, _id: "png", contentType: "image/png" }],
   });
 
-  assert.equal(result.publishable, false);
-  assert.equal(result.blocking.length, 3);
-  assert.match(result.blocking.join(" "), /JPEG/);
-  assert.match(result.blocking.join(" "), /8 MB/);
-  assert.match(result.blocking.join(" "), /aspect ratio/);
+  assert.equal(result.publishable, true);
+  assert.equal(result.needsJpegDerivative, true);
 });
 
-test("single-image validation blocks carousel and Reel selections in L5-04", () => {
-  const carousel = validateInstagramSingleImagePublishDraft({
-    mediaIds: ["image-1", "image-2"],
-    mediaAssets: [jpeg, { ...jpeg, _id: "image-2" }],
+test("single-image validation blocks unsupported image types and invalid ratio files", () => {
+  const unsupported = validateInstagramSingleImagePublishDraft({
+    mediaIds: ["bad"],
+    mediaAssets: [{ ...jpeg, _id: "bad", contentType: "image/gif" }],
   });
-  const video = validateInstagramSingleImagePublishDraft({
-    mediaIds: ["video-1"],
-    mediaAssets: [{ ...jpeg, _id: "video-1", contentType: "video/mp4" }],
+  const ratio = validateInstagramSingleImagePublishDraft({
+    mediaIds: ["wide"],
+    mediaAssets: [{ ...jpeg, _id: "wide", width: 2000, height: 500 }],
   });
 
-  assert.equal(carousel.publishable, false);
-  assert.match(carousel.blocking[0], /L5-05/);
-  assert.equal(video.publishable, false);
-  assert.match(video.blocking.join(" "), /JPEG/);
+  assert.equal(unsupported.publishable, false);
+  assert.match(unsupported.blocking.join(" "), /PNG, WebP, and AVIF/);
+  assert.equal(ratio.publishable, false);
+  assert.match(ratio.blocking.join(" "), /aspect ratio/);
 });
 
 test("single-image validation blocks unhealthy destinations and overlong captions", () => {
