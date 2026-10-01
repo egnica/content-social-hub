@@ -4,6 +4,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import InstagramPublishControls from "@/components/instagram-publish-controls";
 import styles from "@/components/ui.module.css";
 import {
   instagramMediaModeLabel,
@@ -203,18 +204,10 @@ function InstagramPreview({ destination, form, media, mediaMode }) {
         )}
 
         <div style={{ padding: "14px 16px" }}>
-          <div
-            style={{
-              whiteSpace: "pre-wrap",
-              fontSize: 14,
-              lineHeight: 1.5,
-            }}
-          >
+          <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.5 }}>
             <strong>{destinationName}</strong>{" "}
             {form.caption || (
-              <span style={{ color: "#98a2b3" }}>
-                Instagram caption preview
-              </span>
+              <span style={{ color: "#98a2b3" }}>Instagram caption preview</span>
             )}
           </div>
         </div>
@@ -228,7 +221,7 @@ function InstagramPreview({ destination, form, media, mediaMode }) {
             textAlign: "center",
           }}
         >
-          Preview only — L5-03 does not send anything to Instagram.
+          Preview only. L5-04 Publish Now supports a single compatible JPEG image.
         </div>
       </div>
     </div>
@@ -249,8 +242,7 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
     masterContent.revision,
   );
   const selectedMedia = useMemo(
-    () =>
-      media.filter((asset) => form.mediaIds.includes(stringId(asset._id))),
+    () => media.filter((asset) => form.mediaIds.includes(stringId(asset._id))),
     [form.mediaIds, media],
   );
   const validation = useMemo(
@@ -318,7 +310,7 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
       setVersion(saved);
       setForm(initialDraft(saved));
       setDirty(false);
-      setMessage("Instagram version saved. Nothing has been published.");
+      setMessage("Instagram version saved.");
       router.refresh();
     } catch (requestError) {
       setError(requestError.message);
@@ -355,12 +347,18 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
     }
   }
 
+  function handlePublished(savedVersion) {
+    if (!savedVersion) return;
+    setVersion(savedVersion);
+    setForm(initialDraft(savedVersion));
+    setDirty(false);
+    router.refresh();
+  }
+
   return (
     <section className={styles.formCard} style={{ marginTop: 20 }}>
       <div className={styles.sectionHeader}>
-        <h2>
-          {version.destinationName || destination?.accountName || "Instagram"}
-        </h2>
+        <h2>{version.destinationName || destination?.accountName || "Instagram"}</h2>
         <p>
           Instagram-specific version · Revision {version.revision || 1} ·{" "}
           {version.customized ? "Customized" : "Inherited from Master"}
@@ -407,8 +405,8 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
           <div className={styles.sectionHeader}>
             <h2>Instagram Version</h2>
             <p>
-              Instagram is media-first. Caption and selected media can differ
-              from the shared Master Content without changing Facebook.
+              Caption and selected media can differ from Master Content without
+              changing Facebook.
             </p>
           </div>
 
@@ -428,9 +426,9 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
             <div className={styles.sectionHeader}>
               <h2>Instagram media</h2>
               <p>
-                Choose compatible images or video already attached to Master
-                Content. Text-only and URL-only content is not Instagram
-                compatible.
+                Choose compatible media attached to Master Content. L5-04 can
+                publish one JPEG image; carousel and Reel publishing remain later
+                Level 5 tasks.
               </p>
             </div>
 
@@ -482,9 +480,7 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
                 <select
                   className={styles.select}
                   value={form.primaryMediaId}
-                  onChange={(event) =>
-                    update("primaryMediaId", event.target.value)
-                  }
+                  onChange={(event) => update("primaryMediaId", event.target.value)}
                 >
                   {selectedMedia.map((asset) => (
                     <option key={asset._id} value={asset._id}>
@@ -515,11 +511,15 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
             </button>
           </div>
 
-          <div className={styles.notice} style={{ marginTop: 18 }}>
-            Instagram publishing is intentionally not available in L5-03.
-            Single-image Publish Now begins in L5-04 after this editor and
-            validation boundary is verified.
-          </div>
+          <InstagramPublishControls
+            version={version}
+            destination={destination}
+            form={form}
+            media={media}
+            dirty={dirty}
+            busy={saving}
+            onPublished={handlePublished}
+          />
         </div>
 
         <InstagramPreview

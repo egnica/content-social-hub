@@ -14,17 +14,17 @@ export async function GET(_request, { params }) {
     const platformVersionId = toObjectId(id);
 
     if (!platformVersionId) {
-      return Response.json({ error: "Facebook version not found." }, { status: 404 });
+      return Response.json({ error: "Platform version not found." }, { status: 404 });
     }
 
     const db = await getDb();
     const version = await db.collection("platform_versions").findOne({
       _id: platformVersionId,
-      platform: "facebook",
+      platform: { $in: ["facebook", "instagram"] },
     });
 
     if (!version) {
-      return Response.json({ error: "Facebook version not found." }, { status: 404 });
+      return Response.json({ error: "Platform version not found." }, { status: 404 });
     }
 
     const attempts = await db
@@ -35,9 +35,10 @@ export async function GET(_request, { params }) {
       .toArray();
 
     return Response.json({
+      platform: version.platform,
       attempts: attempts.map((attempt) => serializeDocument(attempt)),
     });
   } catch (error) {
-    return apiError(error, "Unable to load Facebook publish history.");
+    return apiError(error, "Unable to load publish history.");
   }
 }
