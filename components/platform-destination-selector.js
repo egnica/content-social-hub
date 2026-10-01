@@ -11,10 +11,18 @@ function activeConnectionIds(platformVersions) {
     .map((version) => version.socialConnectionId);
 }
 
+function platformLabel(platform) {
+  if (platform === "instagram") return "Instagram Professional";
+  if (platform === "facebook") return "Facebook Page";
+  return platform || "Social destination";
+}
+
 function destinationStatus(destination) {
   if (destination.selectable) return "Healthy · ready for a platform version";
   if (destination.healthMessage) return destination.healthMessage;
-  if (!destination.canPublish) return "Facebook publishing permission is unavailable.";
+  if (!destination.canPublish) {
+    return `${platformLabel(destination.platform)} publishing permission is unavailable.`;
+  }
   return `Account Health: ${destination.healthStatus || "unavailable"}`;
 }
 
@@ -64,7 +72,9 @@ export default function PlatformDestinationSelector({
 
       setPlatformVersions(result.platformVersions || []);
       setSelectedIds(activeConnectionIds(result.platformVersions || []));
-      setMessage("Destinations saved. Nothing has been published to Facebook.");
+      setMessage(
+        "Destinations saved. Platform versions were prepared; nothing has been published.",
+      );
       router.refresh();
     } catch (requestError) {
       setError(requestError.message);
@@ -78,9 +88,9 @@ export default function PlatformDestinationSelector({
       <div className={styles.sectionHeader}>
         <h2>Publishing Destinations</h2>
         <p>
-          Choose the connected Facebook Page(s) that should receive a platform
-          version for {clientName}. This only prepares the destination; it does
-          not publish anything.
+          Choose the connected Facebook and Instagram destinations that should
+          receive their own platform version for {clientName}. This only prepares
+          destination-specific drafts; it does not publish anything.
         </p>
       </div>
 
@@ -92,6 +102,11 @@ export default function PlatformDestinationSelector({
           {destinations.map((destination) => {
             const checked = selectedSet.has(destination._id);
             const disabled = !destination.selectable && !checked;
+            const hasVersion = checked && platformVersions.some(
+              (version) =>
+                version.socialConnectionId === destination._id &&
+                version.active !== false,
+            );
 
             return (
               <label className={styles.checkboxRow} key={destination._id}>
@@ -106,14 +121,9 @@ export default function PlatformDestinationSelector({
                 <span>
                   <strong>{destination.accountName}</strong>
                   <span>
-                    Facebook Page · {destinationStatus(destination)}
-                    {checked && platformVersions.some(
-                      (version) =>
-                        version.socialConnectionId === destination._id &&
-                        version.active !== false,
-                    )
-                      ? " · version saved"
-                      : ""}
+                    {platformLabel(destination.platform)} ·{" "}
+                    {destinationStatus(destination)}
+                    {hasVersion ? " · version saved" : ""}
                   </span>
                 </span>
               </label>
@@ -122,7 +132,8 @@ export default function PlatformDestinationSelector({
         </div>
       ) : (
         <div className={styles.notice}>
-          No Facebook Page is connected to this client yet. Add one in{" "}
+          No supported Facebook or Instagram destination is connected to this
+          client yet. Add one in{" "}
           <Link href="/connections">Social Accounts</Link> before creating a
           platform version.
         </div>

@@ -33,7 +33,7 @@ export async function PUT(request, { params }) {
 
     if (!Array.isArray(body?.socialConnectionIds)) {
       return Response.json(
-        { error: "Choose the Facebook destinations to save." },
+        { error: "Choose the social destinations to save." },
         { status: 400 },
       );
     }

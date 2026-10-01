@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import FacebookPlatformEditors from "@/components/facebook-platform-editor";
+import InstagramPlatformEditors from "@/components/instagram-platform-editor";
 import MasterContentForm from "@/components/master-content-form";
 import PageHeader from "@/components/page-header";
 import PlatformDestinationSelector from "@/components/platform-destination-selector";
@@ -21,6 +22,18 @@ export default async function EditContentPage({ params }) {
   const destinationState = await getPlatformDestinationState(id);
   const destinations = destinationState?.destinations || [];
   const platformVersions = destinationState?.platformVersions || [];
+  const masterContent = {
+    _id: content._id,
+    clientId: content.clientId,
+    revision: content.revision,
+    text: content.text,
+    primaryUrl: content.primaryUrl,
+    media: content.media || [],
+    defaultVideoThumbnail: content.defaultVideoThumbnail || null,
+    defaultReleaseAt: content.defaultReleaseAt || null,
+    defaultReleaseTimezone: content.defaultReleaseTimezone || null,
+    clientTimezone: content.clientTimezone || "",
+  };
 
   return (
     <>
@@ -37,18 +50,12 @@ export default async function EditContentPage({ params }) {
         initialPlatformVersions={platformVersions}
       />
       <FacebookPlatformEditors
-        masterContent={{
-          _id: content._id,
-          clientId: content.clientId,
-          revision: content.revision,
-          text: content.text,
-          primaryUrl: content.primaryUrl,
-          media: content.media || [],
-          defaultVideoThumbnail: content.defaultVideoThumbnail || null,
-          defaultReleaseAt: content.defaultReleaseAt || null,
-          defaultReleaseTimezone: content.defaultReleaseTimezone || null,
-          clientTimezone: content.clientTimezone || "",
-        }}
+        masterContent={masterContent}
+        destinations={destinations}
+        platformVersions={platformVersions}
+      />
+      <InstagramPlatformEditors
+        masterContent={masterContent}
         destinations={destinations}
         platformVersions={platformVersions}
       />
