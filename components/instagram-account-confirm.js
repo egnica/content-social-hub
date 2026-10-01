@@ -51,12 +51,18 @@ export default function InstagramAccountConfirm({ token, flow }) {
           {flow.clientName}. Account Health is currently{" "}
           {connection.healthStatus.replaceAll("_", " ")}.
         </p>
-        <Link
-          className={styles.button}
-          href={`/connections?clientId=${flow.clientId}`}
-        >
-          Return to Social Accounts
-        </Link>
+        {flow.mode === "owner" ? (
+          <Link
+            className={styles.button}
+            href={`/connections?clientId=${flow.clientId}`}
+          >
+            Return to Social Accounts
+          </Link>
+        ) : (
+          <div className={styles.successNotice}>
+            Setup is complete. You can safely close this page.
+          </div>
+        )}
       </div>
     );
   }
@@ -70,6 +76,13 @@ export default function InstagramAccountConfirm({ token, flow }) {
         destination that belongs to <strong>{flow.clientName}</strong> before it
         is saved.
       </p>
+
+      {flow.mode === "request" ? (
+        <div className={styles.notice}>
+          This is a limited connection step. It does not provide access to the
+          Content Social Hub workspace.
+        </div>
+      ) : null}
 
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
 
