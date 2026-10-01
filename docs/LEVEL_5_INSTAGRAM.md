@@ -183,8 +183,8 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | L5-01 | `DONE` | Build Instagram connection / OAuth / Account Health foundation | Real `@nicholasegner` Professional account connected to `Nicholas_Egner`; persisted and Healthy in production |
 | L5-02 | `DONE` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Real emailed `@nicholasegner` request completed under `Nicholas_Egner`; connection persisted Healthy in production |
 | L5-03 | `DONE` | Add Instagram destination selection, platform version, validation, and preview | Real `@nicholasegner` destination/version inheritance, customization preservation, reset behavior, validation, and carousel preview verified in production |
-| L5-04 | `MANUAL` | Publish single-image Instagram posts with durable results and duplicate protection | Implementation deployed in job 113; requires real GIGnovate single-image publish verification |
-| L5-05 | `WAITING` | Add Instagram carousel publishing | Requires proven single-image publisher/result model |
+| L5-04 | `DONE` | Publish single-image Instagram posts with durable results and duplicate protection | Real `@nicholasegner` single-image post published from revision 9; Succeeded history, Published lock, and exact View Post verified in production |
+| L5-05 | `READY` | Add Instagram carousel publishing | L5-04 live single-image publisher/result model is proven |
 | L5-06 | `WAITING` | Add Instagram Reels/video publishing and processing-state handling | Requires proven Instagram publish/idempotency boundary |
 | L5-07 | `WAITING` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Requires all direct Instagram publishing modes to be proven |
 
@@ -666,5 +666,33 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Blockers/manual actions: the real GIGnovate Instagram image post and persisted-result verification above.
 - Remaining work: do not begin `L5-05` until this real single-image result, exact `View Post`, refresh/reopen Published lock, and duplicate barrier are verified and recorded.
 - Status transition: `L5-04` -> `MANUAL`; `L5-05`, `L5-06`, and `L5-07` remain `WAITING`.
+
+### October 1, 2026: L5-04 live single-image publishing closed
+
+- Task: `L5-04` — Single-Image Instagram Publishing.
+- Outcome: `DONE`. Nicholas explicitly closed the task after the first real production Instagram single-image publish completed successfully for `@nicholasegner`.
+- Live verification evidence:
+  - the saved Instagram version was revision `9`, inherited from Master, with green validation and exactly one selected JPEG: `first-post-gram.jpg`
+  - the editor detected `Single image`, displayed the expected preview/caption, and enabled Publish Now only after the JPEG-compatible saved revision was ready
+  - the final browser confirmation displayed the exact destination `@nicholasegner`, the exact caption, and image filename `first-post-gram.jpg` before the real provider submission was approved
+  - after submission, Content Social Hub reported `Published live to @nicholasegner`, changed the action to the locked `Published` state, and exposed `View Post`
+  - Publish History recorded `Succeeded`, `Revision 9`, `single_image`, with the production completion timestamp
+  - `View Post` opened the exact live Instagram post and showed the same image and caption on the real `nicholasegner` account
+  - no second publish submission was made during the checkpoint; the successful revision was visibly locked against another Publish Now action
+  - Nicholas then explicitly declared `L5-04 DONE`, closing the live checkpoint on the successful provider result, exact post link, durable recorded attempt, and duplicate-protection behavior
+- Automated/deployment evidence remains:
+  - focused Instagram publish logic tests: **9 passed, 0 failed**
+  - syntax checks for the Instagram publish logic/provider/service and provider-aware API routes: **passed**
+  - Amplify production job `113` for implementation commit `fb5f706481e94184e3bff40a106d02bc5428eea4`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - Amplify production job `114` for documentation checkpoint commit `5c6e3a23090b7e704e580fe7c6381d1976ec04d2`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+- Files changed for task closure:
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Decisions:
+  - L5-04 is closed on the combined automated, deployed, and real production single-image publish evidence above
+  - carousel publishing remains a separate provider flow and is now the next bounded task
+  - no L5-05 implementation was started in this chat
+- Blockers/manual actions: none remain for L5-04.
+- Remaining work: `L5-05` is now the sole `READY` task. `L5-06` and `L5-07` remain `WAITING`.
+- Status transition: `L5-04` -> `DONE`; `L5-05` -> `READY`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
