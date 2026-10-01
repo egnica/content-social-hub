@@ -183,7 +183,7 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | L5-01 | `DONE` | Build Instagram connection / OAuth / Account Health foundation | Real `@nicholasegner` Professional account connected to `Nicholas_Egner`; persisted and Healthy in production |
 | L5-02 | `DONE` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Real emailed `@nicholasegner` request completed under `Nicholas_Egner`; connection persisted Healthy in production |
 | L5-03 | `DONE` | Add Instagram destination selection, platform version, validation, and preview | Real `@nicholasegner` destination/version inheritance, customization preservation, reset behavior, validation, and carousel preview verified in production |
-| L5-04 | `READY` | Publish single-image Instagram posts with durable results and duplicate protection | L5-03 live editor/validation checkpoint is complete |
+| L5-04 | `MANUAL` | Publish single-image Instagram posts with durable results and duplicate protection | Implementation deployed in job 113; requires real GIGnovate single-image publish verification |
 | L5-05 | `WAITING` | Add Instagram carousel publishing | Requires proven single-image publisher/result model |
 | L5-06 | `WAITING` | Add Instagram Reels/video publishing and processing-state handling | Requires proven Instagram publish/idempotency boundary |
 | L5-07 | `WAITING` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Requires all direct Instagram publishing modes to be proven |
@@ -616,5 +616,55 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Blockers/manual actions: none remain for L5-03.
 - Remaining work: `L5-04` is now the sole `READY` task. `L5-05`, `L5-06`, and `L5-07` remain `WAITING`.
 - Status transition: `L5-03` -> `DONE`; `L5-04` -> `READY`.
+
+### October 1, 2026: L5-04 implementation and deployment checkpoint
+
+- Task: `L5-04` — Single-Image Instagram Publishing.
+- Outcome: implementation completed and deployed successfully; task moved to `MANUAL` pending the required real GIGnovate Instagram image publish verification.
+- Files changed:
+  - `app/api/platform-versions/[id]/publish/route.js`
+  - `app/api/platform-versions/[id]/publish-attempts/route.js`
+  - `components/instagram-platform-editor.js`
+  - `components/instagram-publish-controls.js`
+  - `lib/instagram-publish-logic.js`
+  - `lib/instagram-publisher.js`
+  - `lib/instagram-publishing.js`
+  - `tests/instagram-publish-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions:
+  - the existing platform-version publish and Publish History routes now dispatch by saved platform, preserving the existing Facebook publisher while adding Instagram through a separate provider/service path
+  - L5-04 supports exactly one Instagram feed image; carousel and Reel/video publishing remain deferred to `L5-05` and `L5-06`
+  - Instagram single-image publishing validates JPEG format, 8 MB maximum size, 4:5 through 1.91:1 aspect ratio, caption length, Healthy Account state, publish capability, destination/client ownership, and the exact saved platform-version revision before provider submission
+  - private S3 remains private; Instagram receives a short-lived signed GET URL generated from the existing private-media access helper and no signed URL is persisted
+  - publishing uses the Instagram container flow: create media container, persist the container identity, check readiness, publish the recorded container, then persist the exact provider media ID and permalink when available
+  - unfinished container processing is persisted as `processing` and can be resumed through `Check Instagram Status` without creating a replacement container
+  - the deterministic submission key is provider-specific (`instagram:<platformVersionId>:revision:<revision>`), so successful/current in-flight/uncertain revisions cannot be blindly resubmitted
+  - definitive provider rejection before a remote container is recorded clears the submission key and permits a deliberate retry; ambiguous network/provider outcomes remain `unknown` and locked for review
+  - successful revisions preserve `Published`, Publish History, provider media ID, permalink, and `View Post` after refresh/reopen; if the media ID is known before the permalink becomes readable, `Refresh Post Link` can retrieve the permalink without republishing
+  - the Instagram editor now exposes real Publish Now controls while retaining L5-03 caption/media customization, Master-change handling, validation, and preview behavior
+  - automatic PNG-to-JPEG conversion was not added in L5-04; the original asset is preserved and the UI clearly blocks incompatible files. The L5-03 test asset `first-post-gram.png` therefore needs a JPEG counterpart for the live publish checkpoint.
+- Checks and tests run:
+  - `node --experimental-default-type=module --test tests/instagram-publish-logic.test.js`: **9 passed, 0 failed**
+  - `node --check lib/instagram-publish-logic.js`: **passed**
+  - `node --check lib/instagram-publisher.js`: **passed**
+  - `node --check lib/instagram-publishing.js`: **passed**
+  - `node --check app/api/platform-versions/[id]/publish/route.js`: **passed**
+  - `node --check app/api/platform-versions/[id]/publish-attempts/route.js`: **passed**
+  - repository clone/lint/build remained unavailable in the local execution container because `github.com` DNS resolution is blocked
+  - production Amplify job `113` for implementation commit `fb5f706481e94184e3bff40a106d02bc5428eea4` (`Implement L5-04 Instagram single-image publishing`): **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+- Live-test status: **required / not yet completed**. No real Instagram post was submitted automatically by the implementation agent.
+- Required live/manual checkpoint using `Nicholas_Egner` and `@nicholasegner`:
+  1. open the existing Instagram Master Content or create a clean one under `Nicholas_Egner`
+  2. attach/select exactly one JPEG image that is 8 MB or smaller and within the 4:5 through 1.91:1 aspect-ratio range; the existing PNG test image is intentionally blocked
+  3. save the Instagram version and confirm Publish Now is enabled only for that compatible single-image saved revision
+  4. click Publish Now and review the exact confirmation showing destination, caption, and image filename before approving the real provider submission
+  5. if Instagram leaves the media container processing, use `Check Instagram Status`; do not create a second publish attempt
+  6. confirm the attempt reaches `Succeeded`, Publish History persists, and `View Post` opens the exact live Instagram result
+  7. refresh/reopen the Master Content and confirm the same revision remains locked as `Published`
+  8. confirm the successful revision cannot be submitted a second time and no duplicate Instagram post is created
+  9. confirm the existing Facebook destination/version remains unaffected
+- Blockers/manual actions: the real GIGnovate Instagram image post and persisted-result verification above.
+- Remaining work: do not begin `L5-05` until this real single-image result, exact `View Post`, refresh/reopen Published lock, and duplicate barrier are verified and recorded.
+- Status transition: `L5-04` -> `MANUAL`; `L5-05`, `L5-06`, and `L5-07` remain `WAITING`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
