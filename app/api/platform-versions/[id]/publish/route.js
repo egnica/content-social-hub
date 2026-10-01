@@ -13,6 +13,10 @@ import {
   checkInstagramPublishStatus,
   publishInstagramSingleImageVersion,
 } from "@/lib/instagram-publishing";
+import {
+  checkInstagramCarouselPublishStatus,
+  publishInstagramCarouselVersion,
+} from "@/lib/instagram-carousel-publishing";
 import { requireApiSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -45,17 +49,38 @@ function publishErrorResponse(error) {
   return null;
 }
 
-async function getPlatform(id) {
+async function getPublishTarget(id) {
   const platformVersionId = toObjectId(id);
-  if (!platformVersionId) return "";
+  if (!platformVersionId) return null;
 
   const db = await getDb();
   const version = await db.collection("platform_versions").findOne(
     { _id: platformVersionId, active: { $ne: false } },
-    { projection: { platform: 1 } },
+    {
+      projection: {
+        platform: 1,
+        mediaIds: 1,
+        lastPublishAttemptId: 1,
+      },
+    },
   );
 
-  return String(version?.platform || "");
+  if (!version) return null;
+
+  let attemptMode = "";
+  if (version.lastPublishAttemptId) {
+    const attempt = await db.collection("publish_attempts").findOne(
+      { _id: version.lastPublishAttemptId },
+      { projection: { publishMode: 1 } },
+    );
+    attemptMode = String(attempt?.publishMode || "");
+  }
+
+  return {
+    platform: String(version.platform || ""),
+    mediaCount: Array.isArray(version.mediaIds) ? version.mediaIds.length : 0,
+    attemptMode,
+  };
 }
 
 export async function POST(_request, { params }) {
@@ -64,13 +89,17 @@ export async function POST(_request, { params }) {
 
   try {
     const { id } = await params;
-    const platform = await getPlatform(id);
+    const target = await getPublishTarget(id);
 
-    if (platform === "instagram") {
-      return Response.json(await publishInstagramSingleImageVersion(id));
+    if (target?.platform === "instagram") {
+      return Response.json(
+        target.mediaCount >= 2
+          ? await publishInstagramCarouselVersion(id)
+          : await publishInstagramSingleImageVersion(id),
+      );
     }
 
-    if (platform === "facebook") {
+    if (target?.platform === "facebook") {
       return Response.json(await publishFacebookTextLinkVersion(id));
     }
 
@@ -89,13 +118,17 @@ export async function GET(_request, { params }) {
 
   try {
     const { id } = await params;
-    const platform = await getPlatform(id);
+    const target = await getPublishTarget(id);
 
-    if (platform === "instagram") {
-      return Response.json(await checkInstagramPublishStatus(id));
+    if (target?.platform === "instagram") {
+      return Response.json(
+        target.attemptMode === "carousel"
+          ? await checkInstagramCarouselPublishStatus(id)
+          : await checkInstagramPublishStatus(id),
+      );
     }
 
-    if (platform === "facebook") {
+    if (target?.platform === "facebook") {
       return Response.json(await checkFacebookVideoPublishStatus(id));
     }
 

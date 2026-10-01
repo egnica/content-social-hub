@@ -6,8 +6,8 @@ import {
   getInstagramPublishControlState,
   isInstagramAttemptForRevision,
   normalizeInstagramProviderUrl,
-  validateInstagramSingleImagePublishDraft,
 } from "@/lib/instagram-publish-logic";
+import { validateInstagramL505PublishDraft } from "@/lib/instagram-carousel-publish-logic";
 
 function attemptDate(attempt) {
   const value = attempt?.completedAt || attempt?.startedAt || attempt?.createdAt;
@@ -29,25 +29,35 @@ function attemptLabel(status) {
   return labels[String(status || "").toLowerCase()] || String(status || "Unknown");
 }
 
-function exactPublishConfirmation(destinationName, form, media) {
-  const selected = (media || []).filter((asset) =>
-    (form.mediaIds || []).includes(String(asset?._id || "")),
+function orderedSelectedMedia(form, media) {
+  const byId = new Map(
+    (media || []).map((asset) => [String(asset?._id || ""), asset]),
   );
-  const primary =
-    selected.find(
-      (asset) => String(asset?._id || "") === String(form.primaryMediaId || ""),
-    ) || selected[0];
+
+  return (form.mediaIds || [])
+    .map((id) => byId.get(String(id || "")))
+    .filter(Boolean);
+}
+
+function exactPublishConfirmation(destinationName, form, media, publishMode) {
+  const selected = orderedSelectedMedia(form, media);
+  const mediaLabel = publishMode === "carousel" ? "Carousel items" : "Image";
 
   return [
-    `Publish this exact Instagram post to ${destinationName}?`,
+    `Publish this exact Instagram ${publishMode === "carousel" ? "carousel" : "post"} to ${destinationName}?`,
     "",
     "Caption:",
     String(form.caption || "").trim() || "(none)",
     "",
-    "Image:",
-    primary?.originalName || "(missing)",
+    `${mediaLabel}:`,
+    ...(selected.length
+      ? selected.map(
+          (asset, index) =>
+            `${publishMode === "carousel" ? `${index + 1}. ` : ""}${asset?.originalName || "(missing)"}`,
+        )
+      : ["(missing)"]),
     "",
-    "This creates a real live Instagram post.",
+    "This creates one real live Instagram post.",
   ].join("\n");
 }
 
@@ -71,7 +81,7 @@ export default function InstagramPublishControls({
     version.destinationName || destination?.accountName || "Instagram";
   const validation = useMemo(
     () =>
-      validateInstagramSingleImagePublishDraft({
+      validateInstagramL505PublishDraft({
         caption: form.caption,
         mediaIds: form.mediaIds,
         mediaAssets: media,
@@ -104,6 +114,8 @@ export default function InstagramPublishControls({
     controlState.mode === "published" &&
     Boolean(currentAttempt?.providerPostId || version.providerPostId) &&
     !postUrl;
+  const currentPublishMode =
+    currentAttempt?.publishMode || validation.publishMode || "instagram";
 
   async function refreshHistory({ preferLatest = false } = {}) {
     try {
@@ -165,7 +177,16 @@ export default function InstagramPublishControls({
       return;
     }
 
-    if (!window.confirm(exactPublishConfirmation(destinationName, form, media))) {
+    if (
+      !window.confirm(
+        exactPublishConfirmation(
+          destinationName,
+          form,
+          media,
+          validation.publishMode,
+        ),
+      )
+    ) {
       return;
     }
 
@@ -190,7 +211,9 @@ export default function InstagramPublishControls({
 
       if (result.attempt?.status === "processing") {
         setMessage(
-          `Instagram accepted the image for ${destinationName} and is still processing it.`,
+          result.attempt?.publishMode === "carousel"
+            ? `Instagram accepted the carousel containers for ${destinationName} and is still processing them.`
+            : `Instagram accepted the image for ${destinationName} and is still processing it.`,
         );
       } else {
         setMessage(`Published live to ${destinationName}.`);
@@ -232,10 +255,16 @@ export default function InstagramPublishControls({
         );
       } else if (result.attempt?.status === "failed") {
         setError(
-          "Instagram reported that the image container failed processing. The saved revision can be retried.",
+          result.attempt?.publishMode === "carousel"
+            ? "Instagram reported that carousel preparation failed before the final publish step. The saved revision can be retried."
+            : "Instagram reported that the image container failed processing. The saved revision can be retried.",
         );
       } else {
-        setMessage("Instagram is still processing the image. Check again shortly.");
+        setMessage(
+          result.attempt?.publishMode === "carousel"
+            ? "Instagram is still processing the carousel. Check again shortly."
+            : "Instagram is still processing the image. Check again shortly.",
+        );
       }
     } catch (requestError) {
       setError(requestError.message);
@@ -249,9 +278,10 @@ export default function InstagramPublishControls({
       <div className={styles.sectionHeader}>
         <h2>Publish Now</h2>
         <p>
-          L5-04 publishes one JPEG image. Instagram Account Health and the saved
-          revision are checked again on the server immediately before submission.
-          Successful revisions and uncertain provider results are locked against
+          L5-05 supports one compatible JPEG image or an ordered 2–10 item
+          Instagram carousel. Account Health and the exact saved revision are
+          checked again on the server immediately before submission. Successful
+          revisions and uncertain final provider results remain locked against
           duplicate publishing.
         </p>
       </div>
@@ -276,8 +306,9 @@ export default function InstagramPublishControls({
 
       {providerProcessing ? (
         <div className={styles.notice}>
-          Instagram already has this revision as a media container. Do not publish
-          it again; use Check Instagram Status.
+          Instagram already has this revision as provider containers. Do not
+          submit it again; use Check Instagram Status so the recorded attempt
+          continues without creating duplicate child or parent posts.
         </div>
       ) : null}
 
@@ -285,16 +316,17 @@ export default function InstagramPublishControls({
         <div className={styles.errorNotice}>
           <strong>Review required</strong>
           <div style={{ marginTop: 6 }}>
-            Instagram may have received this revision, but the final result could
-            not be confirmed. Automatic retry is blocked to prevent a duplicate.
+            Instagram may have accepted the final publish for this revision, but
+            the result could not be confirmed. Automatic retry is blocked to
+            prevent a duplicate.
           </div>
         </div>
       ) : null}
 
       {controlState.mode === "retry" ? (
         <div className={styles.notice}>
-          The previous attempt definitively failed before a live Instagram post was
-          recorded. Retry is allowed and the prior failure stays in Publish History.
+          The previous attempt failed before a live Instagram post was accepted.
+          Retry is allowed and the prior failure stays in Publish History.
         </div>
       ) : null}
 
@@ -374,7 +406,7 @@ export default function InstagramPublishControls({
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <strong>{attemptLabel(item.status)}</strong>
                     <span>Revision {item.platformVersionRevision || "—"}</span>
-                    <span>{item.publishMode || "instagram"}</span>
+                    <span>{item.publishMode || currentPublishMode}</span>
                     {attemptDate(item) ? <span>{attemptDate(item)}</span> : null}
                   </div>
                   {providerError ? (
