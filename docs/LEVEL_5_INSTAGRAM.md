@@ -185,7 +185,7 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | L5-03 | `DONE` | Add Instagram destination selection, platform version, validation, and preview | Real `@nicholasegner` destination/version inheritance, customization preservation, reset behavior, validation, and carousel preview verified in production |
 | L5-04 | `DONE` | Publish single-image Instagram posts with durable results and duplicate protection | Real `@nicholasegner` single-image post published from revision 9; Succeeded history, Published lock, and exact View Post verified in production |
 | L5-05 | `DONE` | Add Instagram carousel publishing | Real `@nicholasegner` multi-image carousel published; Succeeded history and exact live `View Post` verified in production |
-| L5-06 | `READY` | Add Instagram Reels/video publishing and processing-state handling | L5-05 live carousel publisher/result model is proven |
+| L5-06 | `MANUAL` | Add Instagram Reels/video publishing and processing-state handling | Implementation deployed; real `@nicholasegner` Reel publish / persisted result verification required |
 | L5-07 | `WAITING` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Requires all direct Instagram publishing modes to be proven |
 
 There should normally be only one `READY` task.
@@ -735,5 +735,58 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Blockers/manual actions: none remain for L5-05.
 - Remaining work: `L5-06` is now the sole `READY` task. `L5-07` remains `WAITING`.
 - Status transition: `L5-05` -> `DONE`; `L5-06` -> `READY`.
+
+### October 1, 2026: L5-06 implementation and deployment checkpoint
+
+- Task: `L5-06` — Instagram Reels / Video Publishing.
+- Outcome: implementation completed and deployed successfully; task moved to `MANUAL` pending the required real `@nicholasegner` Reel publish and persisted-result verification.
+- Provider constraints reviewed at implementation time from Meta's maintained Instagram API references:
+  - Reel container must use MOV or MP4
+  - supported video codecs are H.264 or HEVC
+  - audio must use AAC at 48 kHz
+  - frame rate must be 23–60 FPS
+  - maximum horizontal resolution is 1920 pixels
+  - maximum video bitrate is 25 Mbps and maximum audio bitrate is 128 kbps
+  - duration must be 3 seconds through 15 minutes
+  - file size must be 1 GB or smaller
+- Files changed:
+  - `app/api/platform-versions/[id]/publish/route.js`
+  - `components/instagram-publish-controls.js`
+  - `lib/instagram-carousel-publish-logic.js`
+  - `lib/instagram-publisher.js`
+  - `lib/instagram-reel-publish-logic.js`
+  - `lib/instagram-reel-publishing.js`
+  - `tests/instagram-carousel-publish-logic.test.js`
+  - `tests/instagram-reel-publish-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions:
+  - one selected saved Instagram video now routes to a dedicated Reel publisher while single-image and carousel behavior remain on their existing proven paths
+  - Reel publishing creates a `REELS` container from a short-lived signed URL for the existing private S3 object; the media bucket remains private and the signed URL is not persisted
+  - the durable publish attempt records `publishMode: "reel"`, exact destination/revision identity, provider container ID, provider stage, and provider status before polling begins
+  - provider status checks always resume the recorded Reel container; processing does not create a replacement container or a second attempt
+  - the final `media_publish` call uses an atomic claim from the recorded processing attempt so overlapping status checks cannot both publish the same Reel container
+  - a definitive provider/container failure before final acceptance is retry-safe and clears the deterministic submission key; ambiguous container creation or final publish outcomes remain locked for review to prevent duplicates
+  - successful Reels persist the provider media ID, permalink, Published state, Published revision, Publish History, and exact `View Post` behavior
+  - existing browser upload metadata provides file type, size, duration, and dimensions but not codec, audio codec/sample rate, frame rate, or bitrates. The app therefore blocks constraints it can prove locally and clearly surfaces the remaining Meta requirements; Meta's recorded container-processing result remains authoritative for those technical properties rather than adding a large media-analysis dependency in L5-06
+  - the Instagram publish confirmation now identifies a Reel and the exact video filename, while processing copy directs the operator to `Check Instagram Status` instead of resubmitting
+  - no Instagram scheduling, Calendar, approvals, analytics, or L5-07 work was added
+- Checks/tests and deployment evidence:
+  - `node --experimental-default-type=module --test /tmp/l506/tests/instagram-reel-publish-logic.test.js`: **9 passed, 0 failed**
+  - focused Reel logic syntax validation: **passed**
+  - a full local repository clone/lint/build remains unavailable because the execution container cannot resolve `github.com`
+  - Amplify production job `125` for commit `a5ff50056514e0cc6a2a22f3c78cea1643575d1a`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+- Live-test status: **required / not yet completed**. No real Reel was submitted automatically by the implementation agent.
+- Required live/manual checkpoint using `Nicholas_Egner` and the existing Healthy `@nicholasegner` destination:
+  1. open or create Master Content under `Nicholas_Egner` with exactly one suitable MP4 or MOV video selected for Instagram; use a file 1 GB or smaller, 3 seconds–15 minutes, and no more than 1920 horizontal pixels; preferably use a normal 9:16 H.264/HEVC + AAC 48 kHz file at 23–60 FPS
+  2. save the Instagram version and confirm the editor detects `Reel`, shows no blocking validation issues, and enables Publish Now only for the saved revision
+  3. click Publish Now and confirm the browser dialog names `@nicholasegner`, the exact caption, and the exact video filename before approving the real provider submission
+  4. if Instagram reports processing, use `Check Instagram Status`; do not click Publish Now again and confirm Publish History continues the same recorded `reel` attempt/container
+  5. continue checking the same attempt until it reaches `Succeeded` or a terminal provider failure; a processing state must never create a second Reel container
+  6. on success, confirm the revision becomes locked `Published`, Publish History shows `Succeeded` / `reel`, and `View Post` opens the exact live Reel on `@nicholasegner`
+  7. refresh/reopen the Master Content and confirm the same revision remains Published, the permalink persists, and Publish Now cannot submit the same revision again
+  8. confirm exactly one Reel was created and the existing Facebook destination plus prior Instagram image/carousel results remain unaffected
+- Blockers/manual actions: the real production Reel publish / processing / exact-result checkpoint above.
+- Remaining work: do not begin `L5-07`. After the real Reel reaches a proven terminal result with exact `View Post`, persisted history, and duplicate-safe behavior, move `L5-06` to `DONE` and make `L5-07` the sole `READY` task.
+- Status transition: `L5-06` -> `MANUAL`; `L5-07` remains `WAITING`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
