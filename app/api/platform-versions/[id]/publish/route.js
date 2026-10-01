@@ -17,6 +17,10 @@ import {
   checkInstagramCarouselPublishStatus,
   publishInstagramCarouselVersion,
 } from "@/lib/instagram-carousel-publishing";
+import {
+  checkInstagramReelPublishStatus,
+  publishInstagramReelVersion,
+} from "@/lib/instagram-reel-publishing";
 import { requireApiSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +64,7 @@ async function getPublishTarget(id) {
       projection: {
         platform: 1,
         mediaIds: 1,
+        mediaMode: 1,
         lastPublishAttemptId: 1,
       },
     },
@@ -78,6 +83,7 @@ async function getPublishTarget(id) {
 
   return {
     platform: String(version.platform || ""),
+    mediaMode: String(version.mediaMode || ""),
     mediaCount: Array.isArray(version.mediaIds) ? version.mediaIds.length : 0,
     attemptMode,
   };
@@ -92,11 +98,13 @@ export async function POST(_request, { params }) {
     const target = await getPublishTarget(id);
 
     if (target?.platform === "instagram") {
-      return Response.json(
-        target.mediaCount >= 2
-          ? await publishInstagramCarouselVersion(id)
-          : await publishInstagramSingleImageVersion(id),
-      );
+      if (target.mediaCount >= 2) {
+        return Response.json(await publishInstagramCarouselVersion(id));
+      }
+      if (target.mediaMode === "reel") {
+        return Response.json(await publishInstagramReelVersion(id));
+      }
+      return Response.json(await publishInstagramSingleImageVersion(id));
     }
 
     if (target?.platform === "facebook") {
@@ -121,11 +129,13 @@ export async function GET(_request, { params }) {
     const target = await getPublishTarget(id);
 
     if (target?.platform === "instagram") {
-      return Response.json(
-        target.attemptMode === "carousel"
-          ? await checkInstagramCarouselPublishStatus(id)
-          : await checkInstagramPublishStatus(id),
-      );
+      if (target.attemptMode === "carousel") {
+        return Response.json(await checkInstagramCarouselPublishStatus(id));
+      }
+      if (target.attemptMode === "reel") {
+        return Response.json(await checkInstagramReelPublishStatus(id));
+      }
+      return Response.json(await checkInstagramPublishStatus(id));
     }
 
     if (target?.platform === "facebook") {
