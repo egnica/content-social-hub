@@ -21,6 +21,25 @@ function labelConnectionPlatform(connection) {
     : "Facebook Page";
 }
 
+function labelRequestPlatform(platform) {
+  return platform === "instagram" ? "Instagram" : "Facebook Pages";
+}
+
+function formatRequestPlatforms(request) {
+  return (request.requestedPlatforms || ["facebook"])
+    .map((platform) => {
+      const state = request.platformStatus?.[platform];
+      return state === "connected"
+        ? `${labelRequestPlatform(platform)} connected`
+        : labelRequestPlatform(platform);
+    })
+    .join(" · ");
+}
+
+function requestOverlapsPlatform(request, platform) {
+  return (request.requestedPlatforms || ["facebook"]).includes(platform);
+}
+
 function formatDate(value) {
   if (!value) return "Not yet";
 
@@ -42,7 +61,7 @@ export default function ConnectionsManager({
   const [requests, setRequests] = useState(initialRequests);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [sending, setSending] = useState(false);
+  const [sendingPlatform, setSendingPlatform] = useState("");
   const [checkingId, setCheckingId] = useState("");
 
   useEffect(() => {
@@ -50,6 +69,7 @@ export default function ConnectionsManager({
     setRequests(initialRequests);
     setMessage("");
     setError("");
+    setSendingPlatform("");
   }, [initialConnections, initialRequests, selectedClient?._id]);
 
   function changeClient(event) {
@@ -57,10 +77,10 @@ export default function ConnectionsManager({
     router.push(clientId ? `/connections?clientId=${clientId}` : "/connections");
   }
 
-  async function sendRequest() {
+  async function sendRequest(platform) {
     if (!selectedClient) return;
 
-    setSending(true);
+    setSendingPlatform(platform);
     setMessage("");
     setError("");
 
@@ -68,7 +88,10 @@ export default function ConnectionsManager({
       const response = await fetch("/api/connection-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId: selectedClient._id }),
+        body: JSON.stringify({
+          clientId: selectedClient._id,
+          requestedPlatforms: [platform],
+        }),
       });
       const result = await response.json();
 
@@ -79,18 +102,19 @@ export default function ConnectionsManager({
       setRequests((current) => [
         result.request,
         ...current.map((request) =>
-          ["pending", "email_failed"].includes(request.status)
+          ["pending", "email_failed"].includes(request.status) &&
+          requestOverlapsPlatform(request, platform)
             ? { ...request, status: "revoked" }
             : request,
         ),
       ]);
       setMessage(
-        `Connection request sent to ${result.request.email}. The link expires in 48 hours.`,
+        `${labelRequestPlatform(platform)} connection request sent to ${result.request.email}. The link expires in 48 hours.`,
       );
     } catch (requestError) {
       setError(requestError.message);
     } finally {
-      setSending(false);
+      setSendingPlatform("");
     }
   }
 
@@ -202,15 +226,15 @@ export default function ConnectionsManager({
               <button
                 className={styles.buttonSecondary}
                 type="button"
-                onClick={sendRequest}
+                onClick={() => sendRequest("facebook")}
                 disabled={
-                  sending ||
+                  Boolean(sendingPlatform) ||
                   !configuration.facebookReady ||
                   !configuration.emailReady ||
                   !selectedClient.approvalReportEmail
                 }
               >
-                {sending ? "Sending" : "Request Connection"}
+                {sendingPlatform === "facebook" ? "Sending" : "Request Connection"}
               </button>
             </div>
           </article>
@@ -220,8 +244,8 @@ export default function ConnectionsManager({
             <div className={styles.connectionProviderBody}>
               <strong>Instagram Professional</strong>
               <p>
-                Connect a Business or Creator account directly with Instagram.
-                Client email connection is the next Level 5 checkpoint.
+                Connect a Business or Creator account directly, or email the
+                same secure limited-purpose setup flow to the client.
               </p>
             </div>
             <div className={styles.connectionActions}>
@@ -237,13 +261,26 @@ export default function ConnectionsManager({
               >
                 Connect
               </button>
+              <button
+                className={styles.buttonSecondary}
+                type="button"
+                onClick={() => sendRequest("instagram")}
+                disabled={
+                  Boolean(sendingPlatform) ||
+                  !configuration.instagramReady ||
+                  !configuration.emailReady ||
+                  !selectedClient.approvalReportEmail
+                }
+              >
+                {sendingPlatform === "instagram" ? "Sending" : "Request Connection"}
+              </button>
             </div>
           </article>
 
           {!selectedClient.approvalReportEmail ? (
             <p className={styles.fieldHint}>
               Add an Approval / Report Email to this client before requesting
-              Facebook access by email.
+              social account access by email.
             </p>
           ) : null}
           {!configuration.emailReady ? (
@@ -327,7 +364,7 @@ export default function ConnectionsManager({
           <div>
             <h2>Connection requests</h2>
             <p className={styles.statNote}>
-              New Facebook requests revoke any older unfinished link for this client.
+              A new request replaces older unfinished links for the same network.
             </p>
           </div>
         </div>
@@ -338,7 +375,10 @@ export default function ConnectionsManager({
                 <div className={styles.requestItem} key={request._id}>
                   <div>
                     <strong>{request.email}</strong>
-                    <p>Facebook Pages · Expires {formatDate(request.expiresAt)}</p>
+                    <p>
+                      {formatRequestPlatforms(request)} · Expires{" "}
+                      {formatDate(request.expiresAt)}
+                    </p>
                   </div>
                   <span
                     className={
