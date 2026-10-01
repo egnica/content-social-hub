@@ -278,11 +278,10 @@ export default function InstagramPublishControls({
       <div className={styles.sectionHeader}>
         <h2>Publish Now</h2>
         <p>
-          L5-05 supports one compatible JPEG image or an ordered 2–10 item
-          Instagram carousel. Account Health and the exact saved revision are
-          checked again on the server immediately before submission. Successful
-          revisions and uncertain final provider results remain locked against
-          duplicate publishing.
+          Instagram accepts compatible Master images without manual format work:
+          JPEGs can publish directly, while PNG, WebP, and AVIF images are converted
+          to a private reusable JPEG derivative automatically. Single-image and
+          ordered 2–10 item carousel publishing keep the same duplicate-safety rules.
         </p>
       </div>
 
