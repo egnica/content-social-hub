@@ -19,7 +19,7 @@ const video = {
   contentType: "video/mp4",
   size: 5_000_000,
   width: 1080,
-  height: 1350,
+  height: 1920,
   duration: 12,
 };
 
@@ -105,7 +105,7 @@ test("carousel validation blocks unhealthy destination and overlong caption", ()
   assert.match(result.blocking.join(" "), /2200/);
 });
 
-test("L5-05 validation preserves single-image publishing", () => {
+test("combined Instagram validation preserves single-image publishing", () => {
   const result = validateInstagramL505PublishDraft({
     mediaIds: ["image-1"],
     mediaAssets: [jpeg],
@@ -115,7 +115,7 @@ test("L5-05 validation preserves single-image publishing", () => {
   assert.equal(result.publishMode, "single_image");
 });
 
-test("L5-05 validation routes 2+ items to carousel", () => {
+test("combined Instagram validation routes 2+ items to carousel", () => {
   const result = validateInstagramL505PublishDraft({
     mediaIds: ["image-1", "video-1"],
     mediaAssets: [jpeg, video],
@@ -125,13 +125,12 @@ test("L5-05 validation routes 2+ items to carousel", () => {
   assert.equal(result.publishMode, "carousel");
 });
 
-test("L5-05 validation keeps single-video Reels deferred to L5-06", () => {
+test("combined Instagram validation routes one supported video to Reel", () => {
   const result = validateInstagramL505PublishDraft({
     mediaIds: ["video-1"],
     mediaAssets: [video],
   });
 
-  assert.equal(result.publishable, false);
+  assert.equal(result.publishable, true);
   assert.equal(result.publishMode, "reel");
-  assert.match(result.blocking.join(" "), /L5-06/);
 });
