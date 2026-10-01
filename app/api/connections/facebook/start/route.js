@@ -4,6 +4,7 @@ import {
   createFacebookOauthState,
   getConnectionRequestByToken,
 } from "@/lib/connections";
+import { isConnectionRequestUsableForPlatform } from "@/lib/connection-request-logic";
 import { getAppBaseUrl } from "@/lib/env";
 import { createFacebookAuthorizationUrl } from "@/lib/facebook";
 import { getSession } from "@/lib/session";
@@ -22,7 +23,12 @@ export async function GET(request) {
     if (requestToken) {
       const connectionRequest = await getConnectionRequestByToken(requestToken);
 
-      if (!connectionRequest || connectionRequest.status !== "pending") {
+      if (
+        !isConnectionRequestUsableForPlatform(
+          connectionRequest,
+          "facebook",
+        )
+      ) {
         return NextResponse.redirect(
           appUrl("/connect/facebook/error?reason=request"),
           303,

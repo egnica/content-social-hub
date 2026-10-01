@@ -42,8 +42,12 @@ export async function GET(request) {
       return errorRedirect("expired");
     }
 
-    if (state.mode !== "owner" || !(await getSession())) {
-      return NextResponse.redirect(appUrl("/login"), 303);
+    if (state.mode === "owner") {
+      if (!(await getSession())) {
+        return NextResponse.redirect(appUrl("/login"), 303);
+      }
+    } else if (state.mode !== "request" || !state.requestId) {
+      return errorRedirect("request");
     }
 
     const token = await exchangeInstagramCode(code);
@@ -54,6 +58,7 @@ export async function GET(request) {
     // do not require Meta's OAuth subject ID to equal that Professional account ID.
     const confirmationToken = await createInstagramSelectionFlow({
       clientId: state.clientId,
+      requestId: state.requestId,
       mode: state.mode,
       profile,
       accessToken: token.accessToken,

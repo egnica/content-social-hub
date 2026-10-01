@@ -16,6 +16,12 @@ function formatExpiration(value) {
   }).format(new Date(value));
 }
 
+function platformLabel(platform) {
+  return platform === "instagram"
+    ? "Instagram Professional account"
+    : "Facebook Page";
+}
+
 export default async function ConnectionRequestPage({ params }) {
   const { token } = await params;
   const request = await getConnectionRequestByToken(token);
@@ -42,35 +48,51 @@ export default async function ConnectionRequestPage({ params }) {
           <span className={styles.brandMark}>CS</span>
           <h1>Connection complete</h1>
           <p>
-            The requested Facebook Page has already been connected for{" "}
-            <strong>{request.clientName}</strong>. This link can no longer be
-            used.
+            The requested social account setup for{" "}
+            <strong>{request.clientName}</strong> has already been completed.
+            This link can no longer be used.
           </p>
         </div>
       </main>
     );
   }
 
+  const remainingPlatforms = (request.requestedPlatforms || ["facebook"]).filter(
+    (platform) => request.platformStatus?.[platform] !== "connected",
+  );
+
   return (
     <main className={styles.loginPage}>
       <div className={styles.loginCard}>
         <span className={styles.brandMark}>CS</span>
-        <h1>Connect your Facebook Page</h1>
+        <h1>Connect your social account</h1>
         <p>
-          Authorize Facebook and choose the Page that belongs to{" "}
+          Complete the requested authorization for{" "}
           <strong>{request.clientName}</strong>. This setup page cannot access
           the Content Social Hub workspace.
         </p>
         <div className={styles.notice}>
-          Facebook handles your sign-in. Content Social Hub never receives your
-          Facebook password.
+          Facebook and Instagram handle their own sign-in. Content Social Hub
+          never receives your social account password.
         </div>
-        <form action="/api/connections/facebook/start" method="get">
-          <input type="hidden" name="requestToken" value={token} />
-          <button className={styles.button} type="submit">
-            Continue with Facebook
-          </button>
-        </form>
+
+        <div className={styles.accountPickerList}>
+          {remainingPlatforms.map((platform) => (
+            <div className={styles.accountPickerItem} key={platform}>
+              <span>
+                <strong>{platformLabel(platform)}</strong>
+                <small>Requested for {request.clientName}</small>
+              </span>
+              <form action={`/api/connections/${platform}/start`} method="get">
+                <input type="hidden" name="requestToken" value={token} />
+                <button className={styles.button} type="submit">
+                  Continue with {platform === "instagram" ? "Instagram" : "Facebook"}
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+
         <p className={styles.connectionExpiration}>
           This link expires {formatExpiration(request.expiresAt)}.
         </p>

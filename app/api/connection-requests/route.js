@@ -18,13 +18,17 @@ export async function POST(request) {
 
   try {
     const body = await readJson(request);
-    created = await createConnectionRequest(body?.clientId);
+    created = await createConnectionRequest(
+      body?.clientId,
+      body?.requestedPlatforms ?? body?.platform,
+    );
     const setupUrl = `${requireEnv("APP_BASE_URL").replace(/\/$/, "")}/connect/${created.token}`;
     const email = await sendConnectionRequestEmail({
       to: created.request.email,
       clientName: created.client.name,
       setupUrl,
       expiresAt: new Date(created.request.expiresAt),
+      requestedPlatforms: created.request.requestedPlatforms,
     });
 
     await Promise.all([
