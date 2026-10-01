@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildInstagramConnectionIdentity,
   getInstagramHealth,
+  getInstagramProviderAccountId,
   INSTAGRAM_REQUIRED_PERMISSIONS,
   normalizeInstagramPermissions,
 } from "../lib/instagram-connection-logic.js";
@@ -20,6 +21,20 @@ test("Instagram permission normalization accepts Meta's comma-separated token re
       "instagram_business_basic, instagram_business_content_publish",
     ),
     ["instagram_business_basic", "instagram_business_content_publish"],
+  );
+});
+
+test("Instagram profile identity prefers the Professional account user_id over the graph-scoped id", () => {
+  assert.equal(
+    getInstagramProviderAccountId({ id: "graph-scoped", user_id: "17841400123456789" }),
+    "17841400123456789",
+  );
+});
+
+test("Instagram profile identity safely falls back to id when user_id is unavailable", () => {
+  assert.equal(
+    getInstagramProviderAccountId({ id: "17841400123456789" }),
+    "17841400123456789",
   );
 });
 
