@@ -180,9 +180,9 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 
 | ID | Status | Task | Evidence or dependency |
 | --- | --- | --- | --- |
-| L5-01 | `MANUAL` | Build Instagram connection / OAuth / Account Health foundation | Code implemented; waiting on Meta Instagram Login configuration, deployment env, and live Nicholas_Egner connection proof |
-| L5-02 | `WAITING` | Extend Request Connection flow to Instagram and prove client-scoped live connection | Depends on L5-01 direct connection/account model |
-| L5-03 | `WAITING` | Add Instagram destination selection, platform version, validation, and preview | Requires a real Healthy Instagram connection |
+| L5-01 | `DONE` | Build Instagram connection / OAuth / Account Health foundation | Real `@nicholasegner` Professional account connected to `Nicholas_Egner`; persisted and Healthy in production |
+| L5-02 | `READY` | Extend Request Connection flow to Instagram and prove client-scoped live connection | L5-01 direct connection/account model is live and Healthy |
+| L5-03 | `WAITING` | Add Instagram destination selection, platform version, validation, and preview | Requires L5-02 client-facing connection checkpoint |
 | L5-04 | `WAITING` | Publish single-image Instagram posts with durable results and duplicate protection | Requires L5-03 editor/validation foundation |
 | L5-05 | `WAITING` | Add Instagram carousel publishing | Requires proven single-image publisher/result model |
 | L5-06 | `WAITING` | Add Instagram Reels/video publishing and processing-state handling | Requires proven Instagram publish/idempotency boundary |
@@ -411,5 +411,41 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
   - verify cross-client isolation and persistence after reopening
   - confirm L5-01 created no Instagram post
 - `L5-02` remains `WAITING`; do not start it until this direct-connect checkpoint is supported by live evidence.
+
+### October 1, 2026: L5-01 live connection closed
+
+- Task: `L5-01` — Instagram Connection / OAuth / Account Health Foundation.
+- Outcome: `DONE`. Nicholas explicitly closed the task after the real deployed Instagram Login flow successfully connected the Professional account `@nicholasegner` to `Nicholas_Egner` and the persisted Social Accounts record displayed `Healthy`.
+- External configuration completed during the live checkpoint:
+  - configured Instagram API with Instagram Login in the existing Meta app
+  - registered the production OAuth redirect URI
+  - added `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` to Amplify and redeployed successfully
+  - added `nicholasegner` as an Instagram Tester and accepted the tester invitation while the Meta app remains unpublished
+  - authorization presented both required capabilities: profile/media access and content publishing access
+- Live verification evidence:
+  - Meta/Instagram OAuth authorization completed with the real `nicholasegner` Professional account
+  - the app returned a successful `Instagram account connected` screen naming `@nicholasegner` and client `Nicholas_Egner`
+  - the connection persisted on Social Accounts after returning from OAuth
+  - the persisted Instagram connection displayed `Healthy` and a current health timestamp
+  - the existing GIGnovate Facebook Page connection remained Healthy on the same Social Accounts surface
+  - no Instagram publishing code was invoked by L5-01 and no Instagram post was intentionally created by this task
+- Production identity issue discovered and corrected during the live test:
+  - Meta's OAuth token subject ID and the Instagram Professional account identity returned by `/me` are not guaranteed to be the same identifier
+  - commit `38308637` added Professional-account identity normalization
+  - commit `47c4fc79` added focused identity-field regression coverage
+  - commit `03a4043a` removed the invalid cross-ID equality requirement while preserving the client-scoped one-time OAuth state and exact account confirmation boundary
+  - Amplify production job `104` for `03a4043a56e3d7b5e0ae6e035ae0f4d61cccca7d`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - focused Instagram connection tests after the final fix: **10 passed, 0 failed**; callback syntax check passed
+- Client isolation remains enforced by the persisted connection identity (`clientId + platform + providerAccountId`) and client-filtered Social Accounts query. A dedicated second-client screenshot was not separately captured before Nicholas directed task closure; no cross-client leak was observed in the live flow.
+- MongoDB Atlas connector verification was unavailable because AI-client access is disabled for the Atlas organization; this did not block the deployed UI/OAuth/health evidence above.
+- Files changed during final live-test fixes and closure:
+  - `lib/instagram.js`
+  - `lib/instagram-connection-logic.js`
+  - `app/api/connections/instagram/callback/route.js`
+  - `tests/instagram-connection-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Blockers/manual actions: none remain for L5-01.
+- Remaining Level 5 work begins with `L5-02`; Request Connection support for Instagram has not been implemented yet.
+- Status transition: `L5-01` -> `DONE`; `L5-02` -> `READY`. All later Level 5 tasks remain `WAITING`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
