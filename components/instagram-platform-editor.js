@@ -221,7 +221,8 @@ function InstagramPreview({ destination, form, media, mediaMode }) {
             textAlign: "center",
           }}
         >
-          Preview only. L5-04 Publish Now supports a single compatible JPEG image.
+          Preview only. Publish Now supports one compatible JPEG image or an
+          ordered 2–10 item carousel.
         </div>
       </div>
     </div>
@@ -426,9 +427,9 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
             <div className={styles.sectionHeader}>
               <h2>Instagram media</h2>
               <p>
-                Choose compatible media attached to Master Content. L5-04 can
-                publish one JPEG image; carousel and Reel publishing remain later
-                Level 5 tasks.
+                Choose compatible media attached to Master Content. Publish Now
+                supports one JPEG image or an ordered 2–10 item carousel;
+                standalone Reel/video publishing begins in L5-06.
               </p>
             </div>
 
