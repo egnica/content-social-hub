@@ -185,8 +185,8 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | L5-03 | `DONE` | Add Instagram destination selection, platform version, validation, and preview | Real `@nicholasegner` destination/version inheritance, customization preservation, reset behavior, validation, and carousel preview verified in production |
 | L5-04 | `DONE` | Publish single-image Instagram posts with durable results and duplicate protection | Real `@nicholasegner` single-image post published from revision 9; Succeeded history, Published lock, and exact View Post verified in production |
 | L5-05 | `DONE` | Add Instagram carousel publishing | Real `@nicholasegner` multi-image carousel published; Succeeded history and exact live `View Post` verified in production |
-| L5-06 | `MANUAL` | Add Instagram Reels/video publishing and processing-state handling | Implementation deployed; real `@nicholasegner` Reel publish / persisted result verification required |
-| L5-07 | `WAITING` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Requires all direct Instagram publishing modes to be proven |
+| L5-06 | `DONE` | Add Instagram Reels/video publishing and processing-state handling | Real `@nicholasegner` Reel published from revision 4; Succeeded history, Published lock, exact View Post, and Master thumbnail cover verified in production |
+| L5-07 | `READY` | Extend background scheduling to Instagram and run final browser-closed checkpoint | All direct Instagram publishing modes are now proven |
 
 There should normally be only one `READY` task.
 
@@ -820,5 +820,44 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
   - final provider-cover normalization commit `2b041a5aefa47d515ea9234eef85460874daed07` entered Amplify job `129`; final build/deploy status is recorded in the implementation handoff when available
 - Live-test status: unchanged — the real `@nicholasegner` Reel has not yet been submitted. During the L5-06 live checkpoint, confirm the displayed Master thumbnail is the cover on the exact published Reel.
 - Remaining work: complete the existing L5-06 Reel publish/status/permalink/duplicate-safety checkpoint. Only after that evidence may L5-06 become `DONE` and L5-07 become `READY`.
+
+
+### October 1, 2026: L5-06 live Reel publishing closed
+
+- Task: `L5-06` — Instagram Reels / Video Publishing.
+- Outcome: `DONE`. Nicholas completed the real production Reel checkpoint on `@nicholasegner` and explicitly directed task closure.
+- Live verification evidence:
+  - the Content Social Hub Reel attempt first entered the expected provider-processing state and the UI prevented a second submission, directing the operator to `Check Instagram Status`
+  - the same recorded Reel attempt later reached `Succeeded`; the saved Instagram version displayed the locked `Published` state
+  - Publish History recorded `Succeeded`, `Revision 4`, and publish mode `reel` with the production completion timestamp
+  - `View Post` opened the exact live Reel on the real `nicholasegner` Instagram account
+  - the live Reel displayed the intended Master video thumbnail as its cover
+  - exactly one Reel result was observed; no duplicate Reel submission was made while the provider container was processing
+- Automated/deployment evidence retained:
+  - focused Reel validation tests passed: **9 passed, 0 failed** before the Master-thumbnail extension
+  - Reel-cover revision-safety coverage and Instagram thumbnail-inheritance coverage were added with the Master-thumbnail extension
+  - Amplify job `125` for the core L5-06 application path: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - Amplify jobs `127` and `128` for Master-thumbnail inheritance and Reel-cover UI: **SUCCEED**
+  - Amplify job `129` for provider-cover JPEG normalization commit `2b041a5aefa47d515ea9234eef85460874daed07`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+- Files changed across L5-06 implementation, Reel-cover extension, and closure:
+  - `app/api/platform-versions/[id]/publish/route.js`
+  - `components/instagram-platform-editor.js`
+  - `components/instagram-publish-controls.js`
+  - `lib/instagram-carousel-publish-logic.js`
+  - `lib/instagram-publisher.js`
+  - `lib/instagram-reel-publish-logic.js`
+  - `lib/instagram-reel-publishing.js`
+  - `lib/platform-version-logic.js`
+  - `lib/platform-versions.js`
+  - `tests/instagram-carousel-publish-logic.test.js`
+  - `tests/instagram-platform-version-logic.test.js`
+  - `tests/instagram-reel-publish-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Decisions:
+  - L5-06 is closed on the combined automated, deployed, processing-resume, persisted-success, exact-post, duplicate-safety, and Master-thumbnail-cover evidence
+  - no L5-07 scheduling implementation was started while closing this task
+- Blockers/manual actions: none remain for L5-06.
+- Remaining work: `L5-07` is now the sole `READY` task. It must extend the existing Level 4 background scheduler to Instagram and complete the final browser-closed scheduled Instagram checkpoint.
+- Status transition: `L5-06` -> `DONE`; `L5-07` -> `READY`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
