@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import FacebookPublishControls from "@/components/facebook-publish-controls";
-import FacebookScheduleControls from "@/components/facebook-schedule-controls";
+import DestinationScheduleControls from "@/components/facebook-schedule-controls";
 import {
   isFacebookVersionOutOfSync,
   validateFacebookVersionDraft,
@@ -834,7 +834,7 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
             </button>
           </div>
 
-          <FacebookScheduleControls
+          <DestinationScheduleControls
             version={version}
             destination={destination}
             masterContent={masterContent}
