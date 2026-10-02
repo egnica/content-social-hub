@@ -4,6 +4,7 @@ import {
   INSTAGRAM_REEL_MAX_HORIZONTAL_PIXELS,
   INSTAGRAM_REEL_MAX_VIDEO_BYTES,
   INSTAGRAM_REEL_PROVIDER_REQUIREMENTS,
+  resolveInstagramReelCoverMediaId,
   validateInstagramReelPublishDraft,
 } from "../lib/instagram-reel-publish-logic.js";
 
@@ -131,4 +132,11 @@ test("Reel validation records provider-enforced codec and bitrate requirements",
   assert.equal(result.providerRequirements.maxVideoBitrateMbps, 25);
   assert.equal(result.providerRequirements.maxAudioBitrateKbps, 128);
   assert.equal(INSTAGRAM_REEL_PROVIDER_REQUIREMENTS.recommendedAspectRatio, "9:16");
+});
+
+
+test("Reel cover uses the saved Instagram thumbnail and only falls back to Master when revisions match", () => {
+  assert.equal(resolveInstagramReelCoverMediaId({ versionCoverMediaId: "saved-cover", masterCoverMediaId: "master-cover", versionMasterRevision: 4, masterRevision: 5 }), "saved-cover");
+  assert.equal(resolveInstagramReelCoverMediaId({ masterCoverMediaId: "master-cover", versionMasterRevision: 5, masterRevision: 5 }), "master-cover");
+  assert.equal(resolveInstagramReelCoverMediaId({ masterCoverMediaId: "master-cover", versionMasterRevision: 4, masterRevision: 5 }), "");
 });
