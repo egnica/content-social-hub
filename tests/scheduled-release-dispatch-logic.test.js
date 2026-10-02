@@ -13,6 +13,7 @@ import { evaluateScheduleState } from "../lib/scheduling-logic.js";
 
 const version = {
   _id: "6abc356c9b523f147ecbf422",
+  platform: "facebook",
   revision: 6,
   publishedRevision: 0,
   active: true,
