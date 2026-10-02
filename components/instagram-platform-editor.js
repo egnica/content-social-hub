@@ -221,8 +221,8 @@ function InstagramPreview({ destination, form, media, mediaMode }) {
             textAlign: "center",
           }}
         >
-          Preview only. Publish Now supports one compatible JPEG image or an
-          ordered 2–10 item carousel.
+          Preview only. Publish Now supports one compatible image, one
+          Reel/video, or an ordered 2–10 item carousel.
         </div>
       </div>
     </div>
@@ -246,6 +246,12 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
     () => media.filter((asset) => form.mediaIds.includes(stringId(asset._id))),
     [form.mediaIds, media],
   );
+  const reelCover =
+    version.videoThumbnail ||
+    (Number(version.masterRevisionSynced || 0) ===
+    Number(masterContent.revision || 0)
+      ? masterContent.defaultVideoThumbnail
+      : null);
   const validation = useMemo(
     () =>
       validateInstagramVersionDraft({
@@ -428,8 +434,8 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
               <h2>Instagram media</h2>
               <p>
                 Choose compatible media attached to Master Content. Publish Now
-                supports one JPEG image or an ordered 2–10 item carousel;
-                standalone Reel/video publishing begins in L5-06.
+                supports a single image, a single Reel/video, or an ordered
+                2–10 item carousel.
               </p>
             </div>
 
@@ -474,6 +480,29 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
               <strong>Detected Instagram format:</strong>{" "}
               {instagramMediaModeLabel(validation.mediaMode)}
             </div>
+
+            {validation.mediaMode === "reel" ? (
+              <div className={styles.notice} style={{ marginTop: 12 }}>
+                <strong>Reel cover:</strong>{" "}
+                {reelCover
+                  ? `Master video thumbnail · ${reelCover.originalName || "selected thumbnail"}`
+                  : "No Master video thumbnail is saved; Instagram will use its default video-frame cover."}
+                {reelCover ? (
+                  <img
+                    src={mediaPreviewUrl(reelCover)}
+                    alt=""
+                    style={{
+                      display: "block",
+                      width: 120,
+                      maxHeight: 180,
+                      objectFit: "cover",
+                      marginTop: 10,
+                      borderRadius: 8,
+                    }}
+                  />
+                ) : null}
+              </div>
+            ) : null}
 
             {form.mediaIds.length ? (
               <label className={styles.field} style={{ marginTop: 14 }}>
