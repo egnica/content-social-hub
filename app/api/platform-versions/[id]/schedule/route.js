@@ -27,7 +27,7 @@ export async function GET(_request, { params }) {
       scheduleState: await getDestinationScheduleState(id),
     });
   } catch (error) {
-    return scheduleErrorResponse(error, "Unable to load the Facebook schedule.");
+    return scheduleErrorResponse(error, "Unable to load the destination schedule.");
   }
 }
 
@@ -51,7 +51,7 @@ export async function POST(request, { params }) {
   } catch (error) {
     return scheduleErrorResponse(
       error,
-      "Unable to schedule this Facebook version.",
+      "Unable to schedule this destination version.",
     );
   }
 }
@@ -77,7 +77,7 @@ export async function PATCH(request, { params }) {
   } catch (error) {
     return scheduleErrorResponse(
       error,
-      "Unable to reschedule this Facebook version.",
+      "Unable to reschedule this destination version.",
     );
   }
 }
@@ -101,7 +101,7 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     return scheduleErrorResponse(
       error,
-      "Unable to cancel this Facebook schedule.",
+      "Unable to cancel this destination schedule.",
     );
   }
 }
