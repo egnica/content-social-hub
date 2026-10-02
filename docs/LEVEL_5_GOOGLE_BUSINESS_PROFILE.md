@@ -6,7 +6,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **OPEN — maintenance prepared locally; deployment/live checkpoint pending**
+- Status: **OPEN — L5-GBP-00 accepted; Google Business Profile access readiness active**
 - Opened: **October 2, 2026**
 - Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Provider: **Google Business Profile**
@@ -14,7 +14,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 - Dependency: completed Facebook publishing/scheduling and the closed Instagram adapter
 - API access: **unverified**
 - Live-test client and exact business location: **unconfirmed**
-- Current task: **L5-GBP-00 — Baseline Maintenance Checkpoint (`MANUAL`)**
+- Current task: **L5-GBP-01 — Google Business Profile Access Readiness (`READY`)**
 - No Google adapter, OAuth credentials, API access approval, or live publication is proven by opening this document
 
 ## Scope and phase pass condition
@@ -69,8 +69,8 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 
 | ID | Status | Task | Dependency / required evidence |
 | --- | --- | --- | --- |
-| L5-GBP-00 | `MANUAL` | Baseline maintenance checkpoint | Passing tests/lint, Instagram renewal and scheduled-processing recovery; deployed smoke evidence |
-| L5-GBP-01 | `WAITING` | Google Business Profile access readiness | Baseline maintenance accepted; verified project approval/eligibility and exact test client/location |
+| L5-GBP-00 | `DONE` | Baseline maintenance checkpoint | Accepted October 2, 2026 with deployed smoke evidence; unavailable live edge cases explicitly deferred |
+| L5-GBP-01 | `READY` | Google Business Profile access readiness | Baseline maintenance accepted; verify project approval/eligibility and exact test client/location |
 | L5-GBP-02 | `WAITING` | Direct OAuth, location selection, credential renewal, Account Health | Access checkpoint accepted; real location saved Healthy under correct client |
 | L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
 | L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
@@ -79,7 +79,7 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-No task is `READY` while L5-GBP-00 awaits deployment/live evidence. Opening the phase does not authorize completing several tasks in one chat. Repository writes still require Nicholas's explicit confirmation under his GitHub rule.
+L5-GBP-01 is the sole `READY` task. Opening access readiness does not authorize OAuth implementation or later Google tasks in the same chat. Repository writes still require Nicholas's explicit confirmation under his GitHub rule.
 
 ## L5-GBP-00 — Baseline Maintenance Checkpoint
 
@@ -207,3 +207,21 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - This publication includes the recorded 165 passing tests, clean lint, successful production build, and passing infrastructure schema/security checks. No application behavior changed after that verification; this entry only records publication authorization.
 - L5-GBP-00 remains **MANUAL**. AWS infrastructure deployment, hosting timeout verification, live renewal/recovery and UI smoke checks, and current carousel-specification verification remain outstanding. L5-GBP-01 remains **WAITING**; no Google implementation or Level 6 work is opened.
 - Git commit/push verification is reported in the implementation handoff. This authorization does not record a completed AWS deployment or live integration test.
+
+
+### October 2, 2026: L5-GBP-00 accepted after deployed maintenance checkpoint
+
+- Task: **L5-GBP-00 — Baseline Maintenance Checkpoint**
+- Outcome: **DONE**. Nicholas explicitly accepted the remaining unavailable live edge-case proofs as deferred and instructed `L5-GBP-00 DONE`. `L5-GBP-01` is now the sole `READY` task.
+- Application deployment: Amplify production job **138** successfully deployed commit `eaaa6d10a47360dda30c37a8d034656224afd1b8` (`Repair Instagram maintenance and add safe renewal and processing recovery`) on October 2.
+- AWS deployment: CloudFormation stack `content-social-hub-level4-scheduling` reached **UPDATE_COMPLETE**. The reviewed change set added only `InstagramMaintenanceSchedule`, added `ScheduledReleaseWorkerErrorAlarm`, and modified `ScheduledReleaseWorker` with **Replacement: False**.
+- Deployed infrastructure verification: `csh-instagram-maintenance` exists, is **ENABLED**, runs at `rate(15 minutes)`, targets the existing scheduled-release worker with `{"action":"instagram_maintenance"}`, and has zero Scheduler retries. The worker remains Node 24, 512 MB, 900-second timeout. The CloudWatch worker error alarm exists and was **OK** with no notification actions configured.
+- Maintenance live evidence: the recurring worker invoked the deployed application handler automatically at approximately **18:31 UTC** and **18:46 UTC**. Both runs returned `action: instagram_maintenance`, `errors: 0`, `connectionsChecked: 0`, `renewed: 0`, `recovered: 0`, `processing: 0`, and `reviewRequired: 0`. This proves the production Scheduler -> Lambda -> authenticated application-maintenance path for the current no-op state; it does not fabricate a renewal or interrupted-processing case that did not naturally exist.
+- Connections smoke evidence: under `Nicholas_Egner`, `@nicholasegner` and `GIGnovate` remained **Healthy** after deployment. Switching to `Andrew_Davis` showed only `Davis Criminal Defense`, and switching back restored the Nicholas destinations, confirming client-scoped display did not regress.
+- Facebook preview smoke evidence: with primary media temporarily unselected and no save/publish, `https://nicholasegner.com` loaded its own metadata; replacing it with `https://www.davisdefenselawyers.com/` replaced image/title/description without stale Nicholas data; clearing the URL removed the card; entering `not-a-real-url` did not resurrect stale Davis metadata.
+- Automated/local evidence retained from implementation: Node **24.19.0**; `npm test` **165 passed, 0 failed**; `npm run lint` **0 errors, 0 warnings**; `npm run build` passed; `cfn-lint infrastructure/level4-scheduling.yaml` passed; CloudFormation Guard **3.2.1** passed; AWS `ValidateTemplate` also accepted the deployed template before the stack update.
+- No real social post was submitted during this maintenance closure. No credential value, OAuth secret, dispatch token, encryption key, or other secret was written to project documentation.
+- Explicitly deferred live evidence: (1) an actual Instagram token renewal when a genuinely eligible unexpired credential naturally enters the renewal window, (2) an actual interrupted Instagram provider-processing recovery case, and (3) broader carousel-video ratio acceptance beyond the retained supported product boundary until current official Meta evidence is retrievable. Nicholas accepted these as deferred rather than manipulating production expiry data or deliberately interrupting a live publication.
+- Monitoring limitation retained: the CloudWatch alarm has no delivery action; notification delivery and broader cross-provider recovery/monitoring remain later bounded work before Level 6 operational-readiness review.
+- Files changed for this closure: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`, `README.md`, and `AGENTS.md` only.
+- Remaining work: begin **L5-GBP-01 — Google Business Profile Access Readiness**. Confirm the exact eligible test client/location and non-secret Google project/API access state before OAuth implementation. No Google OAuth/account modification or publication is authorized by closing this task.
