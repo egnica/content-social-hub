@@ -35,7 +35,7 @@ function scheduleStateLabel(code) {
   return labels[code] || "Schedule state";
 }
 
-function releaseChoiceError(resolved, version) {
+function releaseChoiceError(resolved, version, platformLabel) {
   if (!resolved.ok) return resolved.error;
 
   const evaluation = evaluateScheduleState({
@@ -51,7 +51,7 @@ function releaseChoiceError(resolved, version) {
   const messages = {
     past_release_time: "Choose a future release date and time.",
     already_published_revision:
-      "This Facebook revision has already been published and cannot be scheduled again.",
+      `This ${platformLabel} revision has already been published and cannot be scheduled again.`,
   };
 
   return messages[evaluation.code] || "This release time cannot be scheduled.";
@@ -68,7 +68,7 @@ function scheduleNeedsAttention(code) {
   ].includes(code);
 }
 
-export default function FacebookScheduleControls({
+export default function DestinationScheduleControls({
   version,
   destination,
   masterContent,
@@ -83,8 +83,12 @@ export default function FacebookScheduleControls({
   const [destinationLocalDateTime, setDestinationLocalDateTime] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const platform = version.platform === "instagram" ? "instagram" : "facebook";
+  const platformLabel = platform === "instagram" ? "Instagram" : "Facebook";
   const destinationName =
-    version.destinationName || destination?.accountName || "Facebook Page";
+    version.destinationName ||
+    destination?.accountName ||
+    (platform === "instagram" ? "Instagram account" : "Facebook Page");
   const clientTimezone =
     scheduleState?.clientTimezone || masterContent.clientTimezone || "";
 
@@ -103,7 +107,9 @@ export default function FacebookScheduleControls({
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.error || "Unable to load the Facebook schedule.");
+          throw new Error(
+            result.error || `Unable to load the ${platformLabel} schedule.`,
+          );
         }
 
         const nextState = result.scheduleState || null;
@@ -154,7 +160,11 @@ export default function FacebookScheduleControls({
       releaseSource,
     ],
   );
-  const choiceError = releaseChoiceError(resolvedChoice, version);
+  const choiceError = releaseChoiceError(
+    resolvedChoice,
+    version,
+    platformLabel,
+  );
   const activeSchedule = scheduleState?.schedule?.active === true;
   const currentSchedule = scheduleState?.schedule || null;
   const serverBlocking = scheduleState?.validation?.blocking || [];
@@ -177,7 +187,7 @@ export default function FacebookScheduleControls({
   function exactScheduleConfirmation(action) {
     const verb = action === "reschedule" ? "Reschedule" : "Schedule";
     const lines = [
-      `${verb} this exact Facebook revision for ${destinationName}?`,
+      `${verb} this exact ${platformLabel} revision for ${destinationName}?`,
       "",
       `Revision: ${version.revision || 1}`,
       `Release: ${wallClockLabel(resolvedChoice.localDateTime)}`,
@@ -207,7 +217,7 @@ export default function FacebookScheduleControls({
     setError("");
 
     if (dirty) {
-      setError("Save the Facebook version before scheduling it.");
+      setError(`Save the ${platformLabel} version before scheduling it.`);
       return;
     }
 
@@ -225,10 +235,10 @@ export default function FacebookScheduleControls({
     if (!canSubmit) {
       setError(
         scheduleState?.stateCode === "review_required"
-          ? "This Facebook revision is locked for review because the provider result is uncertain. Do not resubmit it until the recorded publish attempt is reviewed."
+          ? `This ${platformLabel} revision is locked for review because the provider result is uncertain. Do not resubmit it until the recorded publish attempt is reviewed.`
           : activeSchedule
             ? "This scheduled release cannot be changed in its current state."
-            : "This Facebook revision cannot be scheduled in its current state.",
+            : `This ${platformLabel} revision cannot be scheduled in its current state.`,
       );
       return;
     }
@@ -256,14 +266,16 @@ export default function FacebookScheduleControls({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to save the Facebook schedule.");
+        throw new Error(
+          result.error || `Unable to save the ${platformLabel} schedule.`,
+        );
       }
 
       setScheduleState(result.scheduleState || null);
       setMessage(
         activeSchedule
-          ? `Facebook release rescheduled for ${wallClockLabel(result.schedule?.localDateTime)} ${result.schedule?.timezone || ""}.`
-          : `Facebook release scheduled for ${wallClockLabel(result.schedule?.localDateTime)} ${result.schedule?.timezone || ""}.`,
+          ? `${platformLabel} release rescheduled for ${wallClockLabel(result.schedule?.localDateTime)} ${result.schedule?.timezone || ""}.`
+          : `${platformLabel} release scheduled for ${wallClockLabel(result.schedule?.localDateTime)} ${result.schedule?.timezone || ""}.`,
       );
       router.refresh();
     } catch (requestError) {
@@ -284,7 +296,7 @@ export default function FacebookScheduleControls({
 
     if (
       !window.confirm(
-        `Cancel the ${wallClockLabel(currentSchedule.localDateTime)} ${currentSchedule.timezone} Facebook release for ${destinationName}?\n\nNo Facebook post will be deleted. Cancellation is only allowed before dispatch begins.`,
+        `Cancel the ${wallClockLabel(currentSchedule.localDateTime)} ${currentSchedule.timezone} ${platformLabel} release for ${destinationName}?\n\nNo ${platformLabel} post will be deleted. Cancellation is only allowed before dispatch begins.`,
       )
     ) {
       return;
@@ -304,11 +316,13 @@ export default function FacebookScheduleControls({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to cancel the Facebook schedule.");
+        throw new Error(
+          result.error || `Unable to cancel the ${platformLabel} schedule.`,
+        );
       }
 
       setScheduleState(result.scheduleState || null);
-      setMessage("Facebook release schedule cancelled.");
+      setMessage(`${platformLabel} release schedule cancelled.`);
       router.refresh();
     } catch (requestError) {
       setError(requestError.message);
@@ -322,7 +336,7 @@ export default function FacebookScheduleControls({
       <div className={styles.sectionHeader}>
         <h2>Schedule</h2>
         <p>
-          Save a destination-level release time for this exact Facebook revision.
+          Save a destination-level release time for this exact {platformLabel} revision.
           The client timezone is authoritative; AWS wakes the background worker at
           the resolved UTC instant.
         </p>
@@ -363,7 +377,7 @@ export default function FacebookScheduleControls({
           ) : null}
           {scheduleState?.stale ? (
             <div style={{ marginTop: 7 }}>
-              The Facebook content is now revision {version.revision}. This older
+              The {platformLabel} content is now revision {version.revision}. This older
               schedule will not be allowed to release the edited content. Reschedule
               deliberately to bind the current revision.
             </div>
@@ -382,14 +396,14 @@ export default function FacebookScheduleControls({
           ) : null}
           {scheduleState?.stateCode === "failed" ? (
             <div style={{ marginTop: 7 }}>
-              Facebook returned a definitive failure. The schedule stopped instead of
+              {platformLabel} returned a definitive failure. The schedule stopped instead of
               posting late. After fixing the issue, this revision can be deliberately
               scheduled again under the existing duplicate-safety rules.
             </div>
           ) : null}
           {scheduleState?.stateCode === "review_required" ? (
             <div style={{ marginTop: 7 }}>
-              Facebook may have received this publish request, but the final result is
+              {platformLabel} may have received this publish request, but the final result is
               uncertain. Automatic retry is locked to prevent a duplicate post. Review
               the recorded publish attempt before taking further action.
             </div>
@@ -409,14 +423,14 @@ export default function FacebookScheduleControls({
 
       {scheduleState?.currentRevisionPublished ? (
         <div className={styles.errorNotice}>
-          This Facebook revision has already been published and cannot be scheduled
+          This {platformLabel} revision has already been published and cannot be scheduled
           again.
         </div>
       ) : null}
 
       {dirty ? (
         <div className={styles.notice}>
-          Save the Facebook version before scheduling so the schedule binds the exact
+          Save the {platformLabel} version before scheduling so the schedule binds the exact
           saved revision.
         </div>
       ) : null}
@@ -443,7 +457,7 @@ export default function FacebookScheduleControls({
           >
             <option value="master">Use Master default release time</option>
             <option value="destination_override">
-              Use a Facebook-specific release time
+              Use a {platformLabel}-specific release time
             </option>
           </select>
         </label>
@@ -451,7 +465,7 @@ export default function FacebookScheduleControls({
         {releaseSource === "destination_override" ? (
           <label className={styles.fieldFull}>
             <span className={styles.label}>
-              Facebook release date and time ({clientTimezone || "client timezone"})
+              {platformLabel} release date and time ({clientTimezone || "client timezone"})
             </span>
             <input
               className={styles.input}
