@@ -186,7 +186,7 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | L5-04 | `DONE` | Publish single-image Instagram posts with durable results and duplicate protection | Real `@nicholasegner` single-image post published from revision 9; Succeeded history, Published lock, and exact View Post verified in production |
 | L5-05 | `DONE` | Add Instagram carousel publishing | Real `@nicholasegner` multi-image carousel published; Succeeded history and exact live `View Post` verified in production |
 | L5-06 | `DONE` | Add Instagram Reels/video publishing and processing-state handling | Real `@nicholasegner` Reel published from revision 4; Succeeded history, Published lock, exact View Post, and Master thumbnail cover verified in production |
-| L5-07 | `READY` | Extend background scheduling to Instagram and run final browser-closed checkpoint | All direct Instagram publishing modes are now proven |
+| L5-07 | `MANUAL` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Implementation complete on the L5-07 branch; production build/infrastructure deploy and final live browser-closed checkpoint remain |
 
 There should normally be only one `READY` task.
 
@@ -861,3 +861,55 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Status transition: `L5-06` -> `DONE`; `L5-07` -> `READY`.
 
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
+
+### October 1, 2026: L5-07 implementation checkpoint
+
+- Task: `L5-07` — Instagram Scheduling + Final Level 5 Checkpoint.
+- Outcome: application and infrastructure implementation completed on the dedicated implementation branch; task moved to `MANUAL` pending production deployment and the required browser-closed Instagram scheduling verification.
+- Files changed:
+  - `app/api/internal/scheduled-releases/dispatch/route.js`
+  - `app/api/platform-versions/[id]/schedule/route.js`
+  - `components/facebook-platform-editor.js`
+  - `components/facebook-schedule-controls.js`
+  - `components/instagram-platform-editor.js`
+  - `infrastructure/level4-scheduling.yaml`
+  - `lib/scheduled-release-dispatch-logic.js`
+  - `lib/scheduled-release-dispatch.js`
+  - `lib/scheduled-release-guard.js`
+  - `lib/scheduling.js`
+  - `tests/aws-scheduler-logic.test.js`
+  - `tests/scheduled-release-dispatch-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions:
+  - preserved the existing `scheduled_releases` collection, schedule revision binding, EventBridge one-time trigger model, scheduler-manager Lambda, and background worker rather than creating an Instagram-specific scheduler
+  - schedule loading now accepts only the two proven platforms, Facebook and Instagram, and verifies that the saved connection platform matches the platform version
+  - scheduling validation dispatches by platform: Facebook keeps the existing Facebook preflight while Instagram reuses the proven L5-04–L5-06 single-image/carousel/Reel validation boundary
+  - the shared destination schedule controls now render for both Facebook and Instagram and retain the same Master-default versus destination-override, client-timezone, Reschedule, Cancel, stale-revision, and already-published behavior
+  - the scheduled-release worker dispatch path now selects the existing Facebook or Instagram publisher from the saved schedule platform; Instagram mode selection reuses the saved platform version to route single image, carousel, or Reel
+  - provider-processing refresh resumes the exact existing Instagram attempt through the matching single-image, carousel, or Reel status checker; it does not create replacement containers or a second publish attempt
+  - scheduled Instagram provider failures/conflicts now use the same missed/failed/review-required and bounded certainty-aware retry classification already proven for Facebook
+  - the scheduler-manager CloudFormation policy and validation now allow only `csh-facebook-*` and `csh-instagram-*` schedule names; no broader EventBridge schedule namespace was granted
+  - the worker polling loop remains provider-neutral and continues polling only when the application returns `processing`
+  - no Level 6 Calendar, Level 7 approvals, analytics, second social provider, or new scheduling collection was added
+- Focused checks completed on the implementation branch:
+  - direct evaluation of the updated scheduled-release dispatch logic: **6 passed, 0 failed**, covering Instagram claim eligibility, cross-platform mismatch blocking, recorded processing refresh, transient provider retry classification, ambiguous conflict lock, and success classification
+  - direct evaluation of the existing AWS scheduler helpers with Instagram inputs: **3 passed, 0 failed**, covering provider-specific schedule naming, scheduler-manager platform identity, and UTC release preservation
+  - branch-vs-main review confirmed the implementation is limited to the scheduler/provider seams, shared schedule UI, focused tests, infrastructure permission/validation changes, and this phase record
+- Production build/deployment status: pending. The implementation has not yet been fast-forwarded to `main`, the Amplify production build has not yet run for L5-07, and the updated `content-social-hub-level4-scheduling` CloudFormation template has not yet been deployed.
+- Live-test status: **required / not yet completed**. No scheduled Instagram provider submission was triggered by this implementation checkpoint.
+- Required production/live checkpoint using `Nicholas_Egner` and the Healthy `@nicholasegner` destination:
+  1. merge/deploy the L5-07 application changes and confirm the production Amplify build succeeds
+  2. update the existing `content-social-hub-level4-scheduling` CloudFormation stack so the scheduler-manager accepts the Instagram schedule namespace
+  3. open or create a clean unpublished Instagram destination revision with compatible media and confirm the Instagram editor shows the same Schedule / Reschedule / Cancel controls as Facebook
+  4. verify a near-future Instagram schedule persists with the exact revision, client-local wall time, timezone, UTC instant, and an AWS schedule named `csh-instagram-<platformVersionId>`
+  5. optionally exercise a safe pre-dispatch Cancel and confirm the AWS trigger is removed without creating Publish History
+  6. schedule a fresh Instagram revision, close the browser before release, and allow AWS to wake the existing worker
+  7. reopen after release and confirm exactly one Instagram result, schedule state `Succeeded`, durable Instagram Publish History, and exact `View Post`
+  8. if Instagram processing is asynchronous, confirm the worker keeps checking the same recorded attempt/container rather than creating a replacement submission
+  9. deliberately re-enter the worker after success and confirm it returns a no-op with no duplicate Instagram post
+  10. edit a separately scheduled Instagram revision before dispatch and confirm the older schedule becomes Missed Schedule / stale revision rather than silently publishing the edited content
+  11. confirm existing Facebook scheduling remains functional after the provider-aware changes
+- Blockers/manual actions: production Amplify deployment, CloudFormation stack update, and the real browser-closed Instagram scheduling checkpoint above.
+- Remaining work: do not mark L5-07 or Level 5 complete until the deployed Instagram schedule/cancel/stale/worker-reentry evidence is recorded. After that evidence, L5-07 may become `DONE`; Work must still review the complete Level 5 evidence before README phase closure.
+- Status transition: `L5-07` -> `MANUAL`.
+
