@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { apiError, readJson } from "@/lib/api";
-import { dispatchScheduledFacebookRelease } from "@/lib/scheduled-release-dispatch";
+import { dispatchScheduledRelease } from "@/lib/scheduled-release-dispatch";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +30,9 @@ export async function POST(request) {
   try {
     const body = await readJson(request);
     return Response.json(
-      await dispatchScheduledFacebookRelease(body?.scheduledReleaseId),
+      await dispatchScheduledRelease(body?.scheduledReleaseId),
     );
   } catch (error) {
-    return apiError(error, "Unable to dispatch the scheduled Facebook release.");
+    return apiError(error, "Unable to dispatch the scheduled release.");
   }
 }
