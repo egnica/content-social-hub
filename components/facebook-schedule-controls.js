@@ -138,6 +138,7 @@ export default function DestinationScheduleControls({
   }, [
     masterContent.defaultReleaseAt,
     masterContent.defaultReleaseTimezone,
+    platformLabel,
     version._id,
     version.publishedRevision,
     version.revision,
