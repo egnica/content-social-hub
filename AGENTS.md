@@ -96,6 +96,11 @@ End every implementation session with:
 
 - Product roadmap and source of truth: `README.md`
 - Level 0-1 setup record: `docs/LEVEL_0_1_SETUP.md`
-- Current Level 2 plan and progress log: `docs/LEVEL_2_FACEBOOK_SETUP.md`
+- Closed Facebook, publishing, scheduling, and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`
+- Active Level 5 Google Business Profile plan and progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
+- Current first task: `L5-GBP-00` — Baseline Maintenance Checkpoint (`READY`)
+- Required provider order before Level 6: Google Business Profile, YouTube, LinkedIn, TikTok; X and Pinterest are optional
+- Level 6 requires verified required adapters or Nicholas's explicit deferral of documented blockers, plus operational-readiness review
+- Blog / website publishing is planned later and has no active task
 
 Always follow the `active_phase_document` named in the README rather than assuming Level 2 will remain active permanently.

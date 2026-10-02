@@ -18,7 +18,7 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 ## Implementation Status
 
-Levels 0, 1, 2, 3, 4, and 5 are implemented, deployed, and verified in the live application.
+Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, and verified in the live application. Instagram remains closed; broader Level 5 platform expansion is now active and must precede Level 6.
 
 **Level 2 — First Social Connection was reviewed and closed on September 28, 2026.** Facebook Pages direct Connect and emailed Request Connection are both proven with real accounts. The selected-Page capability cleanup passed production verification, the Resend client setup flow passed end to end, and completed/replaced secure setup links were verified to become unusable as designed.
 
@@ -26,7 +26,7 @@ Levels 0, 1, 2, 3, 4, and 5 are implemented, deployed, and verified in the live 
 
 **Level 4 — Scheduling was reviewed and closed on September 30, 2026.** Client-timezone scheduling, Master defaults and destination overrides, revision-safe schedule records, EventBridge Scheduler, the scheduler-manager Lambda, the background release worker, missed-schedule handling, bounded certainty-aware retries, pre-dispatch cancellation, browser-closed publishing, durable Publish History, exact `View Post`, and duplicate-safe worker re-entry were verified with `Nicholas_Egner -> GIGnovate`.
 
-**Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. No next phase or second provider is active yet.
+**Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. Its completed tasks remain closed. On October 2, Nicholas approved continuing Level 5 platform expansion before Workflow + Calendar; the active phase is now `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
 
 Implemented:
 
@@ -1829,15 +1829,19 @@ Add social networks one at a time.
 
 For each new adapter:
 
+- provider access / eligibility verification
 - OAuth / account selection
+- direct Connect and secure Request Connection
 - platform-specific form
 - URL / media behavior
 - validation rules
 - publishing
 - remote ID / URL capture
 - Account Health
-- analytics permissions where appropriate
-- follower / subscriber metrics where supported
+- browser-independent scheduling through the shared Level 4 worker
+- duplicate-safe processing, retries, and worker re-entry
+- automatic credential renewal where the provider supports it
+- record analytics permissions and follower / subscriber metric availability for Level 8; do not build analytics UI in the adapter phase
 
 Credential checkpoint:
 
@@ -1845,9 +1849,10 @@ Credential checkpoint:
 
 Pass condition:
 
-- each network must connect and publish independently before another adapter is treated as complete
+- each required network must prove direct Connect, Request Connection, destination editing/validation, publishing, exact remote result/history, and browser-closed scheduling independently before its adapter is complete
+- Level 6 cannot open until required adapters pass or Nicholas explicitly approves deferring a documented blocked provider; an OAuth screen alone is not completion
 
-**Status: PASSED and CLOSED October 2, 2026.**
+**Status: PLATFORM EXPANSION ACTIVE. Instagram adapter PASSED and CLOSED October 2, 2026.**
 
 First additional provider: **Instagram Professional accounts**.
 
@@ -1865,9 +1870,45 @@ Verified closure evidence includes:
 - real browser-closed scheduled Instagram publish reached `Succeeded`, persisted the exact result, cleaned up its one-time AWS trigger, and returned `noop / succeeded` on deliberate worker re-entry
 - Work review confirmed stale-revision and pre-dispatch cancellation safety remain in the shared provider-neutral scheduling layer before provider dispatch
 
-No second Level 5 provider, Level 6 Calendar work, Level 7 approvals, or Level 8 analytics/engagement work is opened by this closure.
+The Instagram closure did not open another phase by itself. Nicholas subsequently approved the following expansion order on October 2, 2026:
+
+| Order | Provider | Roadmap status | Required scope / access checkpoint |
+| --- | --- | --- | --- |
+| Complete | Facebook Pages | Verified; preserve existing implementation | Connection, publishing, and shared scheduling |
+| Complete | Instagram Professional | Verified; closed evidence record | Connection, image/carousel/Reel publishing, and shared scheduling |
+| 1 | Google Business Profile | Active phase; adapter not implemented | Access approval, exact location selection, update posts, CTA links, images, scheduling |
+| 2 | YouTube | Required; phase not opened | Channel selection, video/thumbnail/metadata/visibility, resumable processing and scheduling; API-upload audit restrictions |
+| 3 | LinkedIn | Required; phase not opened | Personal profiles and company Pages must be tracked separately; verify the appropriate permissions and Community Management access |
+| 4 | TikTok | Required; eligibility unresolved; phase not opened | Resolve Direct Post eligibility for the owner-only app before promising public publishing or scheduling |
+| Optional | Pinterest | Candidate; not a Level 6 dependency unless Nicholas selects it | Board/Pin publishing; Trial versus Standard access and public visibility |
+| Optional | X | Candidate; not a Level 6 dependency unless Nicholas selects it | Text/link/media publishing and scheduling; explicit API usage budget |
+
+Current phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Its sole `READY` task is **L5-GBP-00 — Baseline Maintenance Checkpoint**. This closes the demonstrated test/lint gaps before new provider code is built; the subsequent access and OAuth tasks stay `WAITING`.
+
+Provider approvals may require lead time. Read-only feasibility research is allowed; configure credentials only when the relevant task reaches its external checkpoint. If a required provider is blocked, document the exact limitation and obtain Nicholas's explicit decision before skipping it or opening Level 6.
+
+### October 2 build review and maintenance follow-ups
+
+Review baseline: `main` at `08bcc99`, before this roadmap update. These observations do not revoke the recorded live Facebook/Instagram successes:
+
+- `npm run build`: passed.
+- `npm test`: rejected `--experimental-default-type=module` under the review environment's Node 24.19.0. Direct `node --test tests/*.test.js`: 142 tests, 140 passed, 2 failed.
+- Both failures are in `tests/instagram-carousel-publish-logic.test.js`: the mixed image/video fixture uses 9:16, while the current carousel validator requires 4:5 through 1.91:1. Reconcile current official provider rules, fixtures, and user-facing validation; do not weaken validation merely to make tests green.
+- `npm run lint`: 2 errors and 6 warnings. Errors concern synchronous state updates in effects in `components/connections-manager.js` and `components/facebook-platform-editor.js`. Preserve verified client-switching and link-preview behavior during cleanup.
+- Instagram Account Health checks do not renew its token automatically. Plan safe renewal plus proactive expiration checks; a health check is not a token refresh.
+- Failure/missed-schedule email alerts, central Needs Attention, and derived aggregate Content status remain unfinished. The operational UI belongs to Level 6; failure/reconnection delivery and monitoring must be explicitly planned rather than forgotten.
+- The worker has bounded polling but needs a demonstrated recovery/monitoring plan for interrupted or prolonged processing. Recovery must resume recorded provider work, never blindly repost an ambiguous outcome.
+- The dashboard still describes Facebook as the first live adapter. Correct presentation copy when Level 6 opens.
+
+Only baseline test/lint maintenance is authorized as the first implementation assignment by this task queue. Token renewal, monitoring/recovery, and operational alerts are recorded follow-ups, not additional `READY` tasks. Work must turn them into bounded tasks with acceptance criteria before implementation, and review operational readiness before Level 6 opens.
+
+### Future blog / website destination
+
+Blog publishing is an explicit later expansion, after required social-platform coverage and the core workflow. It is not active and is not a Level 6 dependency. Preserve the existing Master Content -> destination version model with a website connector/API. Initial fields should include title, slug, excerpt, Markdown body, hero image/alt text, SEO title/description, draft/publish state, release time, and returned live URL. Keep website credentials server-side and avoid coupling every website to one database technology. `README_GIGNOVATE_PLATFORM.md` remains a longer-term direction note; this README controls implementation scope.
 
 ### Level 6 — Workflow + Calendar
+
+**WAITING — required platform expansion and operational-readiness review must finish first.** A blocked required platform needs Nicholas's explicit deferral decision. Provider-specific publishing forms and previews remain part of Level 5; the full Calendar/Dashboard workflow stays here.
 
 Build:
 
@@ -1917,7 +1958,8 @@ Build:
 ### Level 10 — Optional Intelligence / Expansion
 
 - optional provider-agnostic AI assistance
-- additional networks
+- blog / website publishing through a destination connector/API
+- optional networks beyond the required Level 5 providers
 - team / client user roles if real usage requires them
 - more advanced engagement capabilities only if needed
 - automatic recurring reports only if they become useful
@@ -2031,14 +2073,16 @@ The user does not need to write a separate assignment. Start the new Chat with t
 
 Current delegation state:
 
-- Completed product stage: **Level 4, Scheduling — reviewed and closed September 30, 2026**
-- Active product stage: **Level 5, Multi-Platform — Instagram adapter in progress**
-- Active phase document: `docs/LEVEL_5_INSTAGRAM.md`
-- Provider selected: **Instagram Professional accounts**
-- Preferred live-test client: `Nicholas_Egner`; exact GIGnovate Instagram account/handle must be confirmed during the L5-01 live checkpoint rather than guessed
-- Current implementation task: **L5-01 — Instagram Connection / OAuth / Account Health Foundation (`READY`)**
-- Progress must be documented in: `docs/LEVEL_5_INSTAGRAM.md`
-- Later Instagram tasks remain `WAITING` until the preceding checkpoint is supported by evidence
+- Completed product stages: **Levels 0–4 plus Level 5 Instagram — Instagram reviewed and closed October 2, 2026**
+- Active product stage: **Level 5 platform expansion — Google Business Profile**
+- Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
+- Provider selected: **Google Business Profile**
+- Current task: **L5-GBP-00 — Baseline Maintenance Checkpoint (`READY`)**
+- Objective: repair the demonstrated test-command, carousel-fixture/validation, and lint gaps while preserving Facebook/Instagram behavior
+- Live-test client/location: **unconfirmed**; confirm an eligible client and exact Google location during `L5-GBP-01`, never guess
+- Progress must be documented in: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
+- Access readiness, OAuth, Request Connection, publishing, and scheduling tasks remain `WAITING`
+- Level 6 is held until required platform coverage and operational readiness are reviewed
 
 ---
 
@@ -2051,10 +2095,10 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_5_instagram_in_progress
+  status: level_5_platform_expansion_google_business_profile
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_5_INSTAGRAM.md
-  active_phase_document_status: in_progress
+  active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  active_phase_document_status: open
 
 current_infrastructure:
   framework: Next.js
@@ -2248,6 +2292,12 @@ social_connections:
     scheduled_worker_reentry_status: verified_noop_after_success
     verified_mapping: Nicholas_Egner -> @nicholasegner
     analytics_ui_status: deferred_level_8
+  google_business_profile:
+    phase_active: true
+    adapter_status: not_implemented
+    access_status: unverified
+    live_test_client: unconfirmed
+    live_test_location: unconfirmed
 
 content_and_publishing:
   client_delete_with_saved_content: blocked
@@ -2256,7 +2306,8 @@ content_and_publishing:
   publish_attempts_durable_records: true
   level_3_complete: true
   level_4_complete: true
-  level_5_complete: true
+  level_5_instagram_complete: true
+  level_5_platform_expansion_complete: false
   facebook_text_link_publish_verified: true
   facebook_image_publish_verified: true
   facebook_video_publish_verified: true
@@ -2330,15 +2381,28 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: awaiting_next_phase_selection
-  active_phase_document: none
-  current_task: none
-  current_task_status: none
-  level_5_provider_selected: instagram
+  current_stage: level_5_google_business_profile
+  active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  current_task: L5-GBP-00
+  current_task_status: READY
+  level_5_provider_selected: google_business_profile
+  required_remaining_provider_order:
+    - google_business_profile
+    - youtube
+    - linkedin
+    - tiktok
+  optional_providers:
+    - pinterest
+    - x
+  level_6_gate: required_adapters_verified_or_explicitly_deferred_by_Nicholas_and_operational_readiness_reviewed
+  future_blog_destination: planned_later_not_active
   level_5_phase_document_created: true
-  level_5_work_review: passed_2026_10_02
-  preferred_level_5_live_test_client: Nicholas_Egner
-  preferred_level_5_live_test_destination: "@nicholasegner"
+  level_5_instagram_work_review: passed_2026_10_02
+  level_5_platform_expansion_status: open
+  verified_instagram_live_test_client: Nicholas_Egner
+  verified_instagram_live_test_destination: "@nicholasegner"
+  google_business_profile_live_test_client: unconfirmed
+  google_business_profile_live_test_location: unconfirmed
   level_5_instagram_task_order:
     - L5-01 DONE Instagram connection / OAuth / Account Health foundation
     - L5-02 DONE Instagram Request Connection + client-scoped live verification
@@ -2364,7 +2428,8 @@ implementation:
     level_1: S3 and Amplify permissions
     level_2: first social provider OAuth credentials plus Resend
     level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS not required by the completed implementation
-    level_5_instagram: Meta Instagram Login product/configuration and required redirect/scopes when L5-01 reaches the manual checkpoint
+    level_5_instagram: completed_configuration_and_live_verification
+    level_5_google_business_profile: verify_API_access_eligibility_project_approval_exact_location_and_OAuth_configuration_in_L5_GBP_01_before_L5_GBP_02
 
 architecture_rules:
   application_source_of_truth: MongoDB
@@ -2393,29 +2458,32 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Deliberately choose and open the next product phase or provider with Nicholas before implementation begins.
-  task_source: none_until_next_phase_is_opened
-  selection_rule: do_not_start_implementation_until_the_next_phase_is_selected_documented_and_given_a_READY_task
-  active_task: none
+  goal: Complete the baseline maintenance checkpoint before implementing the approved Google Business Profile adapter.
+  task_source: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
+  active_task: L5-GBP-00
   do_not_jump_ahead_to:
-    - Level 6 Calendar unless Nicholas and Work deliberately select/open Level 6 next
-    - a second social provider unless Nicholas and Work deliberately select/open that adapter next
+    - Level 6 Workflow / Calendar until required providers pass or Nicholas explicitly defers documented blockers and Work reviews operational readiness
+    - L5-GBP-01 or later Google tasks before the baseline maintenance checkpoint passes
+    - YouTube / LinkedIn / TikTok implementation before its own phase is deliberately opened
+    - optional X / Pinterest or blog publishing before Nicholas selects their phase
     - Level 7 approvals before that phase is deliberately opened
     - Level 8 analytics/engagement before that phase is deliberately opened
     - optional AI
   level_2_checkpoint: passed_and_closed_2026_09_28
   level_3_checkpoint: passed_and_closed_2026_09_29
   level_4_checkpoint: passed_and_closed_2026_09_30
-  level_5_checkpoint: passed_and_closed_2026_10_02
+  level_5_instagram_checkpoint: passed_and_closed_2026_10_02
+  level_5_platform_expansion_checkpoint: pending
 ```
 
 ### Instructions for the next work session
 
 Read this README in full before beginning implementation. Follow **Project Management and Chat Delegation Workflow**. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
 
-Levels 2, 3, 4, and 5 are closed. Do not reopen or rebuild the working Facebook or Instagram connection, publishing, or shared scheduling architecture unless a specific regression is demonstrated. The verified system now includes client-scoped OAuth/Request Connection, encrypted provider credentials, Account Health, destination-specific Facebook and Instagram editors, private-S3 provider transfer, durable provider results and Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing with real Facebook and Instagram results.
+Levels 2, 3, 4, and the Level 5 Instagram adapter are closed. Broader Level 5 platform expansion is active. Do not reopen or rebuild the working Facebook or Instagram connection, publishing, or shared scheduling architecture unless a specific regression is demonstrated. The verified system now includes client-scoped OAuth/Request Connection, encrypted provider credentials, Account Health, destination-specific Facebook and Instagram editors, private-S3 provider transfer, durable provider results and Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing with real Facebook and Instagram results.
 
-There is currently no active implementation phase and no `READY` task. `docs/LEVEL_5_INSTAGRAM.md` is a closed evidence record. Before implementation resumes, Nicholas and Work must deliberately choose the next phase/provider, open or update the appropriate phase document, and mark exactly one task `READY`.
+`docs/LEVEL_5_INSTAGRAM.md` remains a closed evidence record. The active phase is `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`; its sole `READY` task is `L5-GBP-00` (Baseline Maintenance Checkpoint). Complete that bounded task before access-readiness or OAuth implementation. Preserve explicit user authorization requirements for repository writes; a `READY` task does not waive them.
 
 Instagram is now proven through Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection.
 
@@ -2423,7 +2491,7 @@ Preserve private media. Do not make `content-social-hub-media` public for any pr
 
 Preserve the Level 3 idempotency/result boundary and Level 4 schedule safety now shared by Facebook and Instagram. Any future provider should reuse those verified provider-independent seams rather than bypassing them or triggering a speculative broad refactor.
 
-Do not build the full visual Calendar before Level 6. Do not invent fake approval state; client approvals remain Level 7. Do not pull analytics, follower metrics, comment management, messaging, or reporting forward from Level 8/9 merely because Instagram exposes those APIs.
+Do not open Level 6 Workflow + Calendar until required platform coverage and operational readiness pass review, or Nicholas explicitly defers a documented blocked provider. Do not invent fake approval state; client approvals remain Level 7. Do not pull analytics, follower metrics, comment management, messaging, or reporting forward from Level 8/9 merely because Instagram exposes those APIs.
 
 Add social networks one at a time. Instagram has passed that full connection / publishing / background-scheduling bar. A future provider is not complete merely because an OAuth screen or UI exists; it must meet the same end-to-end evidence standard before closure.
 
@@ -2431,4 +2499,4 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected work:** no implementation task is active. Deliberately choose the next product phase/provider with Nicholas, open its phase record, and create exactly one `READY` task before changing application code.
+**Next expected work:** read `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` in full and select `L5-GBP-00`, the sole `READY` task. Report the maintenance result and exact checks; only after its checkpoint passes may `L5-GBP-01` (Google Business Profile Access Readiness) become `READY`. No Google credentials or live posts are needed for the maintenance task.
