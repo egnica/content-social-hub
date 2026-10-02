@@ -789,4 +789,36 @@ When L5-07 is complete, Work reviews the full Instagram evidence. Only Work may 
 - Remaining work: do not begin `L5-07`. After the real Reel reaches a proven terminal result with exact `View Post`, persisted history, and duplicate-safe behavior, move `L5-06` to `DONE` and make `L5-07` the sole `READY` task.
 - Status transition: `L5-06` -> `MANUAL`; `L5-07` remains `WAITING`.
 
+
+### October 1, 2026: L5-06 Master thumbnail Reel-cover addition
+
+- Task: `L5-06` — Instagram Reels / Video Publishing.
+- Outcome: implementation extension completed; task remains `MANUAL` pending the same real production Reel publish checkpoint.
+- Requested behavior:
+  - when Master Content has a saved video thumbnail, Instagram Reel publishing uses that image as the Reel cover instead of requiring a second Instagram-specific upload
+  - if no Master thumbnail is available, Instagram falls back to its normal video-frame cover behavior
+- Files changed:
+  - `lib/platform-version-logic.js`
+  - `lib/platform-versions.js`
+  - `lib/instagram-publisher.js`
+  - `lib/instagram-reel-publish-logic.js`
+  - `lib/instagram-reel-publishing.js`
+  - `components/instagram-platform-editor.js`
+  - `tests/instagram-platform-version-logic.test.js`
+  - `tests/instagram-reel-publish-logic.test.js`
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Implementation decisions:
+  - new/reset Instagram versions inherit `defaultVideoThumbnailMediaId` from the exact Master revision and persist it with the Instagram version
+  - older Instagram Reel versions created before this addition may fall back to the current Master thumbnail only when `masterRevisionSynced` still matches the current Master revision; an out-of-sync Instagram version will not silently pick up a newer Master thumbnail
+  - the Reel publish attempt records the cover media identity/object key before provider processing, preserving the exact cover used by that revision
+  - private S3 remains private; the provider receives only a short-lived signed cover URL as Meta's `cover_url`
+  - Master thumbnails that are PNG, WebP, AVIF, oversize JPEG, or otherwise need provider normalization reuse the existing private Instagram JPEG-derivative pipeline before the cover URL is generated
+  - the Instagram editor now shows the inherited Master thumbnail and filename when the saved media mode is Reel so the operator can verify the cover before publishing
+  - no L5-07 scheduling work was started
+- Verification:
+  - Amplify production jobs `127` (thumbnail inheritance) and `128` (Reel-cover UI) completed successfully
+  - final provider-cover normalization commit `2b041a5aefa47d515ea9234eef85460874daed07` entered Amplify job `129`; final build/deploy status is recorded in the implementation handoff when available
+- Live-test status: unchanged — the real `@nicholasegner` Reel has not yet been submitted. During the L5-06 live checkpoint, confirm the displayed Master thumbnail is the cover on the exact published Reel.
+- Remaining work: complete the existing L5-06 Reel publish/status/permalink/duplicate-safety checkpoint. Only after that evidence may L5-06 become `DONE` and L5-07 become `READY`.
+
 Future implementation agents must append a dated progress entry containing task ID, outcome, files changed, checks/tests run, test results, live-test status, decisions, blockers/manual steps, and remaining work. Update only the selected task's status when supported by evidence. Do not declare the Instagram adapter or Level 5 complete without Work review.
