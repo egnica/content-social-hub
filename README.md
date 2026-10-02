@@ -18,7 +18,7 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 ## Implementation Status
 
-Levels 0, 1, 2, 3, and 4 are implemented, deployed, and verified in the live application.
+Levels 0, 1, 2, 3, 4, and 5 are implemented, deployed, and verified in the live application.
 
 **Level 2 — First Social Connection was reviewed and closed on September 28, 2026.** Facebook Pages direct Connect and emailed Request Connection are both proven with real accounts. The selected-Page capability cleanup passed production verification, the Resend client setup flow passed end to end, and completed/replaced secure setup links were verified to become unusable as designed.
 
@@ -26,7 +26,7 @@ Levels 0, 1, 2, 3, and 4 are implemented, deployed, and verified in the live app
 
 **Level 4 — Scheduling was reviewed and closed on September 30, 2026.** Client-timezone scheduling, Master defaults and destination overrides, revision-safe schedule records, EventBridge Scheduler, the scheduler-manager Lambda, the background release worker, missed-schedule handling, bounded certainty-aware retries, pre-dispatch cancellation, browser-closed publishing, durable Publish History, exact `View Post`, and duplicate-safe worker re-entry were verified with `Nicholas_Egner -> GIGnovate`.
 
-**Level 5 — Multi-Platform is now active with Instagram as the first additional provider.** The active phase plan is `docs/LEVEL_5_INSTAGRAM.md`. `L5-01` — Instagram Connection / OAuth / Account Health Foundation — is the sole `READY` task. No later Instagram task or second Level 5 provider should begin until that connection foundation is implemented, live-verified, and documented.
+**Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. No next phase or second provider is active yet.
 
 Implemented:
 
@@ -61,6 +61,13 @@ Implemented:
 - missed-schedule handling for stale/human/content blockers without silently publishing late
 - bounded certainty-aware technical retries and locked ambiguous-provider outcomes
 - duplicate-safe worker re-entry after a successful scheduled publish
+- Instagram Professional OAuth adapter with direct Connect and emailed Request Connection paths
+- client-scoped Instagram Account Health and publish capability using encrypted provider credentials
+- destination-specific Instagram platform versions with inheritance/customization/reset behavior and media-mode detection
+- real Instagram single-image, carousel, and Reel publishing from private S3 media with durable provider results and exact `View Post`
+- Instagram Reel processing that resumes the recorded provider attempt/container rather than resubmitting
+- browser-independent Instagram scheduling through the shared Level 4 EventBridge/Lambda worker and schedule records
+- duplicate-safe Instagram scheduled worker re-entry after successful publication
 - placeholder screens that clearly identify later implementation levels
 
 Deployment checkpoint passed on September 17, 2026:
@@ -142,6 +149,24 @@ Create / open clean GIGnovate Facebook destination
 -> pre-dispatch Cancel removes AWS trigger and creates no publish attempt
 ```
 
+Instagram Level 5 closure checkpoint passed on October 2, 2026:
+
+```text
+Select Nicholas_Egner
+-> connect @nicholasegner as an independent Instagram Professional destination
+-> verify Healthy / publishable Account Health
+-> create and customize Instagram platform versions
+-> publish real single-image, carousel, and Reel results
+-> persist exact Instagram media IDs / permalinks and Publish History
+-> View Post opens the exact live Instagram result
+-> schedule a fresh Instagram revision
+-> close the browser
+-> EventBridge wakes the existing background worker
+-> Instagram publishes exactly once
+-> schedule reaches Succeeded and the one-time AWS trigger cleans up
+-> deliberate worker re-entry returns noop / succeeded
+```
+
 Verified in the deployed application:
 
 - MongoDB health, reads, and writes
@@ -179,6 +204,14 @@ Verified in the deployed application:
 - browser-closed scheduled publishing to GIGnovate with one worker invocation and zero Lambda errors
 - successful scheduled worker re-entry returns a no-op and does not create a duplicate Facebook post
 - pre-dispatch cancellation removes the EventBridge schedule and creates no Publish History attempt
+- real Instagram Professional direct Connect and emailed Request Connection under `Nicholas_Egner`
+- Instagram Account Health returning Healthy / publishable for `@nicholasegner`
+- separate Instagram platform-version inheritance, customization, reset, validation, preview, and media-mode behavior
+- real Instagram single-image publishing with durable Succeeded history, Published lock, and exact `View Post`
+- real Instagram carousel publishing with ordered provider processing, durable Succeeded history, and exact `View Post`
+- real Instagram Reel publishing with recorded-container resume behavior, Master thumbnail cover, durable Succeeded history, and exact `View Post`
+- browser-closed Instagram scheduled publishing through the shared EventBridge/Lambda worker
+- successful Instagram scheduled worker re-entry returns `noop / succeeded` and does not create a duplicate post
 
 Verified live Facebook mappings as of September 29, 2026:
 
@@ -199,6 +232,18 @@ Nicholas_Egner
 -> Level 4 browser-closed scheduling verified September 30, 2026
 ```
 
+Verified live Instagram mapping as of October 2, 2026:
+
+```text
+Nicholas_Egner
+-> @nicholasegner
+-> Instagram Professional / Creator
+-> Healthy
+-> Direct Connect and Request Connection verified
+-> single-image, carousel, and Reel publishing verified
+-> Level 5 browser-closed scheduling verified October 2, 2026
+```
+
 Environment, S3 CORS, and runtime IAM requirements are documented in `docs/LEVEL_0_1_SETUP.md`.
 
 The closed Level 2 Meta, Resend, OAuth, token-encryption, and live-verification record is `docs/LEVEL_2_FACEBOOK_SETUP.md`.
@@ -207,7 +252,7 @@ The closed Level 3 Facebook publisher plan and completion record is `docs/LEVEL_
 
 The closed Level 4 Scheduling plan, implementation log, live evidence, and completion record is `docs/LEVEL_4_SCHEDULING.md`.
 
-The active Level 5 Instagram adapter plan and progress record is `docs/LEVEL_5_INSTAGRAM.md`.
+The closed Level 5 Instagram adapter plan, implementation log, live evidence, and Work review record is `docs/LEVEL_5_INSTAGRAM.md`.
 
 ---
 
@@ -1802,17 +1847,25 @@ Pass condition:
 
 - each network must connect and publish independently before another adapter is treated as complete
 
-**Status: IN PROGRESS — Instagram phase opened September 30, 2026.**
+**Status: PASSED and CLOSED October 2, 2026.**
 
 First additional provider: **Instagram Professional accounts**.
 
-Active plan: `docs/LEVEL_5_INSTAGRAM.md`.
+Closed phase record: `docs/LEVEL_5_INSTAGRAM.md`.
 
-Current implementation task: `L5-01` — Instagram Connection / OAuth / Account Health Foundation (`READY`).
+Verified closure evidence includes:
 
-The Instagram phase will prove direct connection, Request Connection, platform-specific editing/validation, single-image publishing, carousel publishing, Reels/video publishing, exact `View Post`, durable result/idempotency behavior, and finally integration with the existing Level 4 browser-independent scheduling path before another Level 5 provider is opened.
+- real `@nicholasegner` Professional-account direct Connect and Resend Request Connection under the correct `Nicholas_Egner` client
+- Healthy / publishable Account Health with encrypted server-side credential storage
+- separate Instagram platform versions with inheritance, customization protection, reset behavior, media-mode detection, validation, and preview
+- real single-image, carousel, and Reel publishing with durable provider IDs/permalinks, Publish History, Published locks, and exact `View Post`
+- provider-processing resume semantics that reuse recorded carousel/Reel attempts rather than creating duplicate submissions
+- private S3 remains private; Instagram receives only short-lived provider-accessible media URLs / explicit derivatives
+- provider-aware scheduling reuses the Level 4 `scheduled_releases`, EventBridge Scheduler, scheduler-manager Lambda, and background worker rather than creating a second scheduling architecture
+- real browser-closed scheduled Instagram publish reached `Succeeded`, persisted the exact result, cleaned up its one-time AWS trigger, and returned `noop / succeeded` on deliberate worker re-entry
+- Work review confirmed stale-revision and pre-dispatch cancellation safety remain in the shared provider-neutral scheduling layer before provider dispatch
 
-Do not pull the Level 6 Calendar, Level 7 approvals, or Level 8 analytics/engagement UI into the Instagram adapter merely because Meta exposes those capabilities.
+No second Level 5 provider, Level 6 Calendar work, Level 7 approvals, or Level 8 analytics/engagement work is opened by this closure.
 
 ### Level 6 — Workflow + Calendar
 
@@ -2177,13 +2230,23 @@ social_connections:
       - d4b569c1 Sync revoked connection request status
       - 446374e6 Document L2-06 token lifecycle verification
   instagram:
-    phase_active: true
+    phase_active: false
+    level_5_complete: true
+    work_review_passed: true
+    closed_on: 2026-10-02
     professional_accounts_only: true
-    planned_login_path: Instagram Login / Business Login for Instagram
-    linked_facebook_page_required_by_plan: false
-    direct_connect_status: L5-01_READY
-    request_connection_status: L5-02_WAITING
-    publishing_status: waiting
+    login_path: Instagram Login / Business Login for Instagram
+    linked_facebook_page_required: false
+    direct_connect_status: verified
+    request_connection_status: verified
+    account_health_status: verified_healthy_publishable
+    platform_version_status: verified
+    single_image_publish_status: verified
+    carousel_publish_status: verified
+    reel_publish_status: verified
+    scheduled_publish_status: verified_browser_closed
+    scheduled_worker_reentry_status: verified_noop_after_success
+    verified_mapping: Nicholas_Egner -> @nicholasegner
     analytics_ui_status: deferred_level_8
 
 content_and_publishing:
@@ -2193,6 +2256,7 @@ content_and_publishing:
   publish_attempts_durable_records: true
   level_3_complete: true
   level_4_complete: true
+  level_5_complete: true
   facebook_text_link_publish_verified: true
   facebook_image_publish_verified: true
   facebook_video_publish_verified: true
@@ -2265,21 +2329,24 @@ implementation:
     - level_2_first_social_connection
     - level_3_first_publisher
     - level_4_scheduling
-  current_stage: level_5_instagram
-  current_task: L5-01_instagram_connection_oauth_account_health_foundation
-  current_task_status: READY
+    - level_5_instagram
+  current_stage: awaiting_next_phase_selection
+  active_phase_document: none
+  current_task: none
+  current_task_status: none
   level_5_provider_selected: instagram
   level_5_phase_document_created: true
+  level_5_work_review: passed_2026_10_02
   preferred_level_5_live_test_client: Nicholas_Egner
-  preferred_level_5_live_test_destination: GIGnovate Instagram Professional account exact handle to be confirmed during L5-01
+  preferred_level_5_live_test_destination: "@nicholasegner"
   level_5_instagram_task_order:
-    - L5-01 READY Instagram connection / OAuth / Account Health foundation
-    - L5-02 WAITING Instagram Request Connection + client-scoped live verification
-    - L5-03 WAITING Instagram destination/platform version/validation/preview
-    - L5-04 WAITING single-image Instagram publishing
-    - L5-05 WAITING Instagram carousel publishing
-    - L5-06 WAITING Instagram Reels/video publishing
-    - L5-07 WAITING Instagram background scheduling + final checkpoint
+    - L5-01 DONE Instagram connection / OAuth / Account Health foundation
+    - L5-02 DONE Instagram Request Connection + client-scoped live verification
+    - L5-03 DONE Instagram destination/platform version/validation/preview
+    - L5-04 DONE single-image Instagram publishing
+    - L5-05 DONE Instagram carousel publishing
+    - L5-06 DONE Instagram Reels/video publishing
+    - L5-07 DONE Instagram background scheduling + final checkpoint
   first_major_end_to_end_milestone:
     status: completed_level_3
     steps:
@@ -2326,47 +2393,42 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Implement only L5-01, the Instagram connection / OAuth / Account Health foundation, using the active Level 5 Instagram plan.
-  task_source: docs/LEVEL_5_INSTAGRAM.md
-  selection_rule: select_the_first_task_marked_READY
-  active_task: L5-01
-  live_test_client: Nicholas_Egner
-  live_test_destination: GIGnovate Instagram Professional account exact identity to be confirmed during live authorization
+  goal: Deliberately choose and open the next product phase or provider with Nicholas before implementation begins.
+  task_source: none_until_next_phase_is_opened
+  selection_rule: do_not_start_implementation_until_the_next_phase_is_selected_documented_and_given_a_READY_task
+  active_task: none
   do_not_jump_ahead_to:
-    - Instagram Request Connection before the direct connection/account model is proven
-    - Instagram platform versions or publishing before a real Healthy Instagram connection exists
-    - carousel/Reels before single-image publishing proves the Instagram result/idempotency boundary
-    - Instagram scheduling before direct Instagram publishing modes are proven
-    - a second Level 5 social provider before Instagram passes Work review
-    - full visual Calendar before Level 6
-    - client approvals before Level 7
-    - analytics/engagement UI before Level 8
+    - Level 6 Calendar unless Nicholas and Work deliberately select/open Level 6 next
+    - a second social provider unless Nicholas and Work deliberately select/open that adapter next
+    - Level 7 approvals before that phase is deliberately opened
+    - Level 8 analytics/engagement before that phase is deliberately opened
     - optional AI
   level_2_checkpoint: passed_and_closed_2026_09_28
   level_3_checkpoint: passed_and_closed_2026_09_29
   level_4_checkpoint: passed_and_closed_2026_09_30
+  level_5_checkpoint: passed_and_closed_2026_10_02
 ```
 
 ### Instructions for the next work session
 
 Read this README in full before beginning implementation. Follow **Project Management and Chat Delegation Workflow**. Treat decisions marked as locked or explicitly described as V1 scope as the current product direction unless the user asks to revisit them.
 
-Levels 2, 3, and 4 are closed. Do not reopen or rebuild the working Facebook connection, publisher, or scheduling architecture unless a specific regression is demonstrated. The direct OAuth flow, client-to-Page persistence, encrypted token storage, Account Health, Resend Request Connection path, destination-specific Facebook editor, private-S3 provider transfer, provider-result persistence, Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing have all been verified with real Pages/posts.
+Levels 2, 3, 4, and 5 are closed. Do not reopen or rebuild the working Facebook or Instagram connection, publishing, or shared scheduling architecture unless a specific regression is demonstrated. The verified system now includes client-scoped OAuth/Request Connection, encrypted provider credentials, Account Health, destination-specific Facebook and Instagram editors, private-S3 provider transfer, durable provider results and Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing with real Facebook and Instagram results.
 
-Level 5 Instagram is active. Open `docs/LEVEL_5_INSTAGRAM.md`, select its first `READY` task, and complete only that bounded task. At phase open, that task is `L5-01` — Instagram Connection / OAuth / Account Health Foundation.
+There is currently no active implementation phase and no `READY` task. `docs/LEVEL_5_INSTAGRAM.md` is a closed evidence record. Before implementation resumes, Nicholas and Work must deliberately choose the next phase/provider, open or update the appropriate phase document, and mark exactly one task `READY`.
 
-The initial Instagram connection plan uses Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection. If live Meta configuration contradicts the planned auth path, stop at that manual checkpoint and document the provider constraint before changing architecture.
+Instagram is now proven through Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection.
 
-Preserve private media. Do not make `content-social-hub-media` public for Instagram. Later publishing tasks should use short-lived signed provider access or another documented provider upload path while the database continues storing private S3 references.
+Preserve private media. Do not make `content-social-hub-media` public for any provider. The verified Instagram path uses short-lived provider access / explicit derivatives while the database continues storing private S3 references.
 
-Preserve the Level 3 idempotency/result boundary and Level 4 schedule safety. Instagram should eventually reuse those provider-independent concepts, but do not perform a speculative broad refactor in L5-01. Extract shared seams only where the second adapter demonstrates a concrete need.
+Preserve the Level 3 idempotency/result boundary and Level 4 schedule safety now shared by Facebook and Instagram. Any future provider should reuse those verified provider-independent seams rather than bypassing them or triggering a speculative broad refactor.
 
 Do not build the full visual Calendar before Level 6. Do not invent fake approval state; client approvals remain Level 7. Do not pull analytics, follower metrics, comment management, messaging, or reporting forward from Level 8/9 merely because Instagram exposes those APIs.
 
-Add social networks one at a time. Instagram is not considered complete merely because an OAuth screen or UI exists; the phase must connect and publish end to end, then prove scheduled background publishing, before another provider is opened.
+Add social networks one at a time. Instagram has passed that full connection / publishing / background-scheduling bar. A future provider is not complete merely because an OAuth screen or UI exists; it must meet the same end-to-end evidence standard before closure.
 
 Do not introduce new infrastructure solely because it is available. Prefer the architecture already established here unless a concrete implementation problem requires a change.
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected implementation work:** complete `L5-01` from `docs/LEVEL_5_INSTAGRAM.md`, record its evidence there, and stop before L5-02 until the task-status transition is supported by verification.
+**Next expected work:** no implementation task is active. Deliberately choose the next product phase/provider with Nicholas, open its phase record, and create exactly one `READY` task before changing application code.
