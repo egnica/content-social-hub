@@ -238,7 +238,7 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const media = masterContent.media || [];
+  const media = useMemo(() => masterContent.media || [], [masterContent.media]);
   const masterChanged = isInstagramVersionOutOfSync(
     version,
     masterContent.revision,

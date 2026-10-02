@@ -333,9 +333,18 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [linkPreview, setLinkPreview] = useState(null);
-  const [linkPreviewStatus, setLinkPreviewStatus] = useState("idle");
-  const media = masterContent.media || [];
+  const [previewState, setPreviewState] = useState(null);
+  const previewUrl = form.destinationUrl.trim();
+  const linkPreview =
+    previewState?.url === previewUrl ? previewState.preview : null;
+  const linkPreviewStatus = !previewUrl
+    ? "idle"
+    : !previewableLink(previewUrl)
+      ? "unavailable"
+      : previewState?.url === previewUrl
+        ? previewState.status
+        : "loading";
+  const media = useMemo(() => masterContent.media || [], [masterContent.media]);
   const masterChanged = isFacebookVersionOutOfSync(
     version,
     masterContent.revision,
@@ -398,21 +407,21 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
 
   useEffect(() => {
     const destinationUrl = form.destinationUrl.trim();
-    setLinkPreview(null);
-
     if (!destinationUrl) {
-      setLinkPreviewStatus("idle");
       return undefined;
     }
 
     if (!previewableLink(destinationUrl)) {
-      setLinkPreviewStatus("unavailable");
       return undefined;
     }
 
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setLinkPreviewStatus("loading");
+      setPreviewState({
+        url: destinationUrl,
+        preview: null,
+        status: "loading",
+      });
 
       try {
         const response = await fetch(
@@ -425,12 +434,20 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
           throw new Error(result.error || "Unable to load link preview.");
         }
 
-        setLinkPreview(result.preview);
-        setLinkPreviewStatus("ready");
+        if (controller.signal.aborted) return;
+        setPreviewState({
+          url: destinationUrl,
+          preview: result.preview,
+          status: "ready",
+        });
       } catch (requestError) {
-        if (requestError.name === "AbortError") return;
-        setLinkPreview(null);
-        setLinkPreviewStatus("unavailable");
+        if (requestError.name === "AbortError" || controller.signal.aborted)
+          return;
+        setPreviewState({
+          url: destinationUrl,
+          preview: null,
+          status: "unavailable",
+        });
       }
     }, 400);
 

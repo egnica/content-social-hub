@@ -1,8 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { apiError, readJson } from "@/lib/api";
 import { dispatchScheduledRelease } from "@/lib/scheduled-release-dispatch";
+import { runInstagramMaintenance } from "@/lib/instagram-maintenance";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180;
 
 function authorized(request) {
   const expected = String(
@@ -29,6 +31,14 @@ export async function POST(request) {
 
   try {
     const body = await readJson(request);
+    if (body?.action === "instagram_maintenance") {
+      return Response.json(await runInstagramMaintenance());
+    }
+    if (body?.action)
+      return Response.json(
+        { error: "Unsupported worker action." },
+        { status: 400 },
+      );
     return Response.json(
       await dispatchScheduledRelease(body?.scheduledReleaseId),
     );

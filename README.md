@@ -1883,7 +1883,7 @@ The Instagram closure did not open another phase by itself. Nicholas subsequentl
 | Optional | Pinterest | Candidate; not a Level 6 dependency unless Nicholas selects it | Board/Pin publishing; Trial versus Standard access and public visibility |
 | Optional | X | Candidate; not a Level 6 dependency unless Nicholas selects it | Text/link/media publishing and scheduling; explicit API usage budget |
 
-Current phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Its sole `READY` task is **L5-GBP-00 — Baseline Maintenance Checkpoint**. This closes the demonstrated test/lint gaps before new provider code is built; the subsequent access and OAuth tasks stay `WAITING`.
+Current phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. **L5-GBP-00 — Baseline Maintenance Checkpoint** is `MANUAL`: baseline repairs and Instagram renewal/recovery are prepared locally and await deployment/live evidence. Access and OAuth tasks stay `WAITING`.
 
 Provider approvals may require lead time. Read-only feasibility research is allowed; configure credentials only when the relevant task reaches its external checkpoint. If a required provider is blocked, document the exact limitation and obtain Nicholas's explicit decision before skipping it or opening Level 6.
 
@@ -1900,7 +1900,7 @@ Review baseline: `main` at `08bcc99`, before this roadmap update. These observat
 - The worker has bounded polling but needs a demonstrated recovery/monitoring plan for interrupted or prolonged processing. Recovery must resume recorded provider work, never blindly repost an ambiguous outcome.
 - The dashboard still describes Facebook as the first live adapter. Correct presentation copy when Level 6 opens.
 
-Only baseline test/lint maintenance is authorized as the first implementation assignment by this task queue. Token renewal, monitoring/recovery, and operational alerts are recorded follow-ups, not additional `READY` tasks. Work must turn them into bounded tasks with acceptance criteria before implementation, and review operational readiness before Level 6 opens.
+Nicholas expanded L5-GBP-00 on October 2 to include Instagram credential renewal and interrupted scheduled-processing recovery alongside the baseline repairs. The active phase document defines this bounded scope. Notification delivery and broader cross-provider monitoring remain follow-ups; review operational readiness before Level 6 opens.
 
 ### Future blog / website destination
 
@@ -2077,8 +2077,8 @@ Current delegation state:
 - Active product stage: **Level 5 platform expansion — Google Business Profile**
 - Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Provider selected: **Google Business Profile**
-- Current task: **L5-GBP-00 — Baseline Maintenance Checkpoint (`READY`)**
-- Objective: repair the demonstrated test-command, carousel-fixture/validation, and lint gaps while preserving Facebook/Instagram behavior
+- Current task: **L5-GBP-00 — Baseline Maintenance Checkpoint (`MANUAL`)**
+- Objective: accept deployment/live evidence for prepared baseline repairs and Instagram renewal/recovery while preserving Facebook/Instagram behavior
 - Live-test client/location: **unconfirmed**; confirm an eligible client and exact Google location during `L5-GBP-01`, never guess
 - Progress must be documented in: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Access readiness, OAuth, Request Connection, publishing, and scheduling tasks remain `WAITING`
@@ -2384,7 +2384,7 @@ implementation:
   current_stage: level_5_google_business_profile
   active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
   current_task: L5-GBP-00
-  current_task_status: READY
+  current_task_status: MANUAL
   level_5_provider_selected: google_business_profile
   required_remaining_provider_order:
     - google_business_profile
@@ -2458,7 +2458,7 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Complete the baseline maintenance checkpoint before implementing the approved Google Business Profile adapter.
+  goal: Review and publish the prepared maintenance changes with explicit approval, then complete deployment/live evidence before Google adapter implementation.
   task_source: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
   active_task: L5-GBP-00
@@ -2483,7 +2483,7 @@ Read this README in full before beginning implementation. Follow **Project Manag
 
 Levels 2, 3, 4, and the Level 5 Instagram adapter are closed. Broader Level 5 platform expansion is active. Do not reopen or rebuild the working Facebook or Instagram connection, publishing, or shared scheduling architecture unless a specific regression is demonstrated. The verified system now includes client-scoped OAuth/Request Connection, encrypted provider credentials, Account Health, destination-specific Facebook and Instagram editors, private-S3 provider transfer, durable provider results and Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing with real Facebook and Instagram results.
 
-`docs/LEVEL_5_INSTAGRAM.md` remains a closed evidence record. The active phase is `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`; its sole `READY` task is `L5-GBP-00` (Baseline Maintenance Checkpoint). Complete that bounded task before access-readiness or OAuth implementation. Preserve explicit user authorization requirements for repository writes; a `READY` task does not waive them.
+`docs/LEVEL_5_INSTAGRAM.md` remains a closed evidence record. The active phase is `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`; `L5-GBP-00` (Baseline Maintenance Checkpoint) is `MANUAL`, awaiting deployment/live evidence for the locally prepared repairs and Instagram renewal/recovery. Complete its checkpoint before access-readiness or OAuth implementation. Preserve explicit user authorization requirements for repository writes; a `READY` task does not waive them.
 
 Instagram is now proven through Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection.
 
@@ -2499,4 +2499,7 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected work:** read `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` in full and select `L5-GBP-00`, the sole `READY` task. Report the maintenance result and exact checks; only after its checkpoint passes may `L5-GBP-01` (Google Business Profile Access Readiness) become `READY`. No Google credentials or live posts are needed for the maintenance task.
+**Next expected work:** read `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` and complete the L5-GBP-00 deployment/live checkpoint after Nicholas authorizes publication. Local checks pass (165 tests, clean lint, build, infrastructure schema/security checks); the current official carousel-video specification remains an explicit verification gap. No task is `READY` during this manual checkpoint. Only after acceptance may L5-GBP-01 (Google Business Profile Access Readiness) become `READY`. No Google credentials are needed here.
+
+
+Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. New renewal/recovery behavior is prepared locally; it is not yet deployed or proven live.

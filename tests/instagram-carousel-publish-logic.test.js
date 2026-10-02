@@ -19,7 +19,7 @@ const video = {
   contentType: "video/mp4",
   size: 5_000_000,
   width: 1080,
-  height: 1920,
+  height: 1350,
   duration: 12,
 };
 
@@ -133,4 +133,20 @@ test("combined Instagram validation routes one supported video to Reel", () => {
 
   assert.equal(result.publishable, true);
   assert.equal(result.publishMode, "reel");
+});
+
+test("carousel video keeps the current supported ratio boundaries separate from Reels", () => {
+  for (const [width, height, publishable] of [
+    [800, 1000, true],
+    [1910, 1000, true],
+    [799, 1000, false],
+    [1911, 1000, false],
+    [1080, 1920, false],
+  ]) {
+    const result = validateInstagramCarouselPublishDraft({
+      mediaIds: [jpeg._id, video._id],
+      mediaAssets: [jpeg, { ...video, width, height }],
+    });
+    assert.equal(result.publishable, publishable, `${width}:${height}`);
+  }
 });

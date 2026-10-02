@@ -22,6 +22,7 @@ import {
   publishInstagramReelVersion,
 } from "@/lib/instagram-reel-publishing";
 import { requireApiSession } from "@/lib/session";
+import { assertDestinationNotAwaitingReview } from "@/lib/scheduled-release-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,7 @@ export async function POST(_request, { params }) {
     const target = await getPublishTarget(id);
 
     if (target?.platform === "instagram") {
+      await assertDestinationNotAwaitingReview(id);
       if (target.mediaCount >= 2) {
         return Response.json(await publishInstagramCarouselVersion(id));
       }

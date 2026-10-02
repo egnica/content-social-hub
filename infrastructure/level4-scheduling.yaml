@@ -124,14 +124,15 @@ Resources:
             return cachedConfig;
           }
 
-          async function invokeDispatch(config, scheduledReleaseId) {
+          async function invokeDispatch(config, body) {
             const response = await fetch(config.dispatchUrl, {
               method: 'POST',
               headers: {
                 authorization: `Bearer ${config.dispatchToken}`,
                 'content-type': 'application/json',
               },
-              body: JSON.stringify({ scheduledReleaseId }),
+              body: JSON.stringify(body),
+              ...(body.action ? { signal: AbortSignal.timeout(180000) } : {}),
             });
             const text = await response.text();
             let payload = null;
@@ -142,11 +143,7 @@ Resources:
             }
 
             if (!response.ok) {
-              throw new Error(
-                `Scheduled release dispatch failed (${response.status}): ${String(
-                  payload?.error || 'unknown error',
-                )}`,
-              );
+              throw new Error(`Scheduled release dispatch failed (${response.status}).`);
             }
             return payload;
           }
@@ -156,6 +153,14 @@ Resources:
           }
 
           exports.handler = async (event) => {
+            if (event?.action === 'instagram_maintenance' && !event?.scheduledReleaseId) {
+              const result = await invokeDispatch(await loadConfig(), { action: 'instagram_maintenance' });
+              if (result?.action !== 'instagram_maintenance') throw new Error('The application maintenance handler is not deployed.');
+              console.log(JSON.stringify({ message: 'Instagram maintenance result', ...result }));
+              if (result?.errors > 0) throw new Error('Instagram maintenance reported a provider read or renewal error. Review saved connection/release health.');
+              return result;
+            }
+            if (event?.action) throw new Error('Unsupported worker action');
             const scheduledReleaseId = String(event?.scheduledReleaseId || '')
               .trim()
               .toLowerCase();
@@ -167,7 +172,7 @@ Resources:
             const deadline = Date.now() + config.maxProcessingWaitSeconds * 1000;
 
             while (true) {
-              const result = await invokeDispatch(config, scheduledReleaseId);
+              const result = await invokeDispatch(config, { scheduledReleaseId });
               console.log(JSON.stringify({
                 message: 'Content Social Hub scheduled release dispatch result',
                 scheduledReleaseId,
@@ -207,6 +212,40 @@ Resources:
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource: !GetAtt ScheduledReleaseWorker.Arn
+
+  InstagramMaintenanceSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: csh-instagram-maintenance
+      GroupName: !Ref ScheduledReleaseGroup
+      Description: Renew eligible Instagram tokens and reconcile recorded interrupted processing
+      ScheduleExpression: rate(15 minutes)
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      State: ENABLED
+      Target:
+        Arn: !GetAtt ScheduledReleaseWorker.Arn
+        RoleArn: !GetAtt SchedulerTargetRole.Arn
+        Input: '{"action":"instagram_maintenance"}'
+        RetryPolicy:
+          MaximumEventAgeInSeconds: 60
+          MaximumRetryAttempts: 0
+
+  ScheduledReleaseWorkerErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scheduled release or Instagram maintenance worker failed; inspect worker logs and saved application health. Notification actions require separate configuration.
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduledReleaseWorker
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
 
   SchedulerManagerRole:
     Type: AWS::IAM::Role
@@ -417,6 +456,10 @@ Resources:
             Resource: !GetAtt SchedulerManager.Arn
 
 Outputs:
+  InstagramMaintenanceScheduleName:
+    Value: !Ref InstagramMaintenanceSchedule
+  ScheduledReleaseWorkerErrorAlarmName:
+    Value: !Ref ScheduledReleaseWorkerErrorAlarm
   ScheduleGroupName:
     Value: !Ref ScheduledReleaseGroup
   ScheduledReleaseWorkerArn:

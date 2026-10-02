@@ -1,0 +1,26 @@
+let roles = Resources.*[ Type == 'AWS::IAM::Role' ]
+let secrets = Resources.*[ Type == 'AWS::SecretsManager::Secret' ]
+let lambdas = Resources.*[ Type == 'AWS::Lambda::Function' ]
+
+rule no_wildcard_iam_actions when %roles !empty {
+  %roles.Properties.Policies.*.PolicyDocument.Statement.*.Action[*] != '*'
+}
+
+rule retain_worker_secret_without_plaintext when %secrets !empty {
+  %secrets.DeletionPolicy == 'Retain'
+  %secrets.UpdateReplacePolicy == 'Retain'
+  %secrets.Properties.SecretString !exists
+}
+
+rule no_public_lambda_url when %lambdas !empty {
+  Resources.*.Type != 'AWS::Lambda::Url'
+}
+
+rule maintenance_is_bounded_and_authenticated {
+  Resources.InstagramMaintenanceSchedule.Properties.ScheduleExpression == 'rate(15 minutes)'
+  Resources.InstagramMaintenanceSchedule.Properties.Target.RetryPolicy.MaximumRetryAttempts == 0
+  Resources.ScheduledReleaseWorker.Properties.Runtime == 'nodejs24.x'
+  Resources.ScheduledReleaseWorker.Properties.Timeout <= 900
+  Resources.SchedulerTargetRole.Properties.Policies.*.PolicyDocument.Statement.*.Action[*] == 'lambda:InvokeFunction'
+  Resources.SchedulerManagerRole.Properties.Policies.*.PolicyDocument.Statement.*[ Sid == 'PassSchedulerTargetRoleOnly' ].Condition.StringEquals.'iam:PassedToService' == 'scheduler.amazonaws.com'
+}

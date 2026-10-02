@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 
 function labelHealth(status) {
-  return {
-    healthy: "Healthy",
-    expiring_soon: "Expiring Soon",
-    expired: "Expired",
-    disconnected: "Disconnected",
-    permission_problem: "Permission Problem",
-    api_error: "API Error",
-  }[status] || "Not checked";
+  return (
+    {
+      healthy: "Healthy",
+      expiring_soon: "Expiring Soon",
+      expired: "Expired",
+      disconnected: "Disconnected",
+      permission_problem: "Permission Problem",
+      api_error: "API Error",
+    }[status] || "Not checked"
+  );
 }
 
 function labelConnectionPlatform(connection) {
@@ -49,7 +51,17 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-export default function ConnectionsManager({
+export default function ConnectionsManager(props) {
+  // Remount local request/health state when the server snapshot or client changes.
+  const key = JSON.stringify([
+    props.selectedClient?._id,
+    props.initialConnections,
+    props.initialRequests,
+  ]);
+  return <ClientConnectionsManager key={key} {...props} />;
+}
+
+function ClientConnectionsManager({
   clients,
   selectedClient,
   initialConnections,
@@ -63,14 +75,6 @@ export default function ConnectionsManager({
   const [error, setError] = useState("");
   const [sendingPlatform, setSendingPlatform] = useState("");
   const [checkingId, setCheckingId] = useState("");
-
-  useEffect(() => {
-    setConnections(initialConnections);
-    setRequests(initialRequests);
-    setMessage("");
-    setError("");
-    setSendingPlatform("");
-  }, [initialConnections, initialRequests, selectedClient?._id]);
 
   function changeClient(event) {
     const clientId = event.target.value;
@@ -186,7 +190,9 @@ export default function ConnectionsManager({
 
         <div className={styles.panelBody}>
           {error ? <div className={styles.errorNotice}>{error}</div> : null}
-          {message ? <div className={styles.successNotice}>{message}</div> : null}
+          {message ? (
+            <div className={styles.successNotice}>{message}</div>
+          ) : null}
 
           {!configuration.facebookReady ? (
             <div className={styles.notice}>
@@ -211,18 +217,18 @@ export default function ConnectionsManager({
               </p>
             </div>
             <div className={styles.connectionActions}>
-              <button
-                className={styles.button}
-                type="button"
-                disabled={!configuration.facebookReady}
-                onClick={() =>
-                  window.location.assign(
-                    `/api/connections/facebook/start?clientId=${selectedClient._id}`,
-                  )
-                }
-              >
-                Connect
-              </button>
+              {configuration.facebookReady ? (
+                <a
+                  className={styles.button}
+                  href={`/api/connections/facebook/start?clientId=${selectedClient._id}`}
+                >
+                  Connect
+                </a>
+              ) : (
+                <button className={styles.button} type="button" disabled>
+                  Connect
+                </button>
+              )}
               <button
                 className={styles.buttonSecondary}
                 type="button"
@@ -249,18 +255,18 @@ export default function ConnectionsManager({
               </p>
             </div>
             <div className={styles.connectionActions}>
-              <button
-                className={styles.button}
-                type="button"
-                disabled={!configuration.instagramReady}
-                onClick={() =>
-                  window.location.assign(
-                    `/api/connections/instagram/start?clientId=${selectedClient._id}`,
-                  )
-                }
-              >
-                Connect
-              </button>
+              {configuration.instagramReady ? (
+                <a
+                  className={styles.button}
+                  href={`/api/connections/instagram/start?clientId=${selectedClient._id}`}
+                >
+                  Connect
+                </a>
+              ) : (
+                <button className={styles.button} type="button" disabled>
+                  Connect
+                </button>
+              )}
               <button
                 className={styles.buttonSecondary}
                 type="button"

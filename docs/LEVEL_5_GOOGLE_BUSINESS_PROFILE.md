@@ -6,7 +6,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **OPEN — baseline maintenance is the first checkpoint**
+- Status: **OPEN — maintenance prepared locally; deployment/live checkpoint pending**
 - Opened: **October 2, 2026**
 - Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Provider: **Google Business Profile**
@@ -14,7 +14,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 - Dependency: completed Facebook publishing/scheduling and the closed Instagram adapter
 - API access: **unverified**
 - Live-test client and exact business location: **unconfirmed**
-- Current task: **L5-GBP-00 — Baseline Maintenance Checkpoint (`READY`)**
+- Current task: **L5-GBP-00 — Baseline Maintenance Checkpoint (`MANUAL`)**
 - No Google adapter, OAuth credentials, API access approval, or live publication is proven by opening this document
 
 ## Scope and phase pass condition
@@ -63,13 +63,13 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 - Reuse `publish_attempts`, deterministic destination/revision duplicate barriers, provider-result persistence, and conservative ambiguous-outcome handling. Do not assume Google supplies an idempotency key.
 - Reuse `scheduled_releases`, EventBridge Scheduler, the scheduler-manager Lambda, and the worker. Extend provider routing and infrastructure permissions only for this adapter.
 - Preserve client timezone, stale-revision blocking, pre-dispatch cancellation, bounded certainty-aware retries, and worker re-entry safety.
-- Broader token-maintenance, alerting, and worker-recovery findings from the October 2 review must receive their own bounded assignments; this phase does not implicitly authorize an architectural rewrite.
+- Nicholas explicitly expanded L5-GBP-00 on October 2 to include Instagram token renewal and interrupted scheduled-processing recovery. Notification delivery and other-provider recovery remain later bounded assignments; preserve the existing architecture.
 
 ## Ordered task queue
 
 | ID | Status | Task | Dependency / required evidence |
 | --- | --- | --- | --- |
-| L5-GBP-00 | `READY` | Baseline maintenance checkpoint | Reproducible passing test command, reconciled carousel validation/tests, lint without errors |
+| L5-GBP-00 | `MANUAL` | Baseline maintenance checkpoint | Passing tests/lint, Instagram renewal and scheduled-processing recovery; deployed smoke evidence |
 | L5-GBP-01 | `WAITING` | Google Business Profile access readiness | Baseline maintenance accepted; verified project approval/eligibility and exact test client/location |
 | L5-GBP-02 | `WAITING` | Direct OAuth, location selection, credential renewal, Account Health | Access checkpoint accepted; real location saved Healthy under correct client |
 | L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
@@ -79,13 +79,13 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-Exactly one task is `READY`. Opening the phase does not authorize completing several tasks in one chat. Repository writes still require Nicholas's explicit confirmation under his GitHub rule.
+No task is `READY` while L5-GBP-00 awaits deployment/live evidence. Opening the phase does not authorize completing several tasks in one chat. Repository writes still require Nicholas's explicit confirmation under his GitHub rule.
 
 ## L5-GBP-00 — Baseline Maintenance Checkpoint
 
 ### Objective
 
-Repair the demonstrated test-runner, carousel-validation/test, and lint gaps before building the Google adapter. Make the smallest changes that preserve the proven publishing, destination editing, and client-switching behavior.
+Repair the demonstrated test-runner, carousel-validation/test, and lint gaps, and implement the Instagram renewal/recovery follow-ups Nicholas requested here, before building the Google adapter. Make the smallest changes that preserve the proven publishing, destination editing, and client-switching behavior.
 
 ### Acceptance criteria
 
@@ -96,7 +96,11 @@ Repair the demonstrated test-runner, carousel-validation/test, and lint gaps bef
 5. Run the complete test suite, lint, and production build. Require zero test failures and zero lint errors; document each retained warning and whether it affects this task. Do not call the baseline clean without reporting warnings.
 6. Review the diff for unintended application or documentation changes and verify no secrets were introduced.
 7. Record exact commands, runtime, counts, files, decisions, and live-verification status here. If UI changes affect the verified connection/preview paths, specify the focused deployed smoke test rather than treating the build as live proof.
-8. Do not implement Google API/OAuth code, change external accounts, submit real posts, perform full UX work, or start token/monitoring follow-ups in this task.
+8. Do not implement Google API/OAuth code, change external accounts, submit real posts, perform full UX work, or implement notification delivery/full cross-provider monitoring in this task.
+
+9. Renew eligible, unexpired Instagram long-lived credentials server-side, verify exact account identity before saving, encrypt the result, and prevent concurrent reconnects from being overwritten. Publishers must use the renewed credential. Test expiry, eligibility, rejection, identity mismatch, and concurrency.
+10. Reuse the authenticated dispatch endpoint and existing worker for periodic maintenance. Resume only recorded Instagram processing attempts with matching client/destination/revision; never create a replacement attempt during recovery. Persist success or hold uncertain/interrupted submissions for review. Bound scanning and verify worker routing and duplicate-safe recovery.
+11. Validate changed infrastructure locally and record a deployment checklist, including browser-closed renewal/recovery and worker-error observation. No AWS deployment or external posts in this chat.
 
 ### Completion and next task
 
@@ -167,3 +171,39 @@ Central Needs Attention, aggregate Content status, calendar views, client dashbo
 - Remaining work: complete the maintenance checkpoint, then access readiness. No application implementation or external credentials changed while opening this plan.
 
 Append dated entries for each task with outcome, changed files, checks/results, live status, decisions, blockers/manual steps, and remaining work. Update statuses only when evidence supports them.
+
+
+### October 2, 2026: L5-GBP-00 Instagram maintenance prepared locally
+
+- Outcome: Nicholas asked to handle the three Instagram follow-ups here. This explicitly expanded the bounded maintenance task to baseline test/lint repairs, credential renewal, and interrupted scheduled-processing recovery. Local implementation is complete; task status is **MANUAL**, awaiting approved publication/deployment and focused live evidence. L5-GBP-01 remains **WAITING**. The closed Instagram phase is preserved.
+- Runtime: Node **24.19.0**. `npm test` now uses `node --test tests/*.test.js`; use Node 24 for the documented verification environment. No package-wide module-system migration. Node emits its existing `MODULE_TYPELESS_PACKAGE_JSON` syntax-detection warnings; npm also reports an environment `http-proxy` warning. These are not test failures and were not suppressed.
+- Baseline reproduced on `866cc3e`: old `npm test` rejected its flag; direct tests **142 total, 140 passed, 2 failed**; lint **2 errors, 6 warnings**.
+- Baseline changes: replaced the obsolete test flag; supplied a 4:5 carousel-video fixture and explicit supported-ratio boundary coverage; keyed the connection-state component to the server/client snapshot; used normal OAuth links; made preview data belong to its requested URL and ignored aborted results; stabilized editor media dependencies. No broad UX redesign.
+- Carousel rule limitation: Meta's current media reference and Instagram Login/refresh documentation returned HTTP 429 or a login wall during verification. The Meta-maintained Postman collection confirmed Reel-specific guidance but did not provide a retrievable current carousel-video specification. **The carousel API's full current ratio allowance has not been proven.** The existing 4:5–1.91:1 product boundary is retained, explicitly described as currently supported, with a compatible fixture. Do not infer broader support or close this requirement without current official evidence and an appropriate live check. References: https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media/ ; https://developers.facebook.com/docs/instagram-platform/reference/refresh_access_token ; https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api .
+- Renewal: unexpired credentials within seven days of expiry, at least 24 hours old, are eligible; attempt cooldown is one hour. Missing/invalid expiry or issue time is conservatively skipped. Legacy connection `createdAt` provides the age fallback; reconnection records issuance and resets renewal metadata. Refresh uses `graph.instagram.com/refresh_access_token` with `ig_refresh_token`, followed by exact account verification, encryption, and a compare-and-set save. Concurrent renewal/reconnect cannot overwrite a newer credential. Expired/revoked access still requires reconnect. Provider errors omit renewal payloads/URLs. All three publishers reload the saved encrypted credential after preflight and validate that current connection.
+- Recovery: the existing authenticated dispatch route and Lambda gain an `instagram_maintenance` action. A recurring Scheduler trigger runs every 15 minutes, handling at most one due connection and one idle release per tick. The route and worker allow up to 180 seconds for maintenance; provider requests have 10-second bounds. A database lease prevents competing recovery ticks. Only Instagram releases already `dispatching` and idle at least 20 minutes are considered. The same client, destination, revision, attempt, and recorded containers are required; processing is continued through the existing status checker. Saved provider success can repair local destination/schedule metadata without another provider submission. Processing older than 24 hours, missing/incomplete attempts, and uncertain outcomes go to `review_required`, retaining the active destination lock. Editing and manual Instagram publishing are blocked during that review. Read failures preserve the submission and surface maintenance errors; no recovery path creates a fresh attempt or retries an ambiguous publication.
+- Monitoring: added a CloudWatch alarm for existing worker `Errors`; maintenance reports safe counters and fails the invocation on renewal/read errors. **No alarm delivery actions or notification emails were added.** The worker rejects an old application handler lacking the maintenance response marker. Non-Instagram recovery, missed undelivered Scheduler triggers, direct unscheduled-attempt recovery, daily checks of unknown/far-future expiries, and alert delivery remain separate work.
+- Files changed: `package.json`; `components/connections-manager.js`, `components/facebook-platform-editor.js`, `components/instagram-platform-editor.js`; `lib/connections.js`, `lib/instagram.js`, `lib/instagram-token-maintenance.js`, `lib/instagram-maintenance.js`, `lib/instagram-recovery-logic.js`, `lib/instagram-carousel-publish-logic.js`, `lib/instagram-publisher.js`, `lib/instagram-publishing.js`, `lib/instagram-carousel-publishing.js`, `lib/instagram-reel-publishing.js`, `lib/scheduled-release-dispatch.js`, `lib/scheduled-release-guard.js`; both changed publish/worker routes; `infrastructure/level4-scheduling.yaml`, `infrastructure/scheduling.guard`; carousel tests, four new maintenance/recovery test files and two test helpers; `README.md`, `AGENTS.md`, this document.
+- Automated evidence: `npm test` **165 passed, 0 failed**; `npm run lint` **0 errors, 0 warnings**; `npm run build` passed. Tests cover renewal eligibility/expiry/cooldown, rejected/malformed provider responses, exact account identity, concurrent renewal/reconnect, Account Health persistence and credential redaction, renewed credentials in all three publishers, bounded scans, recorded/container/revision/client recovery, lease re-entry, saved-success reconciliation, ambiguous/read-failure locks, review edit/publish guards, authenticated routing, worker polling, and rejection of an older handler.
+- Infrastructure evidence: `cfn-lint infrastructure/level4-scheduling.yaml` passed; CloudFormation Guard **3.2.1** validation with `infrastructure/scheduling.guard` passed. A synthetic negative fixture containing a plaintext `SecretString` was rejected as expected. Rules cover secret retention/no plaintext, IAM actions, absence of a public Lambda URL, maintenance cadence/retry bound, worker runtime/timeout, and Scheduler role constraints. These are local checks; no AWS validation API, deployed change set, stack update, or live account operation occurred.
+- Live-test status: **not run**. Existing deployed Facebook/Instagram successes remain valid; these new behaviors are not deployed or proven live. No real post was submitted in this task, and no secret/account configuration was changed.
+- Git: local changes prepared on `main` at `866cc3e`; **not committed or pushed**. GitHub publication requires Nicholas's explicit confirmation under `AGENTS.md` and the README.
+
+#### Manual checkpoint before marking L5-GBP-00 DONE
+
+1. Review and authorize GitHub publication. Deploy the application handler before enabling the recurring infrastructure trigger. Verify the hosting runtime supports the maintenance route's 180-second budget; a build alone does not prove that hosting limit.
+2. Review an AWS change set before applying the scheduling template. Expect an existing worker code update, one new recurring schedule, and one worker-error alarm. Preserve existing one-time schedules, schedule group, role identities, and populated retained worker secret. The existing authenticated dispatch URL/token remain in use; never paste values into docs or logs.
+3. Smoke-test Connections across two clients and a server refresh: identity, request/health state, and OAuth navigation remain correct. Smoke-test Facebook previews with URL A -> URL B, blank/invalid URLs, and aborted/failed responses; stale A data must not appear under B.
+4. Check current official carousel-video rules and reconcile the retained supported boundary. Test an appropriate supported mixed carousel only with an explicitly approved live test. Record actual result identity and exactly one post.
+5. Verify refresh with a genuinely eligible unexpired credential and exact account identity, and confirm encrypted persistence plus extended expiry. Verify an expired/revoked test connection reports reconnect without renewal. If no token is currently eligible for the due window, record that limitation and Nicholas's explicit decision about deferred live evidence rather than falsifying production expiry metadata.
+6. With an approved scheduled Instagram test, verify browser-closed maintenance resumes its saved processing attempt after the normal worker stops, records one exact result, and re-entry creates no second attempt/post. Verify the interrupted/uncertain case remains locked for review. Record schedule/attempt/revision/provider IDs and timestamps without credentials.
+7. Invoke/observe maintenance and verify safe counters, the worker-error alarm, and handling of errors. Alarm existence is not notification delivery. Record non-secret deployed evidence here; keep broader alert/monitoring follow-ups visible.
+8. After required evidence and review are accepted, mark L5-GBP-00 **DONE** and L5-GBP-01 the sole **READY** task. Until then, no Google adapter or Level 6 work begins.
+
+
+### October 2, 2026: Maintenance publication authorized
+
+- Nicholas explicitly instructed: “push these changes.” This authorizes committing and publishing the reviewed L5-GBP-00 maintenance changes to `main`.
+- This publication includes the recorded 165 passing tests, clean lint, successful production build, and passing infrastructure schema/security checks. No application behavior changed after that verification; this entry only records publication authorization.
+- L5-GBP-00 remains **MANUAL**. AWS infrastructure deployment, hosting timeout verification, live renewal/recovery and UI smoke checks, and current carousel-specification verification remain outstanding. L5-GBP-01 remains **WAITING**; no Google implementation or Level 6 work is opened.
+- Git commit/push verification is reported in the implementation handoff. This authorization does not record a completed AWS deployment or live integration test.
