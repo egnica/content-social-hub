@@ -40,6 +40,32 @@ test("ready scheduled revision can be claimed", () => {
   });
 });
 
+test("ready Instagram scheduled revision can be claimed", () => {
+  const instagramVersion = { ...version, platform: "instagram" };
+  const instagramSchedule = { ...schedule, platform: "instagram" };
+
+  assert.deepEqual(
+    evaluateScheduledReleaseDispatch({
+      schedule: instagramSchedule,
+      version: instagramVersion,
+    }),
+    {
+      action: "claim",
+      reason: "ready",
+    },
+  );
+});
+
+test("schedule and destination platform mismatch is blocked", () => {
+  assert.deepEqual(
+    evaluateScheduledReleaseDispatch({
+      schedule: { ...schedule, platform: "instagram" },
+      version: { ...version, platform: "facebook" },
+    }),
+    { action: "noop", reason: "destination_mismatch" },
+  );
+});
+
 test("cancelled and superseded schedules are no-ops", () => {
   for (const state of ["cancelled", "superseded"]) {
     assert.equal(
@@ -93,7 +119,7 @@ test("dispatching video processing refreshes instead of resubmitting", () => {
       schedule: { ...schedule, state: "dispatching", dispatchedAt: new Date() },
       version: { ...version, lastPublishStatus: "processing" },
     }),
-    { action: "refresh_processing", reason: "video_processing" },
+    { action: "refresh_processing", reason: "provider_processing" },
   );
 });
 
@@ -148,6 +174,43 @@ test("definitive transient provider failure is automatically retryable within th
   assert.equal(result.outcome, "retry");
   assert.equal(result.retryable, true);
   assert.ok(result.retryDelayMs > 0);
+});
+
+test("Instagram definitive transient provider failure uses the same bounded retry policy", () => {
+  const result = classifyScheduledDispatchError(
+    {
+      name: "InstagramPublishProviderError",
+      attempt: {
+        status: "failed",
+        providerError: { isTransient: true },
+      },
+    },
+    { ...schedule, platform: "instagram" },
+  );
+
+  assert.equal(result.outcome, "retry");
+  assert.equal(result.retryable, true);
+  assert.ok(result.retryDelayMs > 0);
+});
+
+test("Instagram ambiguous conflict remains locked for review", () => {
+  assert.deepEqual(
+    classifyScheduledDispatchError(
+      {
+        name: "InstagramPublishConflictError",
+        attempt: {
+          status: "processing",
+        },
+      },
+      { ...schedule, platform: "instagram" },
+    ),
+    {
+      outcome: "review_required",
+      state: "review_required",
+      reason: "ambiguous_provider_outcome",
+      retryable: false,
+    },
+  );
 });
 
 test("automatic retries stop after the configured maximum", () => {
