@@ -895,21 +895,24 @@ Future implementation agents must append a dated progress entry containing task 
   - direct evaluation of the updated scheduled-release dispatch logic: **6 passed, 0 failed**, covering Instagram claim eligibility, cross-platform mismatch blocking, recorded processing refresh, transient provider retry classification, ambiguous conflict lock, and success classification
   - direct evaluation of the existing AWS scheduler helpers with Instagram inputs: **3 passed, 0 failed**, covering provider-specific schedule naming, scheduler-manager platform identity, and UTC release preservation
   - branch-vs-main review confirmed the implementation is limited to the scheduler/provider seams, shared schedule UI, focused tests, infrastructure permission/validation changes, and this phase record
-- Production build/deployment status: pending. The implementation has not yet been fast-forwarded to `main`, the Amplify production build has not yet run for L5-07, and the updated `content-social-hub-level4-scheduling` CloudFormation template has not yet been deployed.
+- Production build/deployment status: **passed**.
+  - `main` fast-forwarded to L5-07 implementation commit `64faad3c0ab96307eb9a60ce126d3f78574c9efd`
+  - Amplify production job `132`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - CloudFormation stack `content-social-hub-level4-scheduling` updated successfully to **UPDATE_COMPLETE** with no resource replacements
+  - safe scheduler-manager smoke test created `csh-instagram-bbbbbbbbbbbbbbbbbbbbbbbb`, verified it ENABLED, deleted it through the same manager Lambda, and confirmed the schedule group returned to zero schedules
+  - safe scheduled-release worker smoke test invoked the deployed worker with a nonexistent valid ObjectId and received `noop / schedule_not_found`, confirming the worker can still authenticate to and reach the generic production dispatch route without provider submission
 - Live-test status: **required / not yet completed**. No scheduled Instagram provider submission was triggered by this implementation checkpoint.
 - Required production/live checkpoint using `Nicholas_Egner` and the Healthy `@nicholasegner` destination:
-  1. merge/deploy the L5-07 application changes and confirm the production Amplify build succeeds
-  2. update the existing `content-social-hub-level4-scheduling` CloudFormation stack so the scheduler-manager accepts the Instagram schedule namespace
-  3. open or create a clean unpublished Instagram destination revision with compatible media and confirm the Instagram editor shows the same Schedule / Reschedule / Cancel controls as Facebook
-  4. verify a near-future Instagram schedule persists with the exact revision, client-local wall time, timezone, UTC instant, and an AWS schedule named `csh-instagram-<platformVersionId>`
-  5. optionally exercise a safe pre-dispatch Cancel and confirm the AWS trigger is removed without creating Publish History
-  6. schedule a fresh Instagram revision, close the browser before release, and allow AWS to wake the existing worker
-  7. reopen after release and confirm exactly one Instagram result, schedule state `Succeeded`, durable Instagram Publish History, and exact `View Post`
-  8. if Instagram processing is asynchronous, confirm the worker keeps checking the same recorded attempt/container rather than creating a replacement submission
-  9. deliberately re-enter the worker after success and confirm it returns a no-op with no duplicate Instagram post
-  10. edit a separately scheduled Instagram revision before dispatch and confirm the older schedule becomes Missed Schedule / stale revision rather than silently publishing the edited content
-  11. confirm existing Facebook scheduling remains functional after the provider-aware changes
-- Blockers/manual actions: production Amplify deployment, CloudFormation stack update, and the real browser-closed Instagram scheduling checkpoint above.
+  1. open or create a clean unpublished Instagram destination revision with compatible media and confirm the Instagram editor shows the same Schedule / Reschedule / Cancel controls as Facebook
+  2. verify a near-future Instagram schedule persists with the exact revision, client-local wall time, timezone, UTC instant, and an AWS schedule named `csh-instagram-<platformVersionId>`
+  3. optionally exercise a safe pre-dispatch Cancel and confirm the AWS trigger is removed without creating Publish History
+  4. schedule a fresh Instagram revision, close the browser before release, and allow AWS to wake the existing worker
+  5. reopen after release and confirm exactly one Instagram result, schedule state `Succeeded`, durable Instagram Publish History, and exact `View Post`
+  6. if Instagram processing is asynchronous, confirm the worker keeps checking the same recorded attempt/container rather than creating a replacement submission
+  7. deliberately re-enter the worker after success and confirm it returns a no-op with no duplicate Instagram post
+  8. edit a separately scheduled Instagram revision before dispatch and confirm the older schedule becomes Missed Schedule / stale revision rather than silently publishing the edited content
+  9. confirm existing Facebook scheduling remains functional after the provider-aware changes
+- Blockers/manual actions: only the real deployed Instagram Schedule / Cancel / stale-revision / browser-closed publish / worker-reentry checkpoint above remains.
 - Remaining work: do not mark L5-07 or Level 5 complete until the deployed Instagram schedule/cancel/stale/worker-reentry evidence is recorded. After that evidence, L5-07 may become `DONE`; Work must still review the complete Level 5 evidence before README phase closure.
 - Status transition: `L5-07` -> `MANUAL`.
 
