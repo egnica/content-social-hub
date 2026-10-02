@@ -169,7 +169,7 @@ Resources:
             while (true) {
               const result = await invokeDispatch(config, scheduledReleaseId);
               console.log(JSON.stringify({
-                message: 'L4-04 scheduled release dispatch result',
+                message: 'Content Social Hub scheduled release dispatch result',
                 scheduledReleaseId,
                 outcome: result?.outcome || 'unknown',
                 reason: result?.reason || '',
