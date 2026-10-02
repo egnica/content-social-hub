@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import InstagramPublishControls from "@/components/instagram-publish-controls";
+import DestinationScheduleControls from "@/components/facebook-schedule-controls";
 import styles from "@/components/ui.module.css";
 import {
   instagramMediaModeLabel,
@@ -540,6 +541,14 @@ function InstagramVersionEditor({ initialVersion, destination, masterContent }) 
               {saving ? "Saving" : dirty ? "Save Instagram Version" : "Saved"}
             </button>
           </div>
+
+          <DestinationScheduleControls
+            version={version}
+            destination={destination}
+            masterContent={masterContent}
+            dirty={dirty}
+            busy={saving}
+          />
 
           <InstagramPublishControls
             version={version}
