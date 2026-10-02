@@ -186,7 +186,7 @@ Do not pull the Level 6 full Calendar or Level 7 approval workflow into this pha
 | L5-04 | `DONE` | Publish single-image Instagram posts with durable results and duplicate protection | Real `@nicholasegner` single-image post published from revision 9; Succeeded history, Published lock, and exact View Post verified in production |
 | L5-05 | `DONE` | Add Instagram carousel publishing | Real `@nicholasegner` multi-image carousel published; Succeeded history and exact live `View Post` verified in production |
 | L5-06 | `DONE` | Add Instagram Reels/video publishing and processing-state handling | Real `@nicholasegner` Reel published from revision 4; Succeeded history, Published lock, exact View Post, and Master thumbnail cover verified in production |
-| L5-07 | `MANUAL` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Implementation complete on the L5-07 branch; production build/infrastructure deploy and final live browser-closed checkpoint remain |
+| L5-07 | `DONE` | Extend background scheduling to Instagram and run final browser-closed checkpoint | Real `@nicholasegner` browser-closed scheduled publish succeeded; exact View Post, durable Succeeded history, and worker re-entry no-op verified |
 
 There should normally be only one `READY` task.
 
@@ -915,4 +915,44 @@ Future implementation agents must append a dated progress entry containing task 
 - Blockers/manual actions: only the real deployed Instagram Schedule / Cancel / stale-revision / browser-closed publish / worker-reentry checkpoint above remains.
 - Remaining work: do not mark L5-07 or Level 5 complete until the deployed Instagram schedule/cancel/stale/worker-reentry evidence is recorded. After that evidence, L5-07 may become `DONE`; Work must still review the complete Level 5 evidence before README phase closure.
 - Status transition: `L5-07` -> `MANUAL`.
+
+### October 2, 2026: L5-07 live browser-closed scheduling closed
+
+- Task: `L5-07` — Instagram Scheduling + Final Level 5 Checkpoint.
+- Outcome: `DONE`. Nicholas completed the real production browser-closed Instagram scheduling checkpoint on the Healthy `@nicholasegner` destination under `Nicholas_Egner`.
+- Live schedule evidence:
+  - Instagram Revision `2` was scheduled for `2026-10-02 10:55 America/Chicago`, resolving to `2026-10-02T15:55:00.000Z`
+  - before release, the production app showed the saved schedule as `Scheduled` and exposed Reschedule / Cancel controls while Publish Now remained separate
+  - read-only AWS verification confirmed one enabled EventBridge schedule named `csh-instagram-6abfd1869b523f147ecff37e`, targeting `content-social-hub-scheduled-release-worker` with scheduled-release ID `6abfd3164aa36dce7ab95130`
+  - Nicholas closed the browser before release
+  - CloudWatch recorded the background worker result at `2026-10-02T15:55:28.092Z` as `outcome: succeeded`, `reason: published`
+  - after release, the EventBridge schedule group returned to zero schedules, preserving one-time trigger cleanup
+- Application/result evidence after reopening:
+  - the Instagram revision displayed the locked `Published` state
+  - Schedule correctly blocked another schedule for the already-published revision
+  - Publish History recorded `Succeeded`, `Revision 2`, `single_image`, with the production completion timestamp
+  - `View Post` opened the exact live Instagram result on `nicholasegner` with the expected image and caption `This is a test for a scheduled post.`
+  - the persisted schedule recorded `state: succeeded`, `active: false`, `retryCount: 0`, one dispatch transition, one success transition, the durable publish-attempt ID, provider media ID, and exact Instagram permalink
+- Duplicate-safety / worker re-entry evidence:
+  - the deployed scheduled-release worker was deliberately invoked again with the exact same completed scheduled-release ID
+  - the worker returned HTTP 200 with `outcome: noop`, `reason: succeeded`
+  - the same persisted provider post ID / permalink remained attached to the completed schedule
+  - no second Instagram result was created
+- Production/deployment evidence retained:
+  - Amplify job `132`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - Amplify job `133`: **BUILD SUCCEED, DEPLOY SUCCEED, VERIFY SUCCEED**
+  - CloudFormation stack `content-social-hub-level4-scheduling`: **UPDATE_COMPLETE**
+  - scheduler-manager smoke test created and deleted a synthetic `csh-instagram-*` schedule successfully before the live provider checkpoint
+  - deployed worker smoke test reached the generic protected dispatch route successfully before the live provider checkpoint
+  - focused scheduled-dispatch checks: **6 passed, 0 failed**
+  - focused AWS scheduling checks: **3 passed, 0 failed**
+- Files changed for task closure:
+  - `docs/LEVEL_5_INSTAGRAM.md`
+- Decisions:
+  - L5-07 is closed on the combined implementation, deployed infrastructure, real browser-closed scheduled publish, exact post, durable history, and deliberate worker-reentry no-op evidence
+  - the Instagram adapter has now completed every task in the Level 5 task queue, but overall Level 5 phase closure is still reserved for Work review
+  - the README overall Level 5 status has not been changed by this task closure
+- Blockers/manual actions: none remain for L5-07.
+- Remaining work: Work reviews the complete L5-01 through L5-07 evidence and may then mark the Instagram Level 5 adapter complete in the README or open the next provider/phase.
+- Status transition: `L5-07` -> `DONE`.
 
