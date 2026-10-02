@@ -178,7 +178,7 @@ Resources:
               if (result?.outcome !== 'processing') return result;
               if (Date.now() + config.processingPollSeconds * 1000 >= deadline) {
                 throw new Error(
-                  'Facebook video is still processing beyond the worker polling window.',
+                  'The scheduled provider result is still processing beyond the worker polling window.',
                 );
               }
               await sleep(config.processingPollSeconds * 1000);
@@ -240,7 +240,9 @@ Resources:
                   - scheduler:CreateSchedule
                   - scheduler:UpdateSchedule
                   - scheduler:DeleteSchedule
-                Resource: !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-facebook-*
+                Resource:
+                  - !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-facebook-*
+                  - !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-instagram-*
               - Sid: PassSchedulerTargetRoleOnly
                 Effect: Allow
                 Action: iam:PassRole
@@ -277,7 +279,10 @@ Resources:
           worker_arn = os.environ["SCHEDULED_RELEASE_WORKER_ARN"]
           target_role_arn = os.environ["SCHEDULER_TARGET_ROLE_ARN"]
           object_id_pattern = re.compile(r"^[0-9a-f]{24}$")
-          schedule_name_pattern = re.compile(r"^csh-facebook-[0-9a-f]{24}$")
+          schedule_name_pattern = re.compile(
+              r"^csh-(facebook|instagram)-[0-9a-f]{24}$"
+          )
+          supported_platforms = {"facebook", "instagram"}
 
           def required_string(value, label):
               normalized = str(value or "").strip()
@@ -291,11 +296,11 @@ Resources:
                   platform_version_id,
                   "platformVersionId",
               ).lower()
-              if normalized_platform != "facebook":
-                  raise ValueError("Only Facebook schedules are supported")
+              if normalized_platform not in supported_platforms:
+                  raise ValueError("Unsupported scheduled-release platform")
               if not object_id_pattern.fullmatch(normalized_version_id):
                   raise ValueError("platformVersionId must be a MongoDB ObjectId")
-              return f"csh-facebook-{normalized_version_id}"
+              return f"csh-{normalized_platform}-{normalized_version_id}"
 
           def release_expression(value):
               normalized = required_string(value, "releaseAt")
