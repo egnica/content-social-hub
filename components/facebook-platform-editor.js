@@ -484,6 +484,22 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
     setError("");
   }
 
+  function selectPrimaryFacebookMedia(value) {
+    if (value !== "__link_preview__") {
+      update("primaryMediaId", value);
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      mediaIds: [],
+      primaryMediaId: "",
+    }));
+    setDirty(true);
+    setMessage("");
+    setError("");
+  }
+
   async function uploadFacebookThumbnail(event) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -742,22 +758,44 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
                 })}
               </div>
 
-              {form.mediaIds.length ? (
+              {form.mediaIds.length || linkPreview?.imageUrl ? (
                 <label className={styles.field} style={{ marginTop: 14 }}>
                   <span className={styles.label}>Primary Facebook media</span>
                   <select
                     className={styles.select}
-                    value={form.primaryMediaId}
+                    value={
+                      form.mediaIds.length
+                        ? form.primaryMediaId
+                        : "__link_preview__"
+                    }
                     onChange={(event) =>
-                      update("primaryMediaId", event.target.value)
+                      selectPrimaryFacebookMedia(event.target.value)
                     }
                   >
+                    {linkPreview?.imageUrl ? (
+                      <option value="__link_preview__">
+                        Link preview image — from page metadata
+                      </option>
+                    ) : null}
                     {selectedMedia.map((asset) => (
                       <option key={asset._id} value={asset._id}>
                         {asset.originalName}
                       </option>
                     ))}
                   </select>
+                  {linkPreview?.imageUrl ? (
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 6,
+                        color: "#667085",
+                        fontSize: 12,
+                      }}
+                    >
+                      Choose the link preview to publish this as a Facebook link
+                      post without attaching Master Content media.
+                    </span>
+                  ) : null}
                 </label>
               ) : null}
 
