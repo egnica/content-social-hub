@@ -729,11 +729,14 @@ function FacebookVersionEditor({ initialVersion, destination, masterContent }) {
             </label>
           </div>
 
-          {media.length ? (
+          {media.length || linkPreview?.imageUrl ? (
             <div style={{ marginTop: 22 }}>
               <div className={styles.sectionHeader}>
                 <h2>Facebook media</h2>
-                <p>Select from media already attached to Master Content.</p>
+                <p>
+                  Choose attached Master Content media or the Destination URL
+                  link preview.
+                </p>
               </div>
               <div style={{ display: "grid", gap: 9 }}>
                 {media.map((asset) => {
