@@ -29,7 +29,7 @@ export default async function ConnectionsPage({ searchParams }) {
       <PageHeader
         eyebrow="Level 5"
         title="Social Accounts"
-        description="Connect the exact Facebook or Instagram destination to the correct client. Passwords stay with the social provider and are never collected by this application."
+        description="Connect the exact Facebook, Instagram, or LinkedIn destination to the correct client. Passwords stay with the social provider and are never collected by this application."
       />
       <ConnectionsManager
         clients={clients}
