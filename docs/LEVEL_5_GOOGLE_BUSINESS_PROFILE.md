@@ -6,7 +6,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **OPEN — approved UX-01 editor interlude before Google access readiness**
+- Status: **PAUSED — Google API access approval pending; LinkedIn is the active phase**
 - Opened: **October 2, 2026**
 - Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Provider: **Google Business Profile**
@@ -14,7 +14,8 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 - Dependency: completed Facebook publishing/scheduling and the closed Instagram adapter
 - API access: **unverified**
 - Live-test client and exact business location: **unconfirmed**
-- Current task: **UX-01 — Post composer experience (`MANUAL`: publication authorized; deployment and live smoke review pending)**
+- Current Google task: **L5-GBP-01 — Access Readiness (`MANUAL`: Google approval pending)**
+- Active phase: `docs/LEVEL_5_LINKEDIN.md`
 - No Google adapter, OAuth credentials, API access approval, or live publication is proven by opening this document
 
 ## Scope and phase pass condition
@@ -70,8 +71,8 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | ID | Status | Task | Dependency / required evidence |
 | --- | --- | --- | --- |
 | L5-GBP-00 | `DONE` | Baseline maintenance checkpoint | Accepted October 2, 2026 with deployed smoke evidence; unavailable live edge cases explicitly deferred |
-| UX-01 | `MANUAL` | Approved post composer experience | Local editor implementation verified; authorize publication, deploy, and review live smoke checks |
-| L5-GBP-01 | `WAITING` | Google Business Profile access readiness | Resume after UX-01 deployed smoke review; verify project approval/eligibility and exact test client/location |
+| UX-01 | `DONE` | Approved post composer experience | Local editor implementation verified; authorize publication, deploy, and review live smoke checks |
+| L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | Resume after UX-01 deployed smoke review; verify project approval/eligibility and exact test client/location |
 | L5-GBP-02 | `WAITING` | Direct OAuth, location selection, credential renewal, Account Health | Access checkpoint accepted; real location saved Healthy under correct client |
 | L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
 | L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
@@ -80,7 +81,7 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-UX-01 temporarily precedes access readiness, following Nicholas's October 12 approval of the reviewed composer mockup. No task is `READY` while the editor is at its manual deployment/review checkpoint. After UX-01 is accepted as `DONE`, L5-GBP-01 becomes the sole `READY` task again. Google OAuth and later provider work remain `WAITING`.
+October 12: Nicholas accepted moving past the published composer review and approved LinkedIn as the active provider while Google awaits API approval. UX-01 is DONE for roadmap progression; no new live post was submitted. L5-GBP-01 is MANUAL. L5-LI-01 is the sole READY task in the new LinkedIn phase. Google OAuth remains WAITING.
 
 ## UX-01 — Post Composer Experience
 
@@ -379,3 +380,14 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - Nicholas explicitly instructed “commit and push,” authorizing publication of the reviewed six-file finished-post hierarchy and shaded-footer refinement to main.
 - Verification remains the recorded 168 passing tests, clean lint, successful production build, responsive published/editor/media browser checks, and passing diff check. Only this authorization record was added afterward.
 - UX-01 remains MANUAL pending deployment/live UI review; L5-GBP-01 stays WAITING. The verified remote commit is reported in the handoff.
+
+
+### October 12, 2026: Google API application submitted; provider paused for LinkedIn
+
+- Task: **L5-GBP-01**, status **MANUAL**, awaiting Google approval. Nicholas approved proceeding past UX-01 and prioritizing LinkedIn over YouTube.
+- Project: **Content Social Hub**, Google Cloud ID `content-social-hub`, number `503771980348`, No organization.
+- Applied for Basic Google Business Profile API access on October 12. Support case **`1-5407000042073`** opened. Google's screen estimated **7–10 business days** and cautioned against duplicate applications.
+- The application presented four verified Business Profiles, including Nicholas Egner - Web Development. The exact integration test client/location is still unconfirmed; do not infer a publishing destination from the application.
+- No API approval, enabled quota, OAuth configuration, location-scoped connection, or Google publication is yet verified. Check the approval email and project quotas; do not submit a duplicate request. Resume L5-GBP-01 when Google replies.
+- Active handoff moves to `docs/LEVEL_5_LINKEDIN.md`, with `L5-LI-01` READY. Google OAuth and later Google tasks stay WAITING. Level 6 remains unopened.
+- Evidence: user's screenshots of new project, application, and support-case confirmation. Documentation-only GitHub update; no application code, automated tests, or live publishing. Modified `README.md`, `AGENTS.md`, and this file, plus new LinkedIn phase document. Publication explicitly authorized; verify commit results separately.
