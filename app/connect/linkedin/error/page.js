@@ -10,6 +10,7 @@ const messages = {
   expired: "This authorization attempt expired. Please start again.",
   invalid: "LinkedIn returned an incomplete authorization response.",
   request: "This LinkedIn connection request is no longer available. Ask for a fresh link.",
+  identity: "The authorized LinkedIn profile is different from the profile being reconnected. No credentials were replaced.",
   provider: "LinkedIn could not complete this connection. Check app permissions and try again.",
 };
 export default async function LinkedInConnectionErrorPage({ searchParams }) {
