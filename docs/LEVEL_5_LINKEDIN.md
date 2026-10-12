@@ -44,3 +44,13 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - Verification: checked documentation handoff pointers and task queue. No application tests/build/live tests run for this documentation-only change.
 - Live status: no LinkedIn developer approval, OAuth connection, API post or scheduled publication verified.
 - Blockers: need developer app access, exact personal/organization test destination, and permissions confirmation. Next task L5-LI-02 only after readiness acceptance.
+
+
+### October 12, 2026: Public privacy-policy prerequisite added
+
+- Task: **L5-LI-01**; remains **READY** while developer-app registration and platform product access are unverified.
+- Published source: `app/privacy-policy/page.jsx` and `app/privacy-policy/page.module.css` added to the Content Social Hub repository, to be served publicly at `https://main.d1yfjibipwjpld.amplifyapp.com/privacy-policy` following Amplify deployment. This route deliberately does not require an owner session.
+- Correction: previously added portfolio-site policy and footer link were removed from `egnica/new-nicholasegner.com`; policy now belongs solely to Content Social Hub.
+- Checks: GitHub file writes confirmed. No local test, lint, or build run; public deployment/live HTTP availability is unverified.
+- Manual: review policy wording for accuracy and confirm the URL loads publicly before entering it in the LinkedIn developer app. Finish developer app/Page association and inspect API products.
+- No LinkedIn OAuth implementation, authorization, or publishing has occurred. L5-LI-02 remains WAITING.
