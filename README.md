@@ -1878,7 +1878,7 @@ The Instagram closure did not open another phase by itself. Nicholas subsequentl
 | Complete | Instagram Professional | Verified; closed evidence record | Connection, image/carousel/Reel publishing, and shared scheduling |
 | 1 | Google Business Profile | Paused: API approval pending; adapter not implemented | Access approval, exact location selection, update posts, CTA links, images, scheduling |
 | 2 | YouTube | Required; phase not opened | Channel selection, video/thumbnail/metadata/visibility, resumable processing and scheduling; API-upload audit restrictions |
-| 3 | LinkedIn | Active: access readiness | Personal profiles and company Pages must be tracked separately; verify the appropriate permissions and Community Management access |
+| 3 | LinkedIn | Active: personal OAuth next | Personal profiles and company Pages must be tracked separately; verify the appropriate permissions and Community Management access |
 | 4 | TikTok | Required; eligibility unresolved; phase not opened | Resolve Direct Post eligibility for the owner-only app before promising public publishing or scheduling |
 | Optional | Pinterest | Candidate; not a Level 6 dependency unless Nicholas selects it | Board/Pin publishing; Trial versus Standard access and public visibility |
 | Optional | X | Candidate; not a Level 6 dependency unless Nicholas selects it | Text/link/media publishing and scheduling; explicit API usage budget |
@@ -2074,10 +2074,10 @@ The user does not need to write a separate assignment. Start the new Chat with t
 Current delegation state:
 
 - Completed product stages: **Levels 0–4 plus Level 5 Instagram — Instagram reviewed and closed October 2, 2026**
-- Active product stage: **Level 5 platform expansion — LinkedIn access readiness**
+- Active product stage: **Level 5 platform expansion — LinkedIn personal OAuth**
 - Active phase document: `docs/LEVEL_5_LINKEDIN.md`
 - Provider selected: **LinkedIn**
-- Current task: **L5-LI-01 — LinkedIn Developer Access Readiness (`READY`)**
+- Current task: **L5-LI-02 — Personal Profile OAuth and Account Health (`READY`)**
 - Objective: verify developer-app eligibility, personal versus organization publishing permissions, and the exact test destination before implementation.
 - Progress must be documented in: `docs/LEVEL_5_LINKEDIN.md`
 - Google Business Profile `L5-GBP-01`: **MANUAL**, Google approval pending (case `1-5407000042073`).
@@ -2381,9 +2381,9 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_linkedin
+  current_stage: level_5_linkedin_personal_oauth
   active_phase_document: docs/LEVEL_5_LINKEDIN.md
-  current_task: L5-LI-01
+  current_task: L5-LI-02
   current_task_status: READY
   level_5_provider_selected: linkedin
   required_remaining_provider_order:
@@ -2461,14 +2461,14 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Verify LinkedIn developer-access readiness for member and organization publishing without implementing OAuth or posting.
+  goal: Implement LinkedIn personal-profile OAuth and Account Health with encrypted client-scoped credentials, expiry-aware reconnection and live verification.
   task_source: docs/LEVEL_5_LINKEDIN.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-LI-01
+  active_task: L5-LI-02
   google_access_status: pending_manual_approval
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - L5-LI-02 or subsequent LinkedIn tasks before approval and access evidence
+    - L5-LI-03 Company Page connection until Community Management API access is approved
     - Google OAuth before API approval and exact test location confirmation
     - Level 6 before required platform coverage and operational readiness review
     - optional X/Pinterest and blog integration without a separate approved phase
@@ -2481,7 +2481,7 @@ Read this README in full before beginning implementation. Follow **Project Manag
 
 Levels 2, 3, 4, and the Level 5 Instagram adapter are closed. Broader Level 5 platform expansion is active. Do not reopen or rebuild the working Facebook or Instagram connection, publishing, or shared scheduling architecture unless a specific regression is demonstrated. The verified system now includes client-scoped OAuth/Request Connection, encrypted provider credentials, Account Health, destination-specific Facebook and Instagram editors, private-S3 provider transfer, durable provider results and Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing with real Facebook and Instagram results.
 
-`docs/LEVEL_5_INSTAGRAM.md` remains closed. Google Business Profile API access was requested October 12 under project `content-social-hub` (503771980348), support case `1-5407000042073`; `L5-GBP-01` is MANUAL while Google reviews the request. Nicholas accepted progressing beyond the UX-01 composer and moved LinkedIn ahead of YouTube. The active phase is `docs/LEVEL_5_LINKEDIN.md` and `L5-LI-01` is READY. Google OAuth and later Google tasks remain WAITING. GitHub writes require explicit user confirmation.
+`docs/LEVEL_5_INSTAGRAM.md` remains closed. Google Business Profile API access was requested October 12 under project `content-social-hub` (503771980348), support case `1-5407000042073`; `L5-GBP-01` is MANUAL while Google reviews the request. Nicholas accepted progressing beyond the UX-01 composer and moved LinkedIn ahead of YouTube. The active phase is `docs/LEVEL_5_LINKEDIN.md` and `L5-LI-01` is READY. Google OAuth and later Google tasks remain WAITING. LinkedIn Share on LinkedIn Default Tier, w_member_social and callback are verified; L5-LI-01 is DONE and L5-LI-02 is READY. Company Page L5-LI-03 is BLOCKED until Community Management API access. GitHub writes require explicit user confirmation.
 
 Instagram is now proven through Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection.
 
@@ -2497,6 +2497,6 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected work:** `L5-LI-01` LinkedIn Developer Access Readiness. Confirm personal and Company Page product access, prerequisites, scopes, callback plan, and exact test destination. Do not implement OAuth or posting before the readiness checkpoint. Google approval remains pending (case `1-5407000042073`), tracked in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Level 6 remains unopened.
+**Next expected work:** `L5-LI-02` LinkedIn personal-profile OAuth and Account Health. Share on LinkedIn Default Tier and `w_member_social` are confirmed and the callback is registered. Connect Nicholas Egner's personal profile under `Nicholas_Egner`, then live-verify Account Health and expiry-aware reconnect. Company Page access is blocked pending Community Management API approval; do not implement organization publishing yet. Google approval remains pending (case `1-5407000042073`), tracked in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Level 6 remains unopened.
 
 Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. Renewal/recovery maintenance was deployed; some naturally unavailable edge-case proofs remain deferred.
