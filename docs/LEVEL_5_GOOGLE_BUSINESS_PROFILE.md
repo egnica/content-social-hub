@@ -303,3 +303,19 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - Nicholas explicitly instructed “push please,” authorizing commit/publication of the reviewed four-file Master Content hierarchy refinement to `main`.
 - Verification remains the clean lint/build, diff check, and actual-component browser fixture results recorded above. Only this authorization entry was appended afterward.
 - UX-01 remains MANUAL until the refined layout is deployed and reviewed. L5-GBP-01 remains WAITING. The verified remote commit is reported in the handoff.
+
+
+### October 12, 2026: UX-01 single-media thumbnail correction
+
+- Nicholas's deployed screenshot demonstrated a Main image or video thumbnail stretched across the Master form with most of the image cropped. The actual-component fixture reproduced it: one card was 1030 px wide, with a 1010 × 82 px preview using cover fitting.
+- Outcome: fixed locally. The media grid now keeps vacant columns instead of expanding the lone choice across the form. Thumbnails use a 16:9 frame and contain fitting to show the whole asset, including portrait images. These shared styles apply to Master and Facebook/Instagram media choices. Files changed: `components/ui.module.css` and this phase document. No media source or stored publishing payload changed.
+- Checks: targeted browser reproduction failed before the correction and passed afterward at 1440/1024/768/390/320 px. Cards remained 139–246 px wide, frames retained their ratio, images used contain fitting, selection worked, and the page had no horizontal overflow. Landscape and portrait screenshots inspected. Existing actual-component browser checks also passed for Master hierarchy/collapse, independent account editing, media choices, carousel order, scheduling/rescheduling, published exact links, and source-only draft creation. All API mutations were intercepted locally. `npm run lint` passed with zero errors/warnings; `npm run build` passed; `git diff --check` passed. Existing npm environment warning remains. The full 168-test baseline was not repeated for this three-line CSS correction.
+- Live status: the bug is confirmed in Nicholas's deployed screenshot; the correction is not deployed or verified live. UX-01 remains **MANUAL**. No real post or schedule was submitted.
+- Git: `ux-post-composer` at `e21c57395260a12b8efad74c9a660ea25c8820ae`, two uncommitted files, no commit/push. GitHub publication awaits explicit confirmation per AGENTS.md. Next: publish after approval and review the deployed media choices; after UX-01 acceptance, restore L5-GBP-01 as the sole READY task.
+
+
+### October 12, 2026: Thumbnail correction publication authorized
+
+- Nicholas explicitly instructed “push,” authorizing commit/publication of the reviewed two-file thumbnail correction to main.
+- Verification remains the recorded clean lint, successful production build, diff check, and passing responsive/portrait and existing editor browser checks. Only this authorization record was added afterward.
+- UX-01 remains MANUAL pending deployment and live review; L5-GBP-01 stays WAITING. The verified remote commit is reported in the handoff.
