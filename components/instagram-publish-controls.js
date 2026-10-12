@@ -491,8 +491,13 @@ export default function InstagramPublishControls({
                   ) : null}
                   {itemUrl ? (
                     <div style={{ marginTop: 8 }}>
-                      <a href={itemUrl} target="_blank" rel="noreferrer">
-                        View Post
+                      <a
+                        className={styles.buttonSecondary}
+                        href={itemUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View Post ↗
                       </a>
                     </div>
                   ) : null}

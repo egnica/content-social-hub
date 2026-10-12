@@ -1811,9 +1811,11 @@
   }
   .publishedActions {
     width: 100%;
+    align-items: stretch;
   }
   .publishedActions > a {
-    flex: 1;
+    flex: 1 1 180px;
+    padding: 10px 16px;
   }
 }
 .composerStatus[data-status="Draft"] {
@@ -1841,6 +1843,9 @@
 .platformEditor[data-published="true"] {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
 }
 .platformEditor[data-published="true"] .publishingPanel {
   order: 1;
@@ -1851,6 +1856,14 @@
 }
 .platformEditor[data-published="true"] .composerColumns {
   order: 2;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.platformEditor[data-published="true"] .composerColumns > div:last-child {
+  position: static;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .masterContentCard {
