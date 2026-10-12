@@ -90,7 +90,7 @@ Nicholas explicitly paused further platform expansion on October 12 to review th
 
 1. Present connected account cards with platform icons, exact account identities, selection state, and derived destination statuses.
 2. Place a collapsible Master Content section above Posting to. Use keyboard-accessible tabs only for selected social accounts. Keep mounted editors and unsaved text when switching tabs; preserve independent destination copy and saved customization. Updated to Nicholas's approved top-down hierarchy on October 12 after deployed UI review.
-3. Replace ambiguous primary-media dropdowns with thumbnails and a Main label. Only show short/long format when video is attached. Keep immediate private uploads, media reuse, cover support, and uploaded duration.
+3. Use one Master media tray for uploads, default selection, removal, and ordering. Show each asset once with a Default badge; place an Add media tile alongside assets, keep metadata under Details, and show ordering controls only for multiple files. Per-account choices retain their thumbnail controls. Updated to Nicholas's approved tray refinement on October 12. Only show short/long format when video is attached. Keep immediate private uploads, media reuse, cover support, and uploaded duration.
 4. Provide a visible Facebook Website preview choice that clears attached media for a native link post. Preserve Instagram image/Reel/carousel detection, all provider validation, and exact carousel order.
 5. Combine Publish now and Schedule into one account-specific publishing area. Show account/timezone, exact final confirmation, and useful scheduled/error states. Put technical schedule/history details behind disclosure. Keep cancellation, stale-revision, certainty-aware retry and duplicate barriers. A passed time must not stop the operator from opening Change schedule to select a future time.
 6. Show recorded successful publication as a success state with actual timestamp and exact provider link. Make that saved revision read-only and remove routine already-published red blockers. Preserve processing/review controls and audit history. Create a new draft copies only source content/media; no identity, approvals, releases, remote results or old publishing state.
@@ -319,3 +319,28 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - Nicholas explicitly instructed “push,” authorizing commit/publication of the reviewed two-file thumbnail correction to main.
 - Verification remains the recorded clean lint, successful production build, diff check, and passing responsive/portrait and existing editor browser checks. Only this authorization record was added afterward.
 - UX-01 remains MANUAL pending deployment and live review; L5-GBP-01 stays WAITING. The verified remote commit is reported in the handoff.
+
+
+### October 12, 2026: UX-01 unified Master media tray
+
+- Nicholas approved replacing the duplicate upload list and Main media choices with one media tray. Outcome: locally complete; UX-01 remains **MANUAL** pending authorized publication/deployment and live review. The Level 5 Google phase stays active; L5-GBP-01 remains WAITING and full Level 6 remains unopened.
+- Changed behavior: each image/video appears once in a larger full-frame card. Clicking its thumbnail selects the Default; an Add media tile opens the existing file picker. Remove detaches only from the content. Multiple files show earlier/later controls and position; a single file shows no ordering controls. Metadata is behind Details. Pending and failed uploads remain visible with progress/error handling. Existing private upload/complete and video cover paths are retained.
+- Default behavior: the first completed eligible asset is the automatic default. Saving persists that actual default ID. Reordering preserves the current default instead of changing an implicit selection; removing the default selects the next eligible remaining asset, or clears it when the tray becomes empty. Failed/incomplete uploads cannot be selected as the default. Platform versions retain their independent media controls.
+- Files changed: `components/master-content-form.js`, `components/ui.module.css`, this phase document. UX-01 acceptance criterion 3 now reflects the approved tray. No server routes, storage/public-access settings, provider payloads, publishing gates or scheduling infrastructure were modified.
+- Verification: `npm test` **168 passed, 0 failed**; `npm run lint` passed with zero errors/warnings; production build passed; `git diff --check` passed. Existing npm environment and Node syntax-detection warnings remain. Actual React-component browser checks passed at **1440/1024/768/390/320 px** with no horizontal overflow: each asset appears once; single/empty/video states; keyboard default selection; saved order/default payloads; implicit-default preservation while reordering; remove fallback/clear; metadata disclosure; Add media file chooser; real component upload/progress/complete and failed-upload removal using fake storage. The existing editor suite also passed hierarchy/collapse, independent platform text/media, carousel ordering, exact schedule/reschedule payloads, published links/read-only state, and source-only draft creation. Single/multiple/empty/mobile tray screenshots inspected. All API/storage operations were intercepted locally.
+- Live status: not deployed or verified live; no real upload, social post or schedule was submitted. Next manual step is publication after explicit approval, then deployed review of the tray. Once UX-01 is accepted, L5-GBP-01 becomes the sole READY task.
+- Git: `ux-post-composer`, based on `0a76c141122d426cd7540f8ffa2b59ac5b4aa57a`; three uncommitted files. Nothing committed or pushed in this refinement.
+
+
+### October 12, 2026: Media tray local commit authorized
+
+- Nicholas explicitly instructed “commit,” authorizing a local commit of the verified three-file media tray refinement. No push is performed under this instruction.
+- Checks remain the recorded 168 passing tests, clean lint, successful production build, responsive/upload/editor browser fixture checks, and passing diff check. Only this authorization record was added afterward.
+- UX-01 remains MANUAL pending separately authorized publication/deployment and live review. L5-GBP-01 stays WAITING. The local commit is reported in the handoff.
+
+
+### October 12, 2026: Media tray publication authorized
+
+- Nicholas explicitly instructed “push,” authorizing publication of the verified media tray commit to main. This authorization record is included with the three-file refinement.
+- Verification remains the recorded 168 passing tests, clean lint, successful production build, responsive/upload/editor browser checks, and passing diff check. No application changes followed verification.
+- UX-01 remains MANUAL pending deployment/live review; L5-GBP-01 stays WAITING. The verified remote commit is reported in the handoff.

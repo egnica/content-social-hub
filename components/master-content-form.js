@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
-import MediaChoice from "@/components/media-choice";
+import { MediaThumbnail } from "@/components/media-choice";
 import { freshContentSource } from "@/lib/content-composer-logic";
 import {
   formatUtcDateTimeForZone,
@@ -151,6 +151,7 @@ export default function MasterContentForm({
   const textInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  const mediaInputRef = useRef(null);
   const thumbnailInputRef = useRef(null);
   const [form, setForm] = useState(() => initialForm(source, clients));
   const [media, setMedia] = useState(() =>
@@ -186,7 +187,7 @@ export default function MasterContentForm({
     "";
   const selectedTimezoneValid = isValidIanaTimeZone(selectedTimezone);
   const defaultMediaOptions = useMemo(
-    () => media.filter((asset) => asset.status !== "error"),
+    () => media.filter((asset) => asset._id && asset.status !== "error"),
     [media],
   );
   const effectivePrimaryMedia = useMemo(
@@ -449,6 +450,9 @@ export default function MasterContentForm({
     const destination = index + direction;
     if (destination < 0 || destination >= media.length) return;
 
+    if (effectivePrimaryMedia?._id) {
+      update("defaultPrimaryMediaId", String(effectivePrimaryMedia._id));
+    }
     setMedia((current) => {
       const next = [...current];
       [next[index], next[destination]] = [next[destination], next[index]];
@@ -498,6 +502,9 @@ export default function MasterContentForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          defaultPrimaryMediaId: effectivePrimaryMedia?._id
+            ? String(effectivePrimaryMedia._id)
+            : "",
           defaultReleaseAt: form.defaultReleaseAt,
           mediaIds: media
             .filter((asset) => asset._id && asset.status !== "error")
@@ -610,6 +617,16 @@ export default function MasterContentForm({
         multiple
         onChange={uploadFiles}
         disabled={uploading || thumbnailUploading}
+        hidden
+      />
+      <input
+        ref={mediaInputRef}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        onChange={uploadFiles}
+        disabled={uploading || thumbnailUploading || pending}
+        aria-label="Add images or videos"
         hidden
       />
       <input
@@ -755,112 +772,156 @@ export default function MasterContentForm({
       <section className={styles.formSection}>
         <div className={styles.sectionHeader}>
           <h2>Media</h2>
-          <p>Add images or videos once, then choose what each account uses.</p>
+          <p>Shared media for your posts. Each channel can choose its own.</p>
         </div>
 
-        <div className={styles.uploadZone}>
-          <div>
-            <strong>Add images or video</strong>
-            <p>Selecting a file starts its secure upload immediately.</p>
-            <input
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              onChange={uploadFiles}
-              disabled={uploading || thumbnailUploading}
-            />
-          </div>
-        </div>
-
-        {media.length ? (
-          <div className={styles.mediaList}>
-            {media.map((asset, index) => (
+        <div className={styles.masterMediaTray} aria-label="Shared media">
+          {media.map((asset, index) => {
+            const selected = Boolean(
+              asset._id && effectivePrimaryMedia === asset,
+            );
+            const ready = Boolean(asset._id && asset.status !== "error");
+            return (
               <div
-                className={styles.mediaItem}
+                className={styles.masterMediaCard}
+                data-default={selected || undefined}
                 key={asset._id || asset.localId}
               >
-                <div className={styles.mediaPreview}>
-                  {asset.contentType?.startsWith("video/") ? (
-                    <video src={asset.previewUrl} muted preload="metadata" />
-                  ) : (
-                    <img src={asset.previewUrl} alt="" />
-                  )}
-                </div>
-                <div className={styles.mediaMeta}>
-                  <strong>{asset.originalName}</strong>
-                  <span>
-                    {formatBytes(asset.size)}
-                    {asset.width && asset.height
-                      ? ` · ${asset.width} × ${asset.height} · ${asset.orientation}`
-                      : ""}
-                    {asset.duration
-                      ? ` · ${asset.duration.toFixed(1)} seconds`
-                      : ""}
+                <button
+                  className={styles.masterMediaSelect}
+                  type="button"
+                  aria-label={`Use ${asset.originalName} as default`}
+                  aria-pressed={selected}
+                  disabled={
+                    !ready || uploading || thumbnailUploading || pending
+                  }
+                  onClick={() =>
+                    update("defaultPrimaryMediaId", String(asset._id))
+                  }
+                >
+                  <MediaThumbnail asset={asset} />
+                  <span className={styles.masterMediaName}>
+                    {asset.originalName}
                   </span>
-                  {asset.status === "error" ? (
-                    <span className={styles.fieldError}>{asset.error}</span>
-                  ) : asset.progress < 100 ? (
-                    <div className={styles.progressTrack}>
+                  <span className={styles.masterMediaCaption}>
+                    {selected ? (
+                      <span className={styles.masterMediaBadge}>Default</span>
+                    ) : ready ? (
+                      "Use as default"
+                    ) : asset.status === "error" ? (
+                      "Upload failed"
+                    ) : (
+                      "Uploading…"
+                    )}
+                  </span>
+                </button>
+                <button
+                  className={styles.masterMediaRemove}
+                  type="button"
+                  onClick={() => removeMedia(index)}
+                  disabled={uploading || thumbnailUploading || pending}
+                  aria-label={`Remove ${asset.originalName} from this content`}
+                  title="Remove from this content"
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+                {asset.status === "error" ? (
+                  <p className={styles.fieldError} role="alert">
+                    {asset.error}
+                  </p>
+                ) : asset.progress < 100 ? (
+                  <div className={styles.masterMediaProgress}>
+                    <span className={styles.fieldHint} aria-live="polite">
+                      {asset.status === "inspecting"
+                        ? "Preparing file…"
+                        : `Uploading ${asset.progress}%`}
+                    </span>
+                    <div
+                      className={styles.progressTrack}
+                      role="progressbar"
+                      aria-label={`Uploading ${asset.originalName}`}
+                      aria-valuenow={asset.progress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
                       <div
                         className={styles.progressBar}
                         style={{ width: `${asset.progress}%` }}
                       />
                     </div>
+                  </div>
+                ) : null}
+                <div className={styles.masterMediaTools}>
+                  <details className={styles.masterMediaDetails}>
+                    <summary>Details</summary>
+                    <span>{formatBytes(asset.size)}</span>
+                    {asset.width && asset.height ? (
+                      <span>
+                        {asset.width} × {asset.height} · {asset.orientation}
+                      </span>
+                    ) : null}
+                    {asset.duration ? (
+                      <span>{asset.duration.toFixed(1)} seconds</span>
+                    ) : null}
+                  </details>
+                  {media.length > 1 ? (
+                    <div className={styles.masterMediaOrder}>
+                      <button
+                        type="button"
+                        onClick={() => moveMedia(index, -1)}
+                        disabled={
+                          index === 0 ||
+                          uploading ||
+                          thumbnailUploading ||
+                          pending
+                        }
+                        aria-label={`Move ${asset.originalName} earlier`}
+                        title="Move earlier"
+                      >
+                        ←
+                      </button>
+                      <span
+                        aria-label={`Position ${index + 1} of ${media.length}`}
+                      >
+                        {index + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moveMedia(index, 1)}
+                        disabled={
+                          index === media.length - 1 ||
+                          uploading ||
+                          thumbnailUploading ||
+                          pending
+                        }
+                        aria-label={`Move ${asset.originalName} later`}
+                        title="Move later"
+                      >
+                        →
+                      </button>
+                    </div>
                   ) : null}
                 </div>
-                <div className={styles.mediaActions}>
-                  <button
-                    className={styles.buttonGhost}
-                    type="button"
-                    onClick={() => moveMedia(index, -1)}
-                    disabled={index === 0}
-                    aria-label={`Move ${asset.originalName} earlier`}
-                  >
-                    Up
-                  </button>
-                  <button
-                    className={styles.buttonGhost}
-                    type="button"
-                    onClick={() => moveMedia(index, 1)}
-                    disabled={index === media.length - 1}
-                    aria-label={`Move ${asset.originalName} later`}
-                  >
-                    Down
-                  </button>
-                  <button
-                    className={styles.buttonDanger}
-                    type="button"
-                    onClick={() => removeMedia(index)}
-                  >
-                    Detach
-                  </button>
-                </div>
               </div>
-            ))}
-          </div>
-        ) : null}
-
-        {defaultMediaOptions.length ? (
-          <div className={styles.mediaChoiceSection}>
-            <span className={styles.label}>Main image or video</span>
-            <p className={styles.fieldHint}>
-              The starting media for new platform versions. Each account can
-              choose differently.
-            </p>
-            <div className={styles.mediaChoiceGrid}>
-              {defaultMediaOptions.map((asset) => (
-                <MediaChoice
-                  key={asset._id || asset.localId}
-                  asset={asset}
-                  selected={effectivePrimaryMedia === asset}
-                  disabled={!asset._id || uploading || pending}
-                  onSelect={() =>
-                    update("defaultPrimaryMediaId", String(asset._id))
-                  }
-                />
-              ))}
-            </div>
-          </div>
+            );
+          })}
+          <button
+            className={styles.masterMediaAdd}
+            type="button"
+            onClick={() => mediaInputRef.current?.click()}
+            disabled={uploading || thumbnailUploading || pending}
+          >
+            <span className={styles.masterMediaAddIcon} aria-hidden="true">
+              +
+            </span>
+            <strong>{uploading ? "Uploading…" : "Add media"}</strong>
+            <span>Images or videos</span>
+          </button>
+        </div>
+        {!form.clientId ? (
+          <p className={styles.fieldHint}>
+            Choose a client before adding media.
+          </p>
         ) : null}
 
         {videoIsPrimary ? (
