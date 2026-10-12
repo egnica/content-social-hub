@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "@/components/ui.module.css";
+import PublishedPostSummary from "@/components/published-post-summary";
 import {
   getInstagramPublishControlState,
   isInstagramAttemptForRevision,
@@ -10,7 +11,8 @@ import {
 import { validateInstagramL505PublishDraft } from "@/lib/instagram-carousel-publish-logic";
 
 function attemptDate(attempt) {
-  const value = attempt?.completedAt || attempt?.startedAt || attempt?.createdAt;
+  const value =
+    attempt?.completedAt || attempt?.startedAt || attempt?.createdAt;
   if (!value) return "";
 
   const date = new Date(value);
@@ -26,7 +28,9 @@ function attemptLabel(status) {
     unknown: "Review required",
   };
 
-  return labels[String(status || "").toLowerCase()] || String(status || "Unknown");
+  return (
+    labels[String(status || "").toLowerCase()] || String(status || "Unknown")
+  );
 }
 
 function orderedSelectedMedia(form, media) {
@@ -104,6 +108,7 @@ function stillProcessingMessage(publishMode) {
 
 export default function InstagramPublishControls({
   version,
+  timezone,
   destination,
   form,
   media = [],
@@ -132,7 +137,8 @@ export default function InstagramPublishControls({
     [destination, form.caption, form.mediaIds, media],
   );
   const currentAttempt = useMemo(() => {
-    if (isInstagramAttemptForRevision(attempt, version.revision)) return attempt;
+    if (isInstagramAttemptForRevision(attempt, version.revision))
+      return attempt;
     return (
       history.find((item) =>
         isInstagramAttemptForRevision(item, version.revision),
@@ -167,7 +173,9 @@ export default function InstagramPublishControls({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to load Instagram publish history.");
+        throw new Error(
+          result.error || "Unable to load Instagram publish history.",
+        );
       }
 
       const attempts = Array.isArray(result.attempts) ? result.attempts : [];
@@ -243,7 +251,9 @@ export default function InstagramPublishControls({
       if (!response.ok) {
         if (result.attempt) setAttempt(result.attempt);
         await refreshHistory();
-        throw new Error(result.error || "Unable to publish this Instagram version.");
+        throw new Error(
+          result.error || "Unable to publish this Instagram version.",
+        );
       }
 
       setAttempt(result.attempt || null);
@@ -279,7 +289,9 @@ export default function InstagramPublishControls({
       if (!response.ok) {
         if (result.attempt) setAttempt(result.attempt);
         await refreshHistory();
-        throw new Error(result.error || "Unable to refresh Instagram publish status.");
+        throw new Error(
+          result.error || "Unable to refresh Instagram publish status.",
+        );
       }
 
       setAttempt(result.attempt || null);
@@ -306,122 +318,145 @@ export default function InstagramPublishControls({
 
   return (
     <div style={{ marginTop: 22 }}>
-      <div className={styles.sectionHeader}>
-        <h2>Publish Now</h2>
-        <p>
-          Instagram supports single images, ordered 2–10 item carousels, and
-          single-video Reels. Private S3 media is exposed to Meta only through
-          short-lived provider access, and each saved revision keeps the same
-          duplicate-safety and durable Publish History rules.
-        </p>
-      </div>
-
-      {validation.publishMode === "reel" ? (
-        <div className={styles.notice}>
-          Reel source checks require MP4/MOV, 1 GB or smaller, 3 seconds–15
-          minutes, and at most 1920 horizontal pixels. Meta also requires H.264
-          or HEVC video, AAC 48 kHz audio, 23–60 FPS, up to 25 Mbps video and
-          128 kbps audio; those codec/bitrate properties are confirmed by Meta
-          while the recorded Reel container processes.
-        </div>
+      {controlState.mode === "published" ? (
+        <PublishedPostSummary
+          platformLabel="Instagram"
+          destinationName={destinationName}
+          version={version}
+          attempt={currentAttempt}
+          postUrl={postUrl}
+          timezone={timezone}
+        />
       ) : null}
-
-      {dirty ? (
-        <div className={styles.notice}>
-          Save the Instagram version before publishing so the confirmation and
-          server-side payload are the same saved revision.
+      <div hidden={controlState.mode === "published"}>
+        <div className={styles.sectionHeader}>
+          <h2>Publish Now</h2>
+          <p>
+            Review and publish this saved post to {destinationName} on
+            Instagram.
+          </p>
         </div>
-      ) : null}
 
-      {validation.blocking.length ? (
-        <div className={styles.errorNotice}>
-          <strong>Publish blocked</strong>
-          <ul style={{ margin: "7px 0 0 18px" }}>
-            {validation.blocking.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {providerProcessing ? (
-        <div className={styles.notice}>
-          Instagram already has provider container state for this revision. Do
-          not submit it again; use Check Instagram Status so the recorded attempt
-          continues without creating duplicate containers or posts.
-        </div>
-      ) : null}
-
-      {controlState.mode === "locked" ? (
-        <div className={styles.errorNotice}>
-          <strong>Review required</strong>
-          <div style={{ marginTop: 6 }}>
-            Instagram may have accepted the final publish for this revision, but
-            the result could not be confirmed. Automatic retry is blocked to
-            prevent a duplicate.
+        {validation.publishMode === "reel" ? (
+          <div className={styles.notice}>
+            Reel source checks require MP4/MOV, 1 GB or smaller, 3 seconds–15
+            minutes, and at most 1920 horizontal pixels. Meta also requires
+            H.264 or HEVC video, AAC 48 kHz audio, 23–60 FPS, up to 25 Mbps
+            video and 128 kbps audio; those codec/bitrate properties are
+            confirmed by Meta while the recorded Reel container processes.
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {controlState.mode === "retry" ? (
-        <div className={styles.notice}>
-          The previous attempt failed before a live Instagram post was accepted.
-          Retry is allowed and the prior failure stays in Publish History.
-        </div>
-      ) : null}
+        {dirty ? (
+          <div className={styles.notice}>
+            Save the Instagram version before publishing so the confirmation and
+            server-side payload are the same saved revision.
+          </div>
+        ) : null}
 
-      {error ? <div className={styles.errorNotice}>{error}</div> : null}
-      {message ? <div className={styles.successNotice}>{message}</div> : null}
+        {validation.blocking.length ? (
+          <div className={styles.errorNotice}>
+            <strong>Publish blocked</strong>
+            <ul style={{ margin: "7px 0 0 18px" }}>
+              {validation.blocking.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
-      <div className={styles.formActions}>
-        <button
-          className={styles.button}
-          type="button"
-          onClick={publishNow}
-          disabled={
-            busy ||
-            publishing ||
-            checkingStatus ||
-            dirty ||
-            historyLoading ||
-            !validation.publishable ||
-            !controlState.canSubmit
-          }
-        >
-          {publishing ? "Publishing…" : controlState.label}
-        </button>
+        {providerProcessing ? (
+          <div className={styles.notice}>
+            Instagram already has provider container state for this revision. Do
+            not submit it again; use Check Instagram Status so the recorded
+            attempt continues without creating duplicate containers or posts.
+          </div>
+        ) : null}
 
-        {providerProcessing || missingPublishedLink ? (
+        {controlState.mode === "locked" ? (
+          <div className={styles.errorNotice}>
+            <strong>Review required</strong>
+            <div style={{ marginTop: 6 }}>
+              Instagram may have accepted the final publish for this revision,
+              but the result could not be confirmed. Automatic retry is blocked
+              to prevent a duplicate.
+            </div>
+          </div>
+        ) : null}
+
+        {controlState.mode === "retry" ? (
+          <div className={styles.notice}>
+            The previous attempt failed before a live Instagram post was
+            accepted. Retry is allowed and the prior failure stays in Publish
+            History.
+          </div>
+        ) : null}
+
+        {error ? <div className={styles.errorNotice}>{error}</div> : null}
+        {message ? <div className={styles.successNotice}>{message}</div> : null}
+
+        <div className={styles.formActions}>
           <button
-            className={styles.buttonSecondary}
+            className={styles.button}
             type="button"
-            onClick={checkStatus}
-            disabled={busy || publishing || checkingStatus}
+            onClick={publishNow}
+            disabled={
+              busy ||
+              publishing ||
+              checkingStatus ||
+              dirty ||
+              historyLoading ||
+              !validation.publishable ||
+              !controlState.canSubmit
+            }
           >
-            {checkingStatus
-              ? "Checking…"
-              : missingPublishedLink
-                ? "Refresh Post Link"
-                : "Check Instagram Status"}
+            {publishing ? "Publishing…" : controlState.label}
           </button>
-        ) : null}
 
-        {controlState.mode === "published" && postUrl ? (
-          <a
-            className={styles.buttonSecondary}
-            href={postUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View Post
-          </a>
-        ) : null}
+          {providerProcessing || missingPublishedLink ? (
+            <button
+              className={styles.buttonSecondary}
+              type="button"
+              onClick={checkStatus}
+              disabled={busy || publishing || checkingStatus}
+            >
+              {checkingStatus
+                ? "Checking…"
+                : missingPublishedLink
+                  ? "Refresh Post Link"
+                  : "Check Instagram Status"}
+            </button>
+          ) : null}
+
+          {controlState.mode === "published" && postUrl ? (
+            <a
+              className={styles.buttonSecondary}
+              href={postUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View Post
+            </a>
+          ) : null}
+        </div>
       </div>
-
-      <div style={{ marginTop: 22 }}>
+      {missingPublishedLink ? (
+        <button
+          className={styles.buttonSecondary}
+          type="button"
+          onClick={checkStatus}
+          disabled={busy || publishing || checkingStatus}
+        >
+          {checkingStatus ? "Checking…" : "Refresh post link"}
+        </button>
+      ) : null}
+      <details className={styles.publishHistory}>
+        <summary>Publishing activity</summary>
         <div className={styles.sectionHeader}>
           <h2>Publish History</h2>
-          <p>Prior Instagram attempts are preserved and are never overwritten.</p>
+          <p>
+            Prior Instagram attempts are preserved and are never overwritten.
+          </p>
         </div>
 
         {historyLoading ? (
@@ -447,7 +482,9 @@ export default function InstagramPublishControls({
                     <strong>{attemptLabel(item.status)}</strong>
                     <span>Revision {item.platformVersionRevision || "—"}</span>
                     <span>{item.publishMode || currentPublishMode}</span>
-                    {attemptDate(item) ? <span>{attemptDate(item)}</span> : null}
+                    {attemptDate(item) ? (
+                      <span>{attemptDate(item)}</span>
+                    ) : null}
                   </div>
                   {providerError ? (
                     <div style={{ marginTop: 6 }}>{providerError}</div>
@@ -464,9 +501,11 @@ export default function InstagramPublishControls({
             })}
           </div>
         ) : (
-          <div className={styles.notice}>No Instagram publish attempts yet.</div>
+          <div className={styles.notice}>
+            No Instagram publish attempts yet.
+          </div>
         )}
-      </div>
+      </details>
     </div>
   );
 }

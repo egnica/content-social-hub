@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "@/components/ui.module.css";
+import PublishedPostSummary from "@/components/published-post-summary";
 import { validateFacebookPublishDraft } from "@/lib/facebook-publish-logic";
 import { normalizeFacebookProviderUrl } from "@/lib/facebook-provider-url";
 import {
@@ -50,7 +51,8 @@ function exactPublishConfirmation(
 }
 
 function attemptDate(attempt) {
-  const value = attempt?.completedAt || attempt?.startedAt || attempt?.createdAt;
+  const value =
+    attempt?.completedAt || attempt?.startedAt || attempt?.createdAt;
   if (!value) return "";
 
   const date = new Date(value);
@@ -67,11 +69,14 @@ function attemptLabel(status) {
     unknown: "Review required",
   };
 
-  return labels[String(status || "").toLowerCase()] || String(status || "Unknown");
+  return (
+    labels[String(status || "").toLowerCase()] || String(status || "Unknown")
+  );
 }
 
 export default function FacebookPublishControls({
   version,
+  timezone,
   destination,
   form,
   media = [],
@@ -101,11 +106,21 @@ export default function FacebookPublishControls({
         masterChanged,
         customized: version.customized === true,
       }),
-    [destination, form, masterChanged, media, videoThumbnailAsset, version.customized],
+    [
+      destination,
+      form,
+      masterChanged,
+      media,
+      videoThumbnailAsset,
+      version.customized,
+    ],
   );
   const currentAttempt = useMemo(() => {
     if (isAttemptForRevision(attempt, version.revision)) return attempt;
-    return history.find((item) => isAttemptForRevision(item, version.revision)) || null;
+    return (
+      history.find((item) => isAttemptForRevision(item, version.revision)) ||
+      null
+    );
   }, [attempt, history, version.revision]);
   const effectiveStatus =
     currentAttempt?.status ||
@@ -120,7 +135,8 @@ export default function FacebookPublishControls({
   const postUrl = normalizeFacebookProviderUrl(
     currentAttempt?.providerPostUrl || version.providerPostUrl || "",
   );
-  const hasSelectedMedia = Array.isArray(form.mediaIds) && form.mediaIds.length > 0;
+  const hasSelectedMedia =
+    Array.isArray(form.mediaIds) && form.mediaIds.length > 0;
 
   async function refreshHistory({ preferLatest = false } = {}) {
     try {
@@ -131,7 +147,9 @@ export default function FacebookPublishControls({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to load Facebook publish history.");
+        throw new Error(
+          result.error || "Unable to load Facebook publish history.",
+        );
       }
 
       const attempts = Array.isArray(result.attempts) ? result.attempts : [];
@@ -207,7 +225,9 @@ export default function FacebookPublishControls({
       if (!response.ok) {
         if (result.attempt) setAttempt(result.attempt);
         await refreshHistory();
-        throw new Error(result.error || "Unable to publish this Facebook version.");
+        throw new Error(
+          result.error || "Unable to publish this Facebook version.",
+        );
       }
 
       setAttempt(result.attempt || null);
@@ -260,7 +280,9 @@ export default function FacebookPublishControls({
           "Facebook reported that video processing failed. The saved version can be retried.",
         );
       } else {
-        setMessage("Facebook is still processing the video. Check again shortly.");
+        setMessage(
+          "Facebook is still processing the video. Check again shortly.",
+        );
       }
     } catch (requestError) {
       setError(requestError.message);
@@ -271,114 +293,129 @@ export default function FacebookPublishControls({
 
   return (
     <div style={{ marginTop: 22 }}>
-      <div className={styles.sectionHeader}>
-        <h2>Publish Now</h2>
-        <p>
-          Facebook Account Health is checked again on the server immediately
-          before submission. Successful revisions and uncertain provider results
-          are locked against duplicate publishing; only known failures can retry.
-        </p>
-      </div>
-
-      {dirty ? (
-        <div className={styles.notice}>
-          Save the Facebook version before publishing so the confirmed draft and
-          server-side publish payload are identical.
-        </div>
+      {controlState.mode === "published" ? (
+        <PublishedPostSummary
+          platformLabel="Facebook"
+          destinationName={destinationName}
+          version={version}
+          attempt={currentAttempt}
+          postUrl={postUrl}
+          timezone={timezone}
+        />
       ) : null}
-
-      {hasSelectedMedia && form.destinationUrl ? (
-        <div className={styles.notice}>
-          Media posts do not use the normal Facebook link-card treatment. The
-          destination URL will be included in the image post text or video
-          description.
+      <div hidden={controlState.mode === "published"}>
+        <div className={styles.sectionHeader}>
+          <h2>Publish Now</h2>
+          <p>
+            Review and publish this saved post to {destinationName} on Facebook.
+          </p>
         </div>
-      ) : null}
 
-      {processing ? (
-        <div className={styles.notice}>
-          Facebook already has this revision in progress. Do not publish it again.
-          {videoProcessing ? " Use Check Video Status instead." : ""}
-        </div>
-      ) : null}
-
-      {controlState.mode === "locked" ? (
-        <div className={styles.errorNotice}>
-          <strong>Review required</strong>
-          <div style={{ marginTop: 6 }}>
-            Facebook may have received this revision, but the result could not be
-            confirmed. Automatic retry is blocked to prevent a duplicate post.
+        {dirty ? (
+          <div className={styles.notice}>
+            Save the Facebook version before publishing so the confirmed draft
+            and server-side publish payload are identical.
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {controlState.mode === "retry" ? (
-        <div className={styles.notice}>
-          The last provider attempt definitively failed before a successful post
-          was recorded. A new retry attempt is allowed and the prior failure stays
-          in Publish history.
-        </div>
-      ) : null}
+        {hasSelectedMedia && form.destinationUrl ? (
+          <div className={styles.notice}>
+            Media posts do not use the normal Facebook link-card treatment. The
+            destination URL will be included in the image post text or video
+            description.
+          </div>
+        ) : null}
 
-      {validation.blocking.length ? (
-        <div className={styles.errorNotice}>
-          <strong>Publish blocked</strong>
-          <ul style={{ margin: "7px 0 0 18px" }}>
-            {validation.blocking.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+        {processing ? (
+          <div className={styles.notice}>
+            Facebook already has this revision in progress. Do not publish it
+            again.
+            {videoProcessing ? " Use Check Video Status instead." : ""}
+          </div>
+        ) : null}
 
-      {error ? <div className={styles.errorNotice}>{error}</div> : null}
-      {message ? <div className={styles.successNotice}>{message}</div> : null}
+        {controlState.mode === "locked" ? (
+          <div className={styles.errorNotice}>
+            <strong>Review required</strong>
+            <div style={{ marginTop: 6 }}>
+              Facebook may have received this revision, but the result could not
+              be confirmed. Automatic retry is blocked to prevent a duplicate
+              post.
+            </div>
+          </div>
+        ) : null}
 
-      <div className={styles.formActions}>
-        <button
-          className={styles.button}
-          type="button"
-          onClick={publishNow}
-          disabled={
-            busy ||
-            publishing ||
-            checkingStatus ||
-            dirty ||
-            historyLoading ||
-            !validation.publishable ||
-            !controlState.canSubmit
-          }
-        >
-          {publishing ? "Publishing…" : controlState.label}
-        </button>
+        {controlState.mode === "retry" ? (
+          <div className={styles.notice}>
+            The last provider attempt definitively failed before a successful
+            post was recorded. A new retry attempt is allowed and the prior
+            failure stays in Publish history.
+          </div>
+        ) : null}
 
-        {videoProcessing ? (
+        {validation.blocking.length ? (
+          <div className={styles.errorNotice}>
+            <strong>Publish blocked</strong>
+            <ul style={{ margin: "7px 0 0 18px" }}>
+              {validation.blocking.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {error ? <div className={styles.errorNotice}>{error}</div> : null}
+        {message ? <div className={styles.successNotice}>{message}</div> : null}
+
+        <div className={styles.formActions}>
           <button
-            className={styles.buttonSecondary}
+            className={styles.button}
             type="button"
-            onClick={checkVideoStatus}
-            disabled={busy || publishing || checkingStatus}
+            onClick={publishNow}
+            disabled={
+              busy ||
+              publishing ||
+              checkingStatus ||
+              dirty ||
+              historyLoading ||
+              !validation.publishable ||
+              !controlState.canSubmit
+            }
           >
-            {checkingStatus ? "Checking…" : "Check Video Status"}
+            {publishing ? "Publishing…" : controlState.label}
           </button>
-        ) : null}
 
-        {postUrl ? (
-          <a
-            className={styles.buttonSecondary}
-            href={postUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View Post
-          </a>
-        ) : null}
+          {videoProcessing ? (
+            <button
+              className={styles.buttonSecondary}
+              type="button"
+              onClick={checkVideoStatus}
+              disabled={busy || publishing || checkingStatus}
+            >
+              {checkingStatus ? "Checking…" : "Check Video Status"}
+            </button>
+          ) : null}
+
+          {controlState.mode === "published" && postUrl ? (
+            <a
+              className={styles.buttonSecondary}
+              href={postUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View Post
+            </a>
+          ) : null}
+        </div>
       </div>
-
-      <div style={{ marginTop: 22 }}>
+      <details className={styles.publishHistory}>
+        <summary>Publishing activity</summary>
         <div className={styles.sectionHeader}>
           <h2>Publish History</h2>
-          <p>Prior attempts are preserved as an audit trail and are never overwritten.</p>
+          <p>
+            Prior attempts are preserved as an audit trail and are never
+            overwritten.
+          </p>
         </div>
 
         {historyLoading ? (
@@ -386,7 +423,9 @@ export default function FacebookPublishControls({
         ) : history.length ? (
           <div style={{ display: "grid", gap: 10 }}>
             {history.map((item) => {
-              const itemUrl = normalizeFacebookProviderUrl(item.providerPostUrl || "");
+              const itemUrl = normalizeFacebookProviderUrl(
+                item.providerPostUrl || "",
+              );
               const providerError = item.providerError?.message || "";
 
               return (
@@ -402,7 +441,9 @@ export default function FacebookPublishControls({
                     <strong>{attemptLabel(item.status)}</strong>
                     <span>Revision {item.platformVersionRevision || "—"}</span>
                     <span>{item.publishMode || "facebook"}</span>
-                    {attemptDate(item) ? <span>{attemptDate(item)}</span> : null}
+                    {attemptDate(item) ? (
+                      <span>{attemptDate(item)}</span>
+                    ) : null}
                   </div>
                   {providerError ? (
                     <div style={{ marginTop: 6 }}>{providerError}</div>
@@ -421,7 +462,7 @@ export default function FacebookPublishControls({
         ) : (
           <div className={styles.notice}>No Facebook publish attempts yet.</div>
         )}
-      </div>
+      </details>
     </div>
   );
 }

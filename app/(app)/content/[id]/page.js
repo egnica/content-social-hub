@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
-import FacebookPlatformEditors from "@/components/facebook-platform-editor";
-import InstagramPlatformEditors from "@/components/instagram-platform-editor";
-import MasterContentForm from "@/components/master-content-form";
+import ContentComposer from "@/components/content-composer";
 import PageHeader from "@/components/page-header";
-import PlatformDestinationSelector from "@/components/platform-destination-selector";
+import { getDestinationScheduleState } from "@/lib/scheduling";
 import { getContentById, listClients } from "@/lib/data";
 import { getPlatformDestinationState } from "@/lib/platform-versions";
 
@@ -22,6 +20,18 @@ export default async function EditContentPage({ params }) {
   const destinationState = await getPlatformDestinationState(id);
   const destinations = destinationState?.destinations || [];
   const platformVersions = destinationState?.platformVersions || [];
+  const scheduleEntries = await Promise.all(
+    platformVersions
+      .filter((version) => version.active !== false)
+      .map(async (version) => {
+        try {
+          return [version._id, await getDestinationScheduleState(version._id)];
+        } catch {
+          return [version._id, { stateCode: "unavailable" }];
+        }
+      }),
+  );
+  const scheduleStates = Object.fromEntries(scheduleEntries);
   const masterContent = {
     _id: content._id,
     clientId: content.clientId,
@@ -40,24 +50,15 @@ export default async function EditContentPage({ params }) {
       <PageHeader
         eyebrow={content.clientName}
         title={content.internalTitle}
-        description="Edit the shared source package, choose destinations, and customize each active platform version independently."
+        description="Choose your accounts, customize each post, and preview it before publishing."
       />
-      <MasterContentForm clients={clients} content={content} />
-      <PlatformDestinationSelector
-        contentId={content._id}
-        clientName={content.clientName}
-        destinations={destinations}
-        initialPlatformVersions={platformVersions}
-      />
-      <FacebookPlatformEditors
+      <ContentComposer
+        content={content}
+        clients={clients}
         masterContent={masterContent}
         destinations={destinations}
         platformVersions={platformVersions}
-      />
-      <InstagramPlatformEditors
-        masterContent={masterContent}
-        destinations={destinations}
-        platformVersions={platformVersions}
+        scheduleStates={scheduleStates}
       />
     </>
   );

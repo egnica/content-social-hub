@@ -50,8 +50,7 @@ function releaseChoiceError(resolved, version, platformLabel) {
 
   const messages = {
     past_release_time: "Choose a future release date and time.",
-    already_published_revision:
-      `This ${platformLabel} revision has already been published and cannot be scheduled again.`,
+    already_published_revision: `This ${platformLabel} revision has already been published and cannot be scheduled again.`,
   };
 
   return messages[evaluation.code] || "This release time cannot be scheduled.";
@@ -79,7 +78,13 @@ export default function DestinationScheduleControls({
   const [scheduleState, setScheduleState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mutating, setMutating] = useState(false);
-  const [releaseSource, setReleaseSource] = useState("master");
+  const [editingSchedule, setEditingSchedule] = useState(false);
+  const [releaseSource, setReleaseSource] = useState(() =>
+    masterContent.defaultReleaseAt &&
+    new Date(masterContent.defaultReleaseAt).getTime() > Date.now()
+      ? "master"
+      : "destination_override",
+  );
   const [destinationLocalDateTime, setDestinationLocalDateTime] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -171,9 +176,9 @@ export default function DestinationScheduleControls({
   const serverBlocking = scheduleState?.validation?.blocking || [];
   const schedulingBlocked = Boolean(
     dirty ||
-      choiceError ||
-      serverBlocking.length ||
-      scheduleState?.currentRevisionPublished,
+    choiceError ||
+    serverBlocking.length ||
+    scheduleState?.currentRevisionPublished,
   );
   const canSubmit = activeSchedule
     ? scheduleState?.canReschedule === true
@@ -188,13 +193,10 @@ export default function DestinationScheduleControls({
   function exactScheduleConfirmation(action) {
     const verb = action === "reschedule" ? "Reschedule" : "Schedule";
     const lines = [
-      `${verb} this exact ${platformLabel} revision for ${destinationName}?`,
+      `${verb} this ${platformLabel} post to ${destinationName}?`,
       "",
-      `Revision: ${version.revision || 1}`,
-      `Release: ${wallClockLabel(resolvedChoice.localDateTime)}`,
+      `Date and time: ${wallClockLabel(resolvedChoice.localDateTime)}`,
       `Timezone: ${resolvedChoice.timezone}`,
-      `UTC: ${resolvedChoice.releaseAtIso}`,
-      `Source: ${releaseSource === "master" ? "Master default" : "Destination override"}`,
     ];
 
     if (action === "reschedule" && currentSchedule) {
@@ -207,7 +209,7 @@ export default function DestinationScheduleControls({
 
     lines.push(
       "",
-      "This saves the durable schedule in Content Social Hub and creates or updates its AWS timed trigger. At release time the background worker will revalidate the exact saved revision before publishing.",
+      "This schedules the saved post for this account. Publishing continues when your browser is closed.",
     );
 
     return lines.join("\n");
@@ -273,11 +275,8 @@ export default function DestinationScheduleControls({
       }
 
       setScheduleState(result.scheduleState || null);
-      setMessage(
-        activeSchedule
-          ? `${platformLabel} release rescheduled for ${wallClockLabel(result.schedule?.localDateTime)} ${result.schedule?.timezone || ""}.`
-          : `${platformLabel} release scheduled for ${wallClockLabel(result.schedule?.localDateTime)} ${result.schedule?.timezone || ""}.`,
-      );
+      setEditingSchedule(false);
+      setMessage(activeSchedule ? "Schedule updated." : "Schedule saved.");
       router.refresh();
     } catch (requestError) {
       setError(requestError.message);
@@ -323,6 +322,7 @@ export default function DestinationScheduleControls({
       }
 
       setScheduleState(result.scheduleState || null);
+      setEditingSchedule(false);
       setMessage(`${platformLabel} release schedule cancelled.`);
       router.refresh();
     } catch (requestError) {
@@ -332,142 +332,117 @@ export default function DestinationScheduleControls({
     }
   }
 
-  return (
-    <div style={{ marginTop: 22 }}>
-      <div className={styles.sectionHeader}>
-        <h2>Schedule</h2>
+  if (scheduleState?.currentRevisionPublished) {
+    return (
+      <details className={styles.publishHistory}>
+        <summary>Schedule history</summary>
         <p>
-          Save a destination-level release time for this exact {platformLabel} revision.
-          The client timezone is authoritative; AWS wakes the background worker at
-          the resolved UTC instant.
+          Published to {destinationName}. This saved version will not be
+          submitted again.
         </p>
-      </div>
+        {currentSchedule ? (
+          <p>
+            {wallClockLabel(currentSchedule.localDateTime)} ·{" "}
+            {currentSchedule.timezone}
+          </p>
+        ) : null}
+      </details>
+    );
+  }
 
-      <div className={styles.notice}>
-        <strong>Client timezone:</strong> {clientTimezone || "Unavailable"}
-      </div>
-
-      {loading ? <div className={styles.notice}>Loading schedule state…</div> : null}
-
+  return (
+    <div className={styles.scheduleEditor}>
+      {loading ? <p className={styles.fieldHint}>Loading schedule…</p> : null}
       {currentSchedule ? (
         <div
           className={
             scheduleNeedsAttention(scheduleState?.stateCode)
               ? styles.errorNotice
-              : scheduleState?.stateCode === "succeeded" || currentSchedule.active
-                ? styles.successNotice
-                : styles.notice
+              : styles.scheduleSummary
           }
         >
-          <strong>{scheduleStateLabel(scheduleState?.stateCode)}</strong>
-          <div style={{ marginTop: 6 }}>
-            Revision {currentSchedule.platformVersionRevision} ·{" "}
+          <strong>
+            {scheduleStateLabel(scheduleState?.stateCode)} · {destinationName}
+          </strong>
+          <p>
             {wallClockLabel(currentSchedule.localDateTime)} ·{" "}
             {currentSchedule.timezone}
-          </div>
-          <div style={{ marginTop: 4, fontSize: 12 }}>
-            {currentSchedule.releaseSource === "destination_override"
-              ? "Destination override"
-              : "Master default"}{" "}
-            · UTC {currentSchedule.releaseAt}
-          </div>
-          {Number(currentSchedule.retryCount || 0) > 0 ? (
-            <div style={{ marginTop: 4, fontSize: 12 }}>
-              Automatic technical retries used: {currentSchedule.retryCount}
-            </div>
-          ) : null}
+          </p>
           {scheduleState?.stale ? (
-            <div style={{ marginTop: 7 }}>
-              The {platformLabel} content is now revision {version.revision}. This older
-              schedule will not be allowed to release the edited content. Reschedule
-              deliberately to bind the current revision.
-            </div>
+            <p>The saved post changed. Reschedule to use the new version.</p>
           ) : null}
           {scheduleState?.stateCode === "past_release_time" ? (
-            <div style={{ marginTop: 7 }}>
-              This release time has passed. Reschedule or cancel it; Content Social
-              Hub does not publish late automatically.
-            </div>
+            <p>This time passed. Choose a new time or cancel the schedule.</p>
           ) : null}
           {scheduleState?.stateCode === "missed_schedule" ? (
-            <div style={{ marginTop: 7 }}>
-              The scheduled release was blocked at publish time and was not posted.
-              Fix the issue, then deliberately schedule the current revision again.
-            </div>
-          ) : null}
-          {scheduleState?.stateCode === "failed" ? (
-            <div style={{ marginTop: 7 }}>
-              {platformLabel} returned a definitive failure. The schedule stopped instead of
-              posting late. After fixing the issue, this revision can be deliberately
-              scheduled again under the existing duplicate-safety rules.
-            </div>
+            <p>
+              This post did not publish. Resolve the issue before scheduling it
+              again.
+            </p>
           ) : null}
           {scheduleState?.stateCode === "review_required" ? (
-            <div style={{ marginTop: 7 }}>
-              {platformLabel} may have received this publish request, but the final result is
-              uncertain. Automatic retry is locked to prevent a duplicate post. Review
-              the recorded publish attempt before taking further action.
-            </div>
+            <p>
+              The result is uncertain. Review the recorded attempt before trying
+              again.
+            </p>
           ) : null}
           {currentSchedule.missedReason ? (
-            <div style={{ marginTop: 6, fontSize: 12 }}>
-              Reason: {currentSchedule.missedReason}
-            </div>
+            <p>{currentSchedule.missedReason}</p>
           ) : null}
           {currentSchedule.failure?.message ? (
-            <div style={{ marginTop: 6, fontSize: 12 }}>
-              Last error: {currentSchedule.failure.message}
-            </div>
+            <p>{currentSchedule.failure.message}</p>
           ) : null}
+          <details className={styles.technicalDetails}>
+            <summary>Schedule details</summary>
+            <p>
+              Revision {currentSchedule.platformVersionRevision} · UTC{" "}
+              {currentSchedule.releaseAt}
+            </p>
+            <p>Automatic retries: {Number(currentSchedule.retryCount || 0)}</p>
+          </details>
         </div>
       ) : null}
-
-      {scheduleState?.currentRevisionPublished ? (
-        <div className={styles.errorNotice}>
-          This {platformLabel} revision has already been published and cannot be scheduled
-          again.
-        </div>
-      ) : null}
-
       {dirty ? (
         <div className={styles.notice}>
-          Save the {platformLabel} version before scheduling so the schedule binds the exact
-          saved revision.
+          Save this {platformLabel} draft before scheduling.
         </div>
       ) : null}
-
       {serverBlocking.length ? (
         <div className={styles.errorNotice}>
-          <strong>Scheduling blocked</strong>
-          <ul style={{ margin: "7px 0 0 18px" }}>
+          <strong>Needs attention</strong>
+          <ul>
             {serverBlocking.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
         </div>
       ) : null}
-
-      <div className={styles.fieldGrid} style={{ marginTop: 16 }}>
-        <label className={styles.fieldFull}>
-          <span className={styles.label}>Release time source</span>
-          <select
-            className={styles.select}
-            value={releaseSource}
-            onChange={(event) => changeReleaseSource(event.target.value)}
+      <div hidden={activeSchedule && !editingSchedule}>
+        <div className={styles.scheduleSource}>
+          <button
+            className={styles.buttonSecondary}
+            type="button"
+            aria-pressed={releaseSource === "master"}
+            onClick={() => changeReleaseSource("master")}
+            disabled={
+              loading || mutating || busy || !masterContent.defaultReleaseAt
+            }
+          >
+            Use shared release time
+          </button>
+          <button
+            className={styles.buttonSecondary}
+            type="button"
+            aria-pressed={releaseSource === "destination_override"}
+            onClick={() => changeReleaseSource("destination_override")}
             disabled={loading || mutating || busy}
           >
-            <option value="master">Use Master default release time</option>
-            <option value="destination_override">
-              Use a {platformLabel}-specific release time
-            </option>
-          </select>
-        </label>
-
+            Set time for this account
+          </button>
+        </div>
         {releaseSource === "destination_override" ? (
-          <label className={styles.fieldFull}>
-            <span className={styles.label}>
-              {platformLabel} release date and time ({clientTimezone || "client timezone"})
-            </span>
+          <label className={styles.field}>
+            <span className={styles.label}>Date and time</span>
             <input
               className={styles.input}
               type="datetime-local"
@@ -481,52 +456,38 @@ export default function DestinationScheduleControls({
             />
           </label>
         ) : (
-          <div className={styles.fieldFull}>
-            <span className={styles.label}>Master default</span>
-            <div className={styles.notice} style={{ margin: 0 }}>
-              {scheduleState?.masterDefault?.available
-                ? `${wallClockLabel(scheduleState.masterDefault.localDateTime)} · ${scheduleState.masterDefault.timezone}`
-                : scheduleState?.masterDefault?.error ||
-                  "No Master default release time is saved."}
-            </div>
-          </div>
+          <p className={styles.scheduleSummary}>
+            {scheduleState?.masterDefault?.available
+              ? wallClockLabel(scheduleState.masterDefault.localDateTime)
+              : "No shared release time saved."}
+          </p>
         )}
+        <p className={styles.fieldHint}>
+          {clientTimezone || "Client timezone unavailable"}
+        </p>
+        {resolvedChoice.ok ? (
+          <p className={styles.releaseSummary}>
+            <strong>{destinationName}</strong> ·{" "}
+            {wallClockLabel(resolvedChoice.localDateTime)} ·{" "}
+            {resolvedChoice.timezone}
+          </p>
+        ) : null}
+        {choiceError &&
+        (releaseSource === "master" || destinationLocalDateTime) ? (
+          <div className={styles.errorNotice}>{choiceError}</div>
+        ) : null}
       </div>
-
-      {resolvedChoice.ok ? (
-        <div className={styles.notice} style={{ marginTop: 14 }}>
-          <strong>Resolved release:</strong>{" "}
-          {wallClockLabel(resolvedChoice.localDateTime)} · {resolvedChoice.timezone}
-          <div style={{ marginTop: 4, fontSize: 12 }}>
-            UTC {resolvedChoice.releaseAtIso}
-          </div>
+      {error ? (
+        <div className={styles.errorNotice} role="alert">
+          {error}
         </div>
       ) : null}
-
-      {choiceError ? <div className={styles.errorNotice}>{choiceError}</div> : null}
-      {error ? <div className={styles.errorNotice}>{error}</div> : null}
-      {message ? <div className={styles.successNotice}>{message}</div> : null}
-
+      {message ? (
+        <div className={styles.successNotice} role="status">
+          {message}
+        </div>
+      ) : null}
       <div className={styles.formActions}>
-        <button
-          className={styles.button}
-          type="button"
-          onClick={saveSchedule}
-          disabled={
-            loading ||
-            mutating ||
-            busy ||
-            schedulingBlocked ||
-            !canSubmit
-          }
-        >
-          {mutating
-            ? "Saving Schedule…"
-            : activeSchedule
-              ? "Reschedule"
-              : "Schedule"}
-        </button>
-
         {activeSchedule ? (
           <button
             className={styles.buttonSecondary}
@@ -534,9 +495,33 @@ export default function DestinationScheduleControls({
             onClick={cancelSchedule}
             disabled={loading || mutating || busy || !scheduleState?.canCancel}
           >
-            Cancel Schedule
+            Cancel schedule
           </button>
         ) : null}
+        <button
+          className={styles.button}
+          type="button"
+          onClick={() =>
+            activeSchedule && !editingSchedule
+              ? setEditingSchedule(true)
+              : saveSchedule()
+          }
+          disabled={
+            loading ||
+            mutating ||
+            busy ||
+            !canSubmit ||
+            ((!activeSchedule || editingSchedule) && schedulingBlocked)
+          }
+        >
+          {mutating
+            ? "Saving schedule…"
+            : activeSchedule
+              ? editingSchedule
+                ? "Review reschedule →"
+                : "Change schedule"
+              : "Review schedule →"}
+        </button>
       </div>
     </div>
   );

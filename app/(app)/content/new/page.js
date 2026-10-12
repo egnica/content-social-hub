@@ -3,13 +3,19 @@ import EmptyState from "@/components/empty-state";
 import MasterContentForm from "@/components/master-content-form";
 import PageHeader from "@/components/page-header";
 import styles from "@/components/ui.module.css";
-import { listClients } from "@/lib/data";
+import { getContentById, listClients } from "@/lib/data";
+import { notFound } from "next/navigation";
 
 export const metadata = { title: "Create Content" };
 export const dynamic = "force-dynamic";
 
-export default async function CreateContentPage() {
-  const clients = await listClients({ includeInactive: false });
+export default async function CreateContentPage({ searchParams }) {
+  const query = await searchParams;
+  const [clients, sourceContent] = await Promise.all([
+    listClients({ includeInactive: false }),
+    query?.from ? getContentById(query.from) : Promise.resolve(null),
+  ]);
+  if (query?.from && !sourceContent) notFound();
 
   return (
     <>
@@ -19,7 +25,7 @@ export default async function CreateContentPage() {
         description="Start with shared source material. Platform-specific versions will inherit these defaults when social connections are added."
       />
       {clients.length ? (
-        <MasterContentForm clients={clients} />
+        <MasterContentForm clients={clients} sourceContent={sourceContent} />
       ) : (
         <EmptyState
           title="Add a client first"

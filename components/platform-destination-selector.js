@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
+import PlatformIcon from "@/components/platform-icon";
+import { composerStatus } from "@/lib/content-composer-logic";
 
 function activeConnectionIds(platformVersions) {
   return platformVersions
@@ -18,7 +20,7 @@ function platformLabel(platform) {
 }
 
 function destinationStatus(destination) {
-  if (destination.selectable) return "Healthy · ready for a platform version";
+  if (destination.selectable) return "Connected";
   if (destination.healthMessage) return destination.healthMessage;
   if (!destination.canPublish) {
     return `${platformLabel(destination.platform)} publishing permission is unavailable.`;
@@ -31,9 +33,12 @@ export default function PlatformDestinationSelector({
   clientName,
   destinations,
   initialPlatformVersions,
+  scheduleStates = {},
 }) {
   const router = useRouter();
-  const [platformVersions, setPlatformVersions] = useState(initialPlatformVersions);
+  const [platformVersions, setPlatformVersions] = useState(
+    initialPlatformVersions,
+  );
   const [selectedIds, setSelectedIds] = useState(() =>
     activeConnectionIds(initialPlatformVersions),
   );
@@ -67,7 +72,9 @@ export default function PlatformDestinationSelector({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to save publishing destinations.");
+        throw new Error(
+          result.error || "Unable to save publishing destinations.",
+        );
       }
 
       setPlatformVersions(result.platformVersions || []);
@@ -84,13 +91,12 @@ export default function PlatformDestinationSelector({
   }
 
   return (
-    <section className={styles.formCard} style={{ marginTop: 20 }}>
+    <section className={styles.destinationPicker}>
       <div className={styles.sectionHeader}>
-        <h2>Publishing Destinations</h2>
+        <h2>Posting to</h2>
         <p>
-          Choose the connected Facebook and Instagram destinations that should
-          receive their own platform version for {clientName}. This only prepares
-          destination-specific drafts; it does not publish anything.
+          Choose the accounts for {clientName}. Saving accounts prepares drafts;
+          it does not schedule or publish them.
         </p>
       </div>
 
@@ -98,18 +104,23 @@ export default function PlatformDestinationSelector({
       {message ? <div className={styles.successNotice}>{message}</div> : null}
 
       {destinations.length ? (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div className={styles.destinationGrid}>
           {destinations.map((destination) => {
             const checked = selectedSet.has(destination._id);
             const disabled = !destination.selectable && !checked;
-            const hasVersion = checked && platformVersions.some(
-              (version) =>
-                version.socialConnectionId === destination._id &&
-                version.active !== false,
-            );
+            const savedVersion = checked
+              ? platformVersions.find(
+                  (version) =>
+                    version.socialConnectionId === destination._id &&
+                    version.active !== false,
+                )
+              : null;
+            const status = savedVersion
+              ? composerStatus(savedVersion, scheduleStates[savedVersion._id])
+              : "";
 
             return (
-              <label className={styles.checkboxRow} key={destination._id}>
+              <label className={styles.destinationCard} key={destination._id}>
                 <input
                   type="checkbox"
                   checked={checked}
@@ -118,14 +129,19 @@ export default function PlatformDestinationSelector({
                     toggleDestination(destination._id, event.target.checked)
                   }
                 />
-                <span>
+                <PlatformIcon platform={destination.platform} />
+                <span className={styles.destinationIdentity}>
                   <strong>{destination.accountName}</strong>
                   <span>
                     {platformLabel(destination.platform)} ·{" "}
                     {destinationStatus(destination)}
-                    {hasVersion ? " · version saved" : ""}
                   </span>
                 </span>
+                {savedVersion ? (
+                  <span className={styles.composerStatus} data-status={status}>
+                    {status}
+                  </span>
+                ) : null}
               </label>
             );
           })}
@@ -146,7 +162,7 @@ export default function PlatformDestinationSelector({
           onClick={saveDestinations}
           disabled={saving}
         >
-          {saving ? "Saving Destinations" : "Save Destinations"}
+          {saving ? "Saving accounts…" : "Save accounts"}
         </button>
       </div>
     </section>

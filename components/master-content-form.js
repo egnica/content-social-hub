@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
+import MediaChoice from "@/components/media-choice";
+import { freshContentSource } from "@/lib/content-composer-logic";
 import {
   formatUtcDateTimeForZone,
   isValidIanaTimeZone,
@@ -22,7 +24,8 @@ function formatBytes(bytes) {
 
 function orientation(width, height) {
   if (!width || !height) return null;
-  if (Math.abs(width - height) / Math.max(width, height) < 0.03) return "square";
+  if (Math.abs(width - height) / Math.max(width, height) < 0.03)
+    return "square";
   return width > height ? "landscape" : "portrait";
 }
 
@@ -136,26 +139,31 @@ function mediaPreviewUrl(asset) {
   return asset.previewUrl || (asset._id ? `/api/media/${asset._id}/url` : "");
 }
 
-export default function MasterContentForm({ clients, content = null }) {
+export default function MasterContentForm({
+  clients,
+  content = null,
+  sourceContent = null,
+}) {
+  const source = content || freshContentSource(sourceContent);
   const router = useRouter();
   const linkInputRef = useRef(null);
   const textInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const thumbnailInputRef = useRef(null);
-  const [form, setForm] = useState(() => initialForm(content, clients));
+  const [form, setForm] = useState(() => initialForm(source, clients));
   const [media, setMedia] = useState(() =>
-    (content?.media || []).map((asset) => ({
+    (source?.media || []).map((asset) => ({
       ...asset,
       previewUrl: `/api/media/${asset._id}/url`,
       progress: 100,
     })),
   );
   const [thumbnailAsset, setThumbnailAsset] = useState(() =>
-    content?.defaultVideoThumbnail
+    source?.defaultVideoThumbnail
       ? {
-          ...content.defaultVideoThumbnail,
-          previewUrl: `/api/media/${content.defaultVideoThumbnail._id}/url`,
+          ...source.defaultVideoThumbnail,
+          previewUrl: `/api/media/${source.defaultVideoThumbnail._id}/url`,
         }
       : null,
   );
@@ -184,7 +192,9 @@ export default function MasterContentForm({ clients, content = null }) {
     () =>
       defaultMediaOptions.find(
         (asset) => String(asset._id || "") === form.defaultPrimaryMediaId,
-      ) || defaultMediaOptions[0] || null,
+      ) ||
+      defaultMediaOptions[0] ||
+      null,
     [defaultMediaOptions, form.defaultPrimaryMediaId],
   );
   const videoIsPrimary = Boolean(
@@ -208,7 +218,8 @@ export default function MasterContentForm({ clients, content = null }) {
   const selectedThumbnail = useMemo(
     () =>
       thumbnailOptions.find(
-        (asset) => String(asset._id || "") === form.defaultVideoThumbnailMediaId,
+        (asset) =>
+          String(asset._id || "") === form.defaultVideoThumbnailMediaId,
       ) || null,
     [form.defaultVideoThumbnailMediaId, thumbnailOptions],
   );
@@ -257,7 +268,10 @@ export default function MasterContentForm({ clients, content = null }) {
     setMessage("");
 
     if (!form.clientId) {
-      setErrors((current) => ({ ...current, clientId: "Choose a client before uploading." }));
+      setErrors((current) => ({
+        ...current,
+        clientId: "Choose a client before uploading.",
+      }));
       return;
     }
 
@@ -297,7 +311,9 @@ export default function MasterContentForm({ clients, content = null }) {
         const presignResult = await presignResponse.json();
 
         if (!presignResponse.ok) {
-          throw new Error(presignResult.error || "Unable to prepare the upload.");
+          throw new Error(
+            presignResult.error || "Unable to prepare the upload.",
+          );
         }
 
         await putFile(
@@ -314,7 +330,9 @@ export default function MasterContentForm({ clients, content = null }) {
         const completeResult = await completeResponse.json();
 
         if (!completeResponse.ok) {
-          throw new Error(completeResult.error || "Unable to confirm the upload.");
+          throw new Error(
+            completeResult.error || "Unable to confirm the upload.",
+          );
         }
 
         URL.revokeObjectURL(localPreviewUrl);
@@ -351,7 +369,10 @@ export default function MasterContentForm({ clients, content = null }) {
 
     if (!file) return;
     if (!form.clientId) {
-      setErrors((current) => ({ ...current, clientId: "Choose a client before uploading." }));
+      setErrors((current) => ({
+        ...current,
+        clientId: "Choose a client before uploading.",
+      }));
       return;
     }
     if (!file.type.startsWith("image/")) {
@@ -385,7 +406,9 @@ export default function MasterContentForm({ clients, content = null }) {
       const presignResult = await presignResponse.json();
 
       if (!presignResponse.ok) {
-        throw new Error(presignResult.error || "Unable to prepare the thumbnail upload.");
+        throw new Error(
+          presignResult.error || "Unable to prepare the thumbnail upload.",
+        );
       }
 
       await putFile(presignResult.uploadUrl, presignResult.headers, file);
@@ -397,7 +420,9 @@ export default function MasterContentForm({ clients, content = null }) {
       const completeResult = await completeResponse.json();
 
       if (!completeResponse.ok) {
-        throw new Error(completeResult.error || "Unable to confirm the thumbnail upload.");
+        throw new Error(
+          completeResult.error || "Unable to confirm the thumbnail upload.",
+        );
       }
 
       URL.revokeObjectURL(localPreviewUrl);
@@ -409,7 +434,9 @@ export default function MasterContentForm({ clients, content = null }) {
       update("defaultVideoThumbnailMediaId", String(uploaded._id));
     } catch (uploadError) {
       setThumbnailAsset((current) =>
-        current ? { ...current, status: "error", error: uploadError.message } : null,
+        current
+          ? { ...current, status: "error", error: uploadError.message }
+          : null,
       );
       setMessage(uploadError.message);
     } finally {
@@ -430,7 +457,9 @@ export default function MasterContentForm({ clients, content = null }) {
 
   function removeMedia(index) {
     const removed = media[index];
-    setMedia((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setMedia((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
 
     if (form.defaultPrimaryMediaId === removed?._id) {
       update("defaultPrimaryMediaId", "");
@@ -460,7 +489,9 @@ export default function MasterContentForm({ clients, content = null }) {
         }
       }
 
-      const endpoint = isEditing ? `/api/content/${content._id}` : "/api/content";
+      const endpoint = isEditing
+        ? `/api/content/${content._id}`
+        : "/api/content";
       const response = await fetch(endpoint, {
         method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -506,11 +537,15 @@ export default function MasterContentForm({ clients, content = null }) {
     setErrors({});
 
     try {
-      const response = await fetch(`/api/content/${content._id}`, { method: "DELETE" });
+      const response = await fetch(`/api/content/${content._id}`, {
+        method: "DELETE",
+      });
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to delete the content package.");
+        throw new Error(
+          result.error || "Unable to delete the content package.",
+        );
       }
 
       router.push("/content");
@@ -586,15 +621,24 @@ export default function MasterContentForm({ clients, content = null }) {
       />
 
       {message ? (
-        <div className={Object.keys(errors).length ? styles.errorNotice : styles.successNotice}>
+        <div
+          className={
+            Object.keys(errors).length
+              ? styles.errorNotice
+              : styles.successNotice
+          }
+        >
           {message}
         </div>
       ) : null}
 
       <section className={styles.formSection}>
         <div className={styles.sectionHeader}>
-          <h2>Master Content</h2>
-          <p>Shared source material and defaults for future platform versions.</p>
+          <h2>Shared content</h2>
+          <p>
+            The starting text and media for your account-specific posts.
+            Customized versions are preserved.
+          </p>
         </div>
 
         <div className={styles.fieldGrid}>
@@ -613,7 +657,9 @@ export default function MasterContentForm({ clients, content = null }) {
                 </option>
               ))}
             </select>
-            {errors.clientId ? <span className={styles.fieldError}>{errors.clientId}</span> : null}
+            {errors.clientId ? (
+              <span className={styles.fieldError}>{errors.clientId}</span>
+            ) : null}
           </label>
 
           <label className={styles.field}>
@@ -642,7 +688,8 @@ export default function MasterContentForm({ clients, content = null }) {
               aria-describedby="link-to-share-help"
             />
             <span className={styles.fieldHint} id="link-to-share-help">
-              The article, webpage, video, event, or other destination this content should point to.
+              The article, webpage, video, event, or other destination this
+              content should point to.
             </span>
             {errors.primaryUrl ? (
               <span className={styles.fieldError}>{errors.primaryUrl}</span>
@@ -650,7 +697,7 @@ export default function MasterContentForm({ clients, content = null }) {
           </label>
 
           <label className={styles.fieldFull}>
-            <span className={styles.label}>Source text</span>
+            <span className={styles.label}>Shared text</span>
             <textarea
               ref={textInputRef}
               className={styles.textarea}
@@ -660,25 +707,35 @@ export default function MasterContentForm({ clients, content = null }) {
             />
           </label>
 
-          <label className={styles.field}>
-            <span className={styles.label}>Content length</span>
-            <select
-              className={styles.select}
-              value={form.contentLength}
-              onChange={(event) => update("contentLength", event.target.value)}
-            >
-              <option value="short">Short-form</option>
-              <option value="long">Long-form</option>
-            </select>
-          </label>
+          {media.some((asset) => asset.contentType?.startsWith("video/")) ? (
+            <label className={styles.field}>
+              <span className={styles.label}>Video format</span>
+              <select
+                className={styles.select}
+                value={form.contentLength}
+                onChange={(event) =>
+                  update("contentLength", event.target.value)
+                }
+              >
+                <option value="short">Short-form</option>
+                <option value="long">Long-form</option>
+              </select>
+              <span className={styles.fieldHint}>
+                Your preferred format. Duration is detected from the uploaded
+                video.
+              </span>
+            </label>
+          ) : null}
 
           <label className={styles.field}>
-            <span className={styles.label}>Default release date and time</span>
+            <span className={styles.label}>Shared release time (optional)</span>
             <input
               className={styles.input}
               type="datetime-local"
               value={form.defaultReleaseAt}
-              onChange={(event) => update("defaultReleaseAt", event.target.value)}
+              onChange={(event) =>
+                update("defaultReleaseAt", event.target.value)
+              }
             />
             <span className={styles.fieldHint}>
               {selectedTimezoneValid
@@ -686,7 +743,9 @@ export default function MasterContentForm({ clients, content = null }) {
                 : "The selected client has an invalid timezone. Update the client before setting a release time."}
             </span>
             {errors.defaultReleaseAt ? (
-              <span className={styles.fieldError}>{errors.defaultReleaseAt}</span>
+              <span className={styles.fieldError}>
+                {errors.defaultReleaseAt}
+              </span>
             ) : null}
           </label>
         </div>
@@ -695,7 +754,7 @@ export default function MasterContentForm({ clients, content = null }) {
       <section className={styles.formSection}>
         <div className={styles.sectionHeader}>
           <h2>Media</h2>
-          <p>Original files upload directly to the private media bucket and remain reusable.</p>
+          <p>Add images or videos once, then choose what each account uses.</p>
         </div>
 
         <div className={styles.uploadZone}>
@@ -715,7 +774,10 @@ export default function MasterContentForm({ clients, content = null }) {
         {media.length ? (
           <div className={styles.mediaList}>
             {media.map((asset, index) => (
-              <div className={styles.mediaItem} key={asset._id || asset.localId}>
+              <div
+                className={styles.mediaItem}
+                key={asset._id || asset.localId}
+              >
                 <div className={styles.mediaPreview}>
                   {asset.contentType?.startsWith("video/") ? (
                     <video src={asset.previewUrl} muted preload="metadata" />
@@ -730,7 +792,9 @@ export default function MasterContentForm({ clients, content = null }) {
                     {asset.width && asset.height
                       ? ` · ${asset.width} × ${asset.height} · ${asset.orientation}`
                       : ""}
-                    {asset.duration ? ` · ${asset.duration.toFixed(1)} seconds` : ""}
+                    {asset.duration
+                      ? ` · ${asset.duration.toFixed(1)} seconds`
+                      : ""}
                   </span>
                   {asset.status === "error" ? (
                     <span className={styles.fieldError}>{asset.error}</span>
@@ -776,21 +840,26 @@ export default function MasterContentForm({ clients, content = null }) {
         ) : null}
 
         {defaultMediaOptions.length ? (
-          <label className={styles.field} style={{ marginTop: 16 }}>
-            <span className={styles.label}>Default primary media</span>
-            <select
-              className={styles.select}
-              value={form.defaultPrimaryMediaId}
-              onChange={(event) => update("defaultPrimaryMediaId", event.target.value)}
-            >
-              <option value="">Use the first attached asset</option>
+          <div className={styles.mediaChoiceSection}>
+            <span className={styles.label}>Main image or video</span>
+            <p className={styles.fieldHint}>
+              The starting media for new platform versions. Each account can
+              choose differently.
+            </p>
+            <div className={styles.mediaChoiceGrid}>
               {defaultMediaOptions.map((asset) => (
-                <option key={asset._id} value={asset._id}>
-                  {asset.originalName}
-                </option>
+                <MediaChoice
+                  key={asset._id || asset.localId}
+                  asset={asset}
+                  selected={effectivePrimaryMedia === asset}
+                  disabled={!asset._id || uploading || pending}
+                  onSelect={() =>
+                    update("defaultPrimaryMediaId", String(asset._id))
+                  }
+                />
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
         ) : null}
 
         {videoIsPrimary ? (
@@ -835,7 +904,12 @@ export default function MasterContentForm({ clients, content = null }) {
                 <img
                   src={mediaPreviewUrl(selectedThumbnail)}
                   alt="Selected video thumbnail"
-                  style={{ display: "block", width: "100%", maxHeight: 140, objectFit: "cover" }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    maxHeight: 140,
+                    objectFit: "cover",
+                  }}
                 />
               </div>
             ) : null}
@@ -853,7 +927,9 @@ export default function MasterContentForm({ clients, content = null }) {
               onClick={() => thumbnailInputRef.current?.click()}
               disabled={uploading || thumbnailUploading}
             >
-              {thumbnailUploading ? "Uploading Thumbnail…" : "Upload Thumbnail Image"}
+              {thumbnailUploading
+                ? "Uploading Thumbnail…"
+                : "Upload Thumbnail Image"}
             </button>
           </div>
         ) : null}
@@ -868,7 +944,10 @@ export default function MasterContentForm({ clients, content = null }) {
           />
           <span>
             <strong>Save for reuse</strong>
-            <span>Create a fresh content package from this source later without copying old approvals or schedules.</span>
+            <span>
+              Create a fresh content package from this source later without
+              copying old approvals or schedules.
+            </span>
           </span>
         </label>
       </section>
@@ -882,27 +961,34 @@ export default function MasterContentForm({ clients, content = null }) {
           type="submit"
           disabled={pending || uploading || thumbnailUploading}
         >
-          {pending ? "Saving" : isEditing ? "Save Changes" : "Save Master Content"}
+          {pending
+            ? "Saving"
+            : isEditing
+              ? "Save shared content"
+              : "Save draft"}
         </button>
       </div>
       {isEditing ? (
-        <section className={styles.dangerZone}>
-          <div>
-            <strong>Delete Master Content</strong>
-            <p>
-              Permanently deletes this Content package. Uploaded media remains in
-              private storage so files are never silently removed.
-            </p>
-          </div>
-          <button
-            className={styles.buttonDangerStrong}
-            type="button"
-            onClick={deleteMasterContent}
-            disabled={pending || uploading || thumbnailUploading || deleting}
-          >
-            {deleting ? "Deleting Content" : "Delete Content"}
-          </button>
-        </section>
+        <details className={styles.contentMaintenance}>
+          <summary>Content management</summary>
+          <section className={styles.dangerZone}>
+            <div>
+              <strong>Delete Master Content</strong>
+              <p>
+                Permanently deletes this Content package. Uploaded media remains
+                in private storage so files are never silently removed.
+              </p>
+            </div>
+            <button
+              className={styles.buttonDangerStrong}
+              type="button"
+              onClick={deleteMasterContent}
+              disabled={pending || uploading || thumbnailUploading || deleting}
+            >
+              {deleting ? "Deleting Content" : "Delete Content"}
+            </button>
+          </section>
+        </details>
       ) : null}
     </form>
   );

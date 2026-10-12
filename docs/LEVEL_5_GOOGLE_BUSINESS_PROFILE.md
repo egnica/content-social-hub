@@ -6,7 +6,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **OPEN — L5-GBP-00 accepted; Google Business Profile access readiness active**
+- Status: **OPEN — approved UX-01 editor interlude before Google access readiness**
 - Opened: **October 2, 2026**
 - Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Provider: **Google Business Profile**
@@ -14,7 +14,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 - Dependency: completed Facebook publishing/scheduling and the closed Instagram adapter
 - API access: **unverified**
 - Live-test client and exact business location: **unconfirmed**
-- Current task: **L5-GBP-01 — Google Business Profile Access Readiness (`READY`)**
+- Current task: **UX-01 — Post composer experience (`MANUAL`: publication authorized; deployment and live smoke review pending)**
 - No Google adapter, OAuth credentials, API access approval, or live publication is proven by opening this document
 
 ## Scope and phase pass condition
@@ -70,7 +70,8 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | ID | Status | Task | Dependency / required evidence |
 | --- | --- | --- | --- |
 | L5-GBP-00 | `DONE` | Baseline maintenance checkpoint | Accepted October 2, 2026 with deployed smoke evidence; unavailable live edge cases explicitly deferred |
-| L5-GBP-01 | `READY` | Google Business Profile access readiness | Baseline maintenance accepted; verify project approval/eligibility and exact test client/location |
+| UX-01 | `MANUAL` | Approved post composer experience | Local editor implementation verified; authorize publication, deploy, and review live smoke checks |
+| L5-GBP-01 | `WAITING` | Google Business Profile access readiness | Resume after UX-01 deployed smoke review; verify project approval/eligibility and exact test client/location |
 | L5-GBP-02 | `WAITING` | Direct OAuth, location selection, credential renewal, Account Health | Access checkpoint accepted; real location saved Healthy under correct client |
 | L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
 | L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
@@ -79,7 +80,22 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-L5-GBP-01 is the sole `READY` task. Opening access readiness does not authorize OAuth implementation or later Google tasks in the same chat. Repository writes still require Nicholas's explicit confirmation under his GitHub rule.
+UX-01 temporarily precedes access readiness, following Nicholas's October 12 approval of the reviewed composer mockup. No task is `READY` while the editor is at its manual deployment/review checkpoint. After UX-01 is accepted as `DONE`, L5-GBP-01 becomes the sole `READY` task again. Google OAuth and later provider work remain `WAITING`.
+
+## UX-01 — Post Composer Experience
+
+Nicholas explicitly paused further platform expansion on October 12 to review the content experience, then approved the interactive composer mockup and implementation. This is one bounded editor task, not the full Level 6 Dashboard/Calendar phase. Facebook/Instagram publishers, private media, revision gates, and shared background scheduling remain unchanged.
+
+### Acceptance criteria
+
+1. Present connected account cards with platform icons, exact account identities, selection state, and derived destination statuses.
+2. Put Shared content and each selected account in keyboard-accessible tabs. Keep mounted editors and unsaved text when switching tabs; preserve independent destination copy and saved customization.
+3. Replace ambiguous primary-media dropdowns with thumbnails and a Main label. Only show short/long format when video is attached. Keep immediate private uploads, media reuse, cover support, and uploaded duration.
+4. Provide a visible Facebook Website preview choice that clears attached media for a native link post. Preserve Instagram image/Reel/carousel detection, all provider validation, and exact carousel order.
+5. Combine Publish now and Schedule into one account-specific publishing area. Show account/timezone, exact final confirmation, and useful scheduled/error states. Put technical schedule/history details behind disclosure. Keep cancellation, stale-revision, certainty-aware retry and duplicate barriers. A passed time must not stop the operator from opening Change schedule to select a future time.
+6. Show recorded successful publication as a success state with actual timestamp and exact provider link. Make that saved revision read-only and remove routine already-published red blockers. Preserve processing/review controls and audit history. Create a new draft copies only source content/media; no identity, approvals, releases, remote results or old publishing state.
+7. Require clean lint, passing relevant/full tests, a production build, and browser checks of the actual React components with isolated API fixtures on desktop/mobile. Do not interpret fixtures or a build as live provider evidence.
+8. Keep GitHub commit/push and deployment as manual checkpoints. After deployed smoke review passes, mark UX-01 DONE and restore L5-GBP-01 as the sole READY task. No Google implementation or full Level 6 work in this task.
 
 ## L5-GBP-00 — Baseline Maintenance Checkpoint
 
@@ -225,3 +241,48 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - Monitoring limitation retained: the CloudWatch alarm has no delivery action; notification delivery and broader cross-provider recovery/monitoring remain later bounded work before Level 6 operational-readiness review.
 - Files changed for this closure: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`, `README.md`, and `AGENTS.md` only.
 - Remaining work: begin **L5-GBP-01 — Google Business Profile Access Readiness**. Confirm the exact eligible test client/location and non-secret Google project/API access state before OAuth implementation. No Google OAuth/account modification or publication is authorized by closing this task.
+
+
+### October 12, 2026: UX-01 approved composer implemented locally
+
+- Task/outcome: **UX-01 — Post Composer Experience**, **MANUAL**. Nicholas approved the interactive Compose/Published mockup and requested implementation before further integrations. Local changes and verification are complete; commit/push, deployment, and live UI review remain pending. L5-GBP-01 is temporarily WAITING. This does not open or complete Level 6.
+- Changed behavior: icon/account cards with exact destination names and derived statuses; keyboard-accessible Shared content and per-account tabs that keep editors mounted; thumbnail media choices and a Main label; video-only format control; explicit Facebook website-preview choice; visual Instagram media selection and saved carousel order; sticky desktop previews and mobile reflow; one account-specific Publish now/Schedule area; compact schedule state with Change schedule and Cancel actions; technical details/activity behind disclosures; successful saved versions are read-only with recorded timestamp, exact View Post, and a new source-only draft action.
+- Decisions: use each destination's existing independent schedule/publish endpoints and confirmation. The mockup's aggregate review concept is expressed as explicit account-level review controls in this bounded task, rather than adding a batch dispatcher or implying atomic multi-account publishing. Other destinations retain their own content and times. Existing exact-revision, Account Health, private-media, stale/cancel, processing, ambiguous-result, retry, and duplicate barriers remain in the shared server/publisher paths.
+- Fresh-copy behavior: `/content/new?from=<master id>` loads source material inside the existing owner-protected app. It saves through the existing create-content endpoint. A whitelist preserves text/link/media/cover and client context, omitting old content/version identities, approvals, timestamps, release settings, remote results, and publishing state. Selected account versions are not copied; choose destinations on the fresh draft.
+- Files changed:
+  - `AGENTS.md`
+  - `README.md`
+  - `app/(app)/content/[id]/page.js`
+  - `app/(app)/content/new/page.js`
+  - `components/content-composer.js`
+  - `components/destination-publishing-panel.js`
+  - `components/facebook-platform-editor.js`
+  - `components/facebook-publish-controls.js`
+  - `components/facebook-schedule-controls.js`
+  - `components/instagram-platform-editor.js`
+  - `components/instagram-publish-controls.js`
+  - `components/master-content-form.js`
+  - `components/media-choice.js`
+  - `components/platform-destination-selector.js`
+  - `components/platform-icon.js`
+  - `components/published-post-summary.js`
+  - `components/ui.module.css`
+  - `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
+  - `lib/content-composer-logic.js`
+  - `tests/content-composer-logic.test.js`
+
+- Automated evidence: Node **24.19.0**. Final `npm test`: **168 passed, 0 failed** (165 existing tests plus 3 meaningful composer-status/source-copy tests). Final `npm run lint`: **0 errors, 0 warnings**. Final `npm run build`: **passed**, including compilation, page data/static generation, and route output. `git diff --check`: passed. Existing Node `MODULE_TYPELESS_PACKAGE_JSON` and npm environment `http-proxy` warnings remain; no module-system/package migration or warning suppression was added.
+- Browser evidence: Chromium **153.0.8010.0**, actual application React components and stylesheet bundled in a temporary fixture with all API mutations intercepted locally. Passed at **1440, 1024, 768, 390, and 320 px** without page overflow. Verified unsaved text survives tab switches, per-account edits/save targets remain isolated, image-versus-link-preview choices update, exact account/time scheduling payloads are used, a passed schedule can open Change schedule and PATCH a future time, carousel order is saved, published controls collapse with the exact provider URL, and fresh-source creation POSTs contain no prior publication identity. Draft/mobile/published screenshots visually inspected. These fixture checks are not real Facebook/Instagram or AWS publication evidence.
+- Documentation: acceptance criteria and ordered interlude recorded here; README current-task/handoff pointers and AGENTS current-task map aligned. Historical closed-provider evidence is retained.
+- Live-test status: **not deployed or verified live** in this task. No real post was published or scheduled, and no provider credentials or infrastructure were changed.
+- Manual actions: (1) obtain explicit commit/push confirmation; (2) deploy the application; (3) reopen the existing GIGnovate published post, confirm account/time/read-only state and exact View Post; (4) verify a fresh draft retains source media while release/history are clear; (5) smoke-check Facebook/Instagram tab edits, media/cover/carousel preview, and schedule controls under the actual client timezone. Any new real publishing/scheduling test requires an explicitly approved live checkpoint; provider/backend behavior is already documented in the closed phase records.
+- Remaining work/next task: after deployed UI smoke review is accepted, mark UX-01 DONE and restore **L5-GBP-01** as the sole READY task. No other provider or full Calendar/Dashboard task starts here.
+- Git: isolated local branch **ux-post-composer**, based on `origin/main` at **93871d908e13bc89b51ef75f34c3814acaada8b4**. **20 changed/new files**, uncommitted. Nothing committed, pushed, or written to GitHub by this task.
+
+
+### October 12, 2026: UX-01 publication authorized
+
+- Nicholas answered “yes, make the changes” to the explicit request to commit and push the reviewed UX-01 implementation. This authorizes publication of the verified 20-file change set to `main`.
+- Verification is unchanged: 168 passing tests, clean lint, successful production build, passing browser fixture checks, and matching documentation/task pointers. Only this authorization record and current handoff wording were updated afterward.
+- UX-01 remains **MANUAL** pending Amplify deployment and the recorded live UI smoke review. L5-GBP-01 remains **WAITING** until the editor checkpoint is accepted. No real social publishing/scheduling test is authorized by this GitHub publication.
+- The verified remote commit and push result are reported in the implementation handoff.
