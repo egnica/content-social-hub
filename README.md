@@ -26,7 +26,7 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 
 **Level 4 — Scheduling was reviewed and closed on September 30, 2026.** Client-timezone scheduling, Master defaults and destination overrides, revision-safe schedule records, EventBridge Scheduler, the scheduler-manager Lambda, the background release worker, missed-schedule handling, bounded certainty-aware retries, pre-dispatch cancellation, browser-closed publishing, durable Publish History, exact `View Post`, and duplicate-safe worker re-entry were verified with `Nicholas_Egner -> GIGnovate`.
 
-**Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. Its completed tasks remain closed. On October 2, Nicholas approved continuing Level 5 platform expansion before Workflow + Calendar; the active phase is now `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
+**Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. Its completed tasks remain closed. On October 2, Nicholas approved continuing Level 5 platform expansion before Workflow + Calendar; Google API access is pending and the active phase is now `docs/LEVEL_5_LINKEDIN.md`.
 
 Implemented:
 
@@ -1876,14 +1876,14 @@ The Instagram closure did not open another phase by itself. Nicholas subsequentl
 | --- | --- | --- | --- |
 | Complete | Facebook Pages | Verified; preserve existing implementation | Connection, publishing, and shared scheduling |
 | Complete | Instagram Professional | Verified; closed evidence record | Connection, image/carousel/Reel publishing, and shared scheduling |
-| 1 | Google Business Profile | Active phase; adapter not implemented | Access approval, exact location selection, update posts, CTA links, images, scheduling |
+| 1 | Google Business Profile | Paused: API approval pending; adapter not implemented | Access approval, exact location selection, update posts, CTA links, images, scheduling |
 | 2 | YouTube | Required; phase not opened | Channel selection, video/thumbnail/metadata/visibility, resumable processing and scheduling; API-upload audit restrictions |
-| 3 | LinkedIn | Required; phase not opened | Personal profiles and company Pages must be tracked separately; verify the appropriate permissions and Community Management access |
+| 3 | LinkedIn | Active: access readiness | Personal profiles and company Pages must be tracked separately; verify the appropriate permissions and Community Management access |
 | 4 | TikTok | Required; eligibility unresolved; phase not opened | Resolve Direct Post eligibility for the owner-only app before promising public publishing or scheduling |
 | Optional | Pinterest | Candidate; not a Level 6 dependency unless Nicholas selects it | Board/Pin publishing; Trial versus Standard access and public visibility |
 | Optional | X | Candidate; not a Level 6 dependency unless Nicholas selects it | Text/link/media publishing and scheduling; explicit API usage budget |
 
-Current phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. **L5-GBP-00 — Baseline Maintenance Checkpoint** is `DONE` after deployed maintenance and regression evidence accepted October 2, 2026. Nicholas approved **UX-01 — Post Composer Experience** on October 12 before resuming access readiness. UX-01 is `MANUAL` pending publication/deployment and live UI review; L5-GBP-01 is temporarily `WAITING`. OAuth and later Google tasks remain `WAITING`.
+Current phase: `docs/LEVEL_5_LINKEDIN.md`. Google `L5-GBP-01` is `MANUAL` pending API approval (case `1-5407000042073`, project `content-social-hub` number `503771980348`). Nicholas accepted moving past the UX-01 composer review and moving LinkedIn ahead of YouTube on October 12. LinkedIn `L5-LI-01` is the sole `READY` task. Google OAuth and later tasks remain `WAITING`.
 
 Provider approvals may require lead time. Read-only feasibility research is allowed; configure credentials only when the relevant task reaches its external checkpoint. If a required provider is blocked, document the exact limitation and obtain Nicholas's explicit decision before skipping it or opening Level 6.
 
@@ -2074,15 +2074,15 @@ The user does not need to write a separate assignment. Start the new Chat with t
 Current delegation state:
 
 - Completed product stages: **Levels 0–4 plus Level 5 Instagram — Instagram reviewed and closed October 2, 2026**
-- Active product stage: **Level 5 platform expansion — Google Business Profile**
-- Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
-- Provider selected: **Google Business Profile**
-- Current task: **UX-01 — Post Composer Experience (`MANUAL`, publication authorized; deployment/live smoke pending)**
-- Objective: complete the approved tabbed post composer and review its deployed editing, preview, scheduling, and published-result behavior before returning to Google access readiness
-- Live-test client/location: **unconfirmed**; confirm an eligible client and exact Google location during `L5-GBP-01`, never guess
-- Progress must be documented in: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
-- UX-01 is at its manual publication/deployment checkpoint; access readiness and subsequent Google tasks remain `WAITING`
-- Level 6 is held until required platform coverage and operational readiness are reviewed
+- Active product stage: **Level 5 platform expansion — LinkedIn access readiness**
+- Active phase document: `docs/LEVEL_5_LINKEDIN.md`
+- Provider selected: **LinkedIn**
+- Current task: **L5-LI-01 — LinkedIn Developer Access Readiness (`READY`)**
+- Objective: verify developer-app eligibility, personal versus organization publishing permissions, and the exact test destination before implementation.
+- Progress must be documented in: `docs/LEVEL_5_LINKEDIN.md`
+- Google Business Profile `L5-GBP-01`: **MANUAL**, Google approval pending (case `1-5407000042073`).
+- UX-01: accepted for progression October 12; no new composer assignment is active.
+- Level 6 remains gated by platform coverage and operational readiness.
 
 ---
 
@@ -2095,9 +2095,9 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_5_platform_expansion_google_business_profile
+  status: level_5_platform_expansion_linkedin
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  active_phase_document: docs/LEVEL_5_LINKEDIN.md
   active_phase_document_status: open
 
 current_infrastructure:
@@ -2293,9 +2293,9 @@ social_connections:
     verified_mapping: Nicholas_Egner -> @nicholasegner
     analytics_ui_status: deferred_level_8
   google_business_profile:
-    phase_active: true
+    phase_active: false
     adapter_status: not_implemented
-    access_status: unverified
+    access_status: pending_approval
     live_test_client: unconfirmed
     live_test_location: unconfirmed
 
@@ -2381,16 +2381,16 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_google_business_profile
-  active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
-  current_task: UX-01
-  current_task_status: MANUAL
-  level_5_provider_selected: google_business_profile
+  current_stage: level_5_linkedin
+  active_phase_document: docs/LEVEL_5_LINKEDIN.md
+  current_task: L5-LI-01
+  current_task_status: READY
+  level_5_provider_selected: linkedin
   required_remaining_provider_order:
-    - google_business_profile
-    - youtube
     - linkedin
+    - youtube
     - tiktok
+    - google_business_profile_when_approved
   optional_providers:
     - pinterest
     - x
@@ -2403,6 +2403,9 @@ implementation:
   verified_instagram_live_test_destination: "@nicholasegner"
   google_business_profile_live_test_client: unconfirmed
   google_business_profile_live_test_location: unconfirmed
+  google_business_profile_project_id: content-social-hub
+  google_business_profile_project_number: "503771980348"
+  google_business_profile_case_id: "1-5407000042073"
   level_5_instagram_task_order:
     - L5-01 DONE Instagram connection / OAuth / Account Health foundation
     - L5-02 DONE Instagram Request Connection + client-scoped live verification
@@ -2458,22 +2461,17 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Review and deploy the approved UX-01 editor changes, verify live UI behavior, then resume Google Business Profile access readiness.
-  task_source: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  goal: Verify LinkedIn developer-access readiness for member and organization publishing without implementing OAuth or posting.
+  task_source: docs/LEVEL_5_LINKEDIN.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: UX-01
+  active_task: L5-LI-01
+  google_access_status: pending_manual_approval
+  google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - Level 6 Workflow / Calendar until required providers pass or Nicholas explicitly defers documented blockers and Work reviews operational readiness
-    - L5-GBP-02 or later Google tasks before the access-readiness checkpoint passes
-    - YouTube / LinkedIn / TikTok implementation before its own phase is deliberately opened
-    - optional X / Pinterest or blog publishing before Nicholas selects their phase
-    - Level 7 approvals before that phase is deliberately opened
-    - Level 8 analytics/engagement before that phase is deliberately opened
-    - optional AI
-  level_2_checkpoint: passed_and_closed_2026_09_28
-  level_3_checkpoint: passed_and_closed_2026_09_29
-  level_4_checkpoint: passed_and_closed_2026_09_30
-  level_5_instagram_checkpoint: passed_and_closed_2026_10_02
+    - L5-LI-02 or subsequent LinkedIn tasks before approval and access evidence
+    - Google OAuth before API approval and exact test location confirmation
+    - Level 6 before required platform coverage and operational readiness review
+    - optional X/Pinterest and blog integration without a separate approved phase
   level_5_platform_expansion_checkpoint: pending
 ```
 
@@ -2483,7 +2481,7 @@ Read this README in full before beginning implementation. Follow **Project Manag
 
 Levels 2, 3, 4, and the Level 5 Instagram adapter are closed. Broader Level 5 platform expansion is active. Do not reopen or rebuild the working Facebook or Instagram connection, publishing, or shared scheduling architecture unless a specific regression is demonstrated. The verified system now includes client-scoped OAuth/Request Connection, encrypted provider credentials, Account Health, destination-specific Facebook and Instagram editors, private-S3 provider transfer, durable provider results and Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing with real Facebook and Instagram results.
 
-`docs/LEVEL_5_INSTAGRAM.md` remains a closed evidence record. The active phase is `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`; `L5-GBP-00` (Baseline Maintenance Checkpoint) is `DONE` with deployed evidence accepted October 2, 2026, and the approved `UX-01` editor interlude is `MANUAL` pending deployment/live UI review. `L5-GBP-01` is temporarily `WAITING` and becomes the sole `READY` task when UX-01 is accepted. Complete access readiness before OAuth implementation. Preserve explicit user authorization requirements for repository writes; a `READY` task does not waive them.
+`docs/LEVEL_5_INSTAGRAM.md` remains closed. Google Business Profile API access was requested October 12 under project `content-social-hub` (503771980348), support case `1-5407000042073`; `L5-GBP-01` is MANUAL while Google reviews the request. Nicholas accepted progressing beyond the UX-01 composer and moved LinkedIn ahead of YouTube. The active phase is `docs/LEVEL_5_LINKEDIN.md` and `L5-LI-01` is READY. Google OAuth and later Google tasks remain WAITING. GitHub writes require explicit user confirmation.
 
 Instagram is now proven through Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection.
 
@@ -2499,7 +2497,6 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected work:** complete the manual publication/deployment and live UI smoke review for **UX-01 — Post Composer Experience**, recorded in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Nicholas approved this bounded content-editor improvement on October 12 before further provider expansion. The underlying Facebook/Instagram publishing and scheduling architecture is retained; full Level 6 Dashboard/Calendar work remains unopened. After UX-01 is accepted, resume **L5-GBP-01 — Google Business Profile Access Readiness** and confirm the exact eligible test location/project configuration before OAuth implementation. Actual Instagram renewal/recovery edge-case proofs and broader carousel-video ratio evidence remain deferred as recorded.
+**Next expected work:** `L5-LI-01` LinkedIn Developer Access Readiness. Confirm personal and Company Page product access, prerequisites, scopes, callback plan, and exact test destination. Do not implement OAuth or posting before the readiness checkpoint. Google approval remains pending (case `1-5407000042073`), tracked in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Level 6 remains unopened.
 
-
-Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. New renewal/recovery behavior is prepared locally; it is not yet deployed or proven live.
+Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. Renewal/recovery maintenance was deployed; some naturally unavailable edge-case proofs remain deferred.
