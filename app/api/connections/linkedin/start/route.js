@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api";
-import { createLinkedInOauthState, getConnectionRequestByToken } from "@/lib/connections";
+import { createLinkedInOauthState, createLinkedInReconnectState, getConnectionRequestByToken } from "@/lib/connections";
 import { isConnectionRequestUsableForPlatform } from "@/lib/connection-request-logic";
 import { getAppBaseUrl } from "@/lib/env";
 import { createLinkedInAuthorizationUrl } from "@/lib/linkedin";
@@ -29,9 +29,11 @@ export async function GET(request) {
       return response;
     }
     if (!(await getSession())) return NextResponse.redirect(appUrl("/login"), 303);
-    const state = await createLinkedInOauthState({
-      clientId: url.searchParams.get("clientId"), mode: "owner",
-    });
+    const clientId = url.searchParams.get("clientId");
+    const connectionId = url.searchParams.get("connectionId");
+    const state = connectionId
+      ? await createLinkedInReconnectState({ clientId, connectionId })
+      : await createLinkedInOauthState({ clientId, mode: "owner" });
     const response = NextResponse.redirect(createLinkedInAuthorizationUrl(state), 303);
     response.headers.set("Referrer-Policy", "no-referrer");
     return response;
