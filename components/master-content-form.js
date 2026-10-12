@@ -143,6 +143,7 @@ export default function MasterContentForm({
   clients,
   content = null,
   sourceContent = null,
+  showHeading = true,
 }) {
   const source = content || freshContentSource(sourceContent);
   const router = useRouter();
@@ -634,7 +635,7 @@ export default function MasterContentForm({
 
       <section className={styles.formSection}>
         <div className={styles.sectionHeader}>
-          <h2>Shared content</h2>
+          {showHeading ? <h2>Master Content</h2> : null}
           <p>
             The starting text and media for your account-specific posts.
             Customized versions are preserved.
@@ -964,7 +965,7 @@ export default function MasterContentForm({
           {pending
             ? "Saving"
             : isEditing
-              ? "Save shared content"
+              ? "Save Master Content"
               : "Save draft"}
         </button>
       </div>

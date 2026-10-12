@@ -22,15 +22,12 @@ export default function ContentComposer({
       version.active !== false &&
       ["facebook", "instagram"].includes(version.platform),
   );
-  const [selectedTab, setSelectedTab] = useState(
-    activeVersions[0]?._id || "shared",
-  );
-  const activeTab =
-    selectedTab === "shared" ||
-    activeVersions.some((version) => version._id === selectedTab)
-      ? selectedTab
-      : "shared";
-  const sharedPanelId = "composer-shared";
+  const [selectedTab, setSelectedTab] = useState(activeVersions[0]?._id || "");
+  const activeTab = activeVersions.some(
+    (version) => version._id === selectedTab,
+  )
+    ? selectedTab
+    : activeVersions[0]?._id || "";
 
   function handleTabKeys(event) {
     const tabs = Array.from(
@@ -56,6 +53,19 @@ export default function ContentComposer({
 
   return (
     <div className={styles.composer}>
+      <details className={styles.masterContentCard} open>
+        <summary>
+          <strong>Master Content</strong>
+          <span className={styles.fieldHint}>Shared text, link and media</span>
+          <span className={styles.masterExpanded}>Collapse</span>
+          <span className={styles.masterCollapsed}>Expand</span>
+        </summary>
+        <MasterContentForm
+          clients={clients}
+          content={content}
+          showHeading={false}
+        />
+      </details>
       <PlatformDestinationSelector
         key={JSON.stringify(
           platformVersions.map((version) => [
@@ -70,99 +80,86 @@ export default function ContentComposer({
         initialPlatformVersions={platformVersions}
         scheduleStates={scheduleStates}
       />
-      <div className={styles.composerSurface}>
-        <div
-          className={styles.composerTabs}
-          role="tablist"
-          aria-label="Post versions"
-          onKeyDown={handleTabKeys}
-        >
-          <button
-            type="button"
-            className={styles.composerTab}
-            id="tab-shared"
-            role="tab"
-            aria-controls={sharedPanelId}
-            aria-selected={activeTab === "shared"}
-            tabIndex={activeTab === "shared" ? 0 : -1}
-            onClick={() => setSelectedTab("shared")}
+      {activeVersions.length ? (
+        <div className={styles.composerSurface}>
+          <div
+            className={styles.composerTabs}
+            role="tablist"
+            aria-label="Post versions"
+            onKeyDown={handleTabKeys}
           >
-            <span>Shared content</span>
-            <small>Text, link & media</small>
-          </button>
-          {activeVersions.map((version) => (
-            <button
-              key={version._id}
-              type="button"
-              className={styles.composerTab}
-              data-platform={version.platform}
-              id={`tab-${version._id}`}
-              role="tab"
-              aria-controls={`panel-${version._id}`}
-              aria-selected={activeTab === version._id}
-              tabIndex={activeTab === version._id ? 0 : -1}
-              onClick={() => setSelectedTab(version._id)}
-            >
-              <PlatformIcon platform={version.platform} />
-              <span>
-                <strong>
-                  {version.platform === "instagram" ? "Instagram" : "Facebook"}
-                </strong>
-                <small>
-                  {version.destinationName ||
-                    destinations.find(
-                      (item) => item._id === version.socialConnectionId,
-                    )?.accountName ||
-                    "Account"}
-                </small>
-              </span>
-              <span
-                className={styles.composerStatus}
-                data-status={composerStatus(
-                  version,
-                  scheduleStates[version._id],
-                )}
+            {activeVersions.map((version) => (
+              <button
+                key={version._id}
+                type="button"
+                className={styles.composerTab}
+                data-platform={version.platform}
+                id={`tab-${version._id}`}
+                role="tab"
+                aria-controls={`panel-${version._id}`}
+                aria-selected={activeTab === version._id}
+                tabIndex={activeTab === version._id ? 0 : -1}
+                onClick={() => setSelectedTab(version._id)}
               >
-                {composerStatus(version, scheduleStates[version._id])}
-              </span>
-            </button>
-          ))}
+                <PlatformIcon platform={version.platform} />
+                <span>
+                  <strong>
+                    {version.platform === "instagram"
+                      ? "Instagram"
+                      : "Facebook"}
+                  </strong>
+                  <small>
+                    {version.destinationName ||
+                      destinations.find(
+                        (item) => item._id === version.socialConnectionId,
+                      )?.accountName ||
+                      "Account"}
+                  </small>
+                </span>
+                <span
+                  className={styles.composerStatus}
+                  data-status={composerStatus(
+                    version,
+                    scheduleStates[version._id],
+                  )}
+                >
+                  {composerStatus(version, scheduleStates[version._id])}
+                </span>
+              </button>
+            ))}
+          </div>
+          {activeVersions.map((version) => {
+            const destination = destinations.find(
+              (item) => item._id === version.socialConnectionId,
+            );
+            const Editor =
+              version.platform === "instagram"
+                ? InstagramVersionEditor
+                : FacebookVersionEditor;
+            return (
+              <div
+                key={version._id}
+                id={`panel-${version._id}`}
+                role="tabpanel"
+                aria-labelledby={`tab-${version._id}`}
+                hidden={activeTab !== version._id}
+                data-platform={version.platform}
+              >
+                <Editor
+                  key={`${version._id}-${version.revision}-${masterContent.revision}`}
+                  initialVersion={version}
+                  destination={destination}
+                  masterContent={masterContent}
+                />
+              </div>
+            );
+          })}
         </div>
-        <div
-          id={sharedPanelId}
-          role="tabpanel"
-          aria-labelledby="tab-shared"
-          hidden={activeTab !== "shared"}
-        >
-          <MasterContentForm clients={clients} content={content} />
+      ) : (
+        <div className={styles.notice}>
+          Choose and save an account above to prepare its post.
         </div>
-        {activeVersions.map((version) => {
-          const destination = destinations.find(
-            (item) => item._id === version.socialConnectionId,
-          );
-          const Editor =
-            version.platform === "instagram"
-              ? InstagramVersionEditor
-              : FacebookVersionEditor;
-          return (
-            <div
-              key={version._id}
-              id={`panel-${version._id}`}
-              role="tabpanel"
-              aria-labelledby={`tab-${version._id}`}
-              hidden={activeTab !== version._id}
-              data-platform={version.platform}
-            >
-              <Editor
-                key={`${version._id}-${version.revision}-${masterContent.revision}`}
-                initialVersion={version}
-                destination={destination}
-                masterContent={masterContent}
-              />
-            </div>
-          );
-        })}
-      </div>
+      )}
     </div>
   );
 }

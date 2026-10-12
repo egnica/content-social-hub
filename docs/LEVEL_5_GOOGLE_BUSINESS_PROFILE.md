@@ -89,7 +89,7 @@ Nicholas explicitly paused further platform expansion on October 12 to review th
 ### Acceptance criteria
 
 1. Present connected account cards with platform icons, exact account identities, selection state, and derived destination statuses.
-2. Put Shared content and each selected account in keyboard-accessible tabs. Keep mounted editors and unsaved text when switching tabs; preserve independent destination copy and saved customization.
+2. Place a collapsible Master Content section above Posting to. Use keyboard-accessible tabs only for selected social accounts. Keep mounted editors and unsaved text when switching tabs; preserve independent destination copy and saved customization. Updated to Nicholas's approved top-down hierarchy on October 12 after deployed UI review.
 3. Replace ambiguous primary-media dropdowns with thumbnails and a Main label. Only show short/long format when video is attached. Keep immediate private uploads, media reuse, cover support, and uploaded duration.
 4. Provide a visible Facebook Website preview choice that clears attached media for a native link post. Preserve Instagram image/Reel/carousel detection, all provider validation, and exact carousel order.
 5. Combine Publish now and Schedule into one account-specific publishing area. Show account/timezone, exact final confirmation, and useful scheduled/error states. Put technical schedule/history details behind disclosure. Keep cancellation, stale-revision, certainty-aware retry and duplicate barriers. A passed time must not stop the operator from opening Change schedule to select a future time.
@@ -286,3 +286,20 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - Verification is unchanged: 168 passing tests, clean lint, successful production build, passing browser fixture checks, and matching documentation/task pointers. Only this authorization record and current handoff wording were updated afterward.
 - UX-01 remains **MANUAL** pending Amplify deployment and the recorded live UI smoke review. L5-GBP-01 remains **WAITING** until the editor checkpoint is accepted. No real social publishing/scheduling test is authorized by this GitHub publication.
 - The verified remote commit and push result are reported in the implementation handoff.
+
+
+### October 12, 2026: UX-01 Master Content hierarchy refinement
+
+- Nicholas reviewed the deployed interface and requested a top-down hierarchy: Master Content above Posting to, followed by social-account tabs only. He explicitly approved implementing that layout adjustment.
+- Outcome: locally complete; UX-01 remains **MANUAL** pending publication and deployed UI review. Master Content is expanded initially and has a native collapse/expand control. Collapsing keeps its form mounted and preserves edits. Platform tabs retain account identity, keyboard navigation, independent forms, previews, and existing publishing/scheduling controls. A package with no saved destinations retains the Master and account picker with a clear next-action message.
+- Files changed: `components/content-composer.js`, `components/master-content-form.js`, `components/ui.module.css`, this phase document. Acceptance criterion 2 was updated to match the approved hierarchy.
+- Checks: `npm run lint` passed with zero errors/warnings; `npm run build` passed; `git diff --check` passed. Actual-component browser fixture checks passed at 1440/1024/768/390/320 px, verifying Master precedes Posting to, only account tabs remain, collapse/reopen retains Master edits, account-specific drafts remain independent, and existing media, carousel-order, scheduling/rescheduling, published-link, and source-copy checks still pass. All API mutations were intercepted locally. The existing 168-test baseline from the prior composer change is retained; the full suite was not repeated for this layout-only refinement.
+- Live status: the earlier composer is visible in Nicholas's deployed screenshot. This refined hierarchy has not been committed/pushed or deployed. No real social post or schedule was submitted.
+- Remaining manual actions: authorize commit/push of this refinement, deploy, and confirm the new visual hierarchy. After the UX-01 smoke checkpoint is accepted, L5-GBP-01 becomes the sole READY task. Git base: `597b211ec4ed44a9426ac2601d3c8b699cc2f5d1`; branch `ux-post-composer`; four uncommitted files.
+
+
+### October 12, 2026: Master hierarchy publication authorized
+
+- Nicholas explicitly instructed “push please,” authorizing commit/publication of the reviewed four-file Master Content hierarchy refinement to `main`.
+- Verification remains the clean lint/build, diff check, and actual-component browser fixture results recorded above. Only this authorization entry was appended afterward.
+- UX-01 remains MANUAL until the refined layout is deployed and reviewed. L5-GBP-01 remains WAITING. The verified remote commit is reported in the handoff.

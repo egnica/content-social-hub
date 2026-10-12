@@ -1698,3 +1698,52 @@
 .platformEditor[data-published="true"] .composerColumns {
   order: 2;
 }
+
+.masterContentCard {
+  margin-bottom: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.masterContentCard > summary {
+  padding: 20px 26px;
+  cursor: pointer;
+}
+.masterContentCard > summary strong {
+  font-size: 18px;
+  margin-right: 12px;
+}
+.masterContentCard .formCard {
+  border: 0;
+  border-radius: 0 0 16px 16px;
+  box-shadow: none;
+}
+.masterContentCard[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.masterExpanded,
+.masterCollapsed {
+  float: right;
+  color: var(--brand);
+  font-size: 12px;
+}
+.masterContentCard:not([open]) .masterExpanded,
+.masterContentCard[open] .masterCollapsed {
+  display: none;
+}
+@media (max-width: 700px) {
+  .masterContentCard > summary {
+    padding: 16px 18px;
+  }
+  .masterContentCard > summary .fieldHint {
+    display: block;
+    margin-top: 4px;
+  }
+  .masterExpanded,
+  .masterCollapsed {
+    float: none;
+    display: inline-block;
+    margin-top: 5px;
+  }
+}
