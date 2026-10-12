@@ -4,11 +4,11 @@ Active phase for Content Social Hub as of October 12, 2026. Nicholas approved mo
 
 ## Phase state
 
-- Status: **OPEN — personal OAuth implementation next**
-- Active task: **L5-LI-02 (`READY`)**
+- Status: **OPEN — personal OAuth code prepared; deployment and live verification pending**
+- Active task: **L5-LI-02 (`MANUAL` — deployment and live account verification pending)**
 - Personal test destination: Nicholas Egner personal profile (`https://www.linkedin.com/in/nicholas-egner`) under Content Social Hub client `Nicholas_Egner`; initial organization Page: `https://www.linkedin.com/company/nicholas-egner-digital-marketing` (association verified in developer app, API publishing approval still unavailable)
 - Developer app created and associated with Nicholas Egner Company Page; Share on LinkedIn Default Tier provisioned; `w_member_social` verified; callback registered. Community Management API Development Tier access request button disabled; organization publishing unapproved, reason not confirmed.
-- LinkedIn integration: **not implemented**
+- LinkedIn integration: **personal OAuth code prepared on implementation branch; not deployed or live verified**
 - Google `L5-GBP-01`: **MANUAL**, pending approval (case `1-5407000042073`, project number `503771980348`).
 
 ## Architecture and boundaries
@@ -20,7 +20,7 @@ Reuse client-scoped social connections, encrypted credentials, independent desti
 | ID | Status | Task | Acceptance checkpoint |
 | --- | --- | --- | --- |
 | L5-LI-01 | `DONE` | LinkedIn developer access readiness | Verify app requirements, personal sharing and organization API permission/review paths, intended scopes/callback, exact test identity, and non-secret prerequisites or named external blockers |
-| L5-LI-02 | `READY` | Personal profile OAuth and Account Health | Readiness accepted; encrypted client-scoped credentials, renewal and health checked |
+| L5-LI-02 | `MANUAL` | Personal profile OAuth and Account Health | Readiness accepted; encrypted client-scoped credentials, renewal and health checked |
 | L5-LI-03 | `BLOCKED` | Company Page connection | Appropriate permissions approved, exact Page selected and health verified |
 | L5-LI-04 | `WAITING` | Destination version, validation, preview | Independent platform version and Master protections |
 | L5-LI-05 | `WAITING` | Supported text/link/image publishing | Durable exact provider results, retry and duplicate safety |
@@ -28,7 +28,7 @@ Reuse client-scoped social connections, encrypted credentials, independent desti
 | L5-LI-07 | `WAITING` | Background scheduling | Existing worker, safe cancellation, stale revision, browser-closed proof and re-entry |
 | L5-LI-08 | `WAITING` | Final live integration review | Accepted real-account evidence, regression review and handoff |
 
-Only L5-LI-02 is READY. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
+L5-LI-02 awaits the external configuration, deployment, and live verification checkpoint; no later task is READY. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
 
 ## L5-LI-01 — Developer Access Readiness
 
@@ -75,3 +75,17 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - Deferred: MDP/refresh-token approval and automated token renewal. No permanent-token claim. User selected continued implementation now.
 - Files: this phase document, README and AGENTS handoff pointers. Docs only; no code changes, test/lint/build, OAuth connection, API post, or scheduled live post during readiness.
 - Manual next checkpoint: configure LinkedIn client credentials privately in Amplify when OAuth code is implemented, redeploy, and verify consent, saved connection, Account Health, and safe reconnection with the exact personal account. Verify the public privacy policy URL in production.
+
+### October 12, 2026: L5-LI-02 implementation branch, manual checkpoint pending
+
+- Task: **L5-LI-02**; code implemented on `feat/l5-li-02-personal-oauth`, status **MANUAL** pending required validation and live test. No company Page or post publishing implemented.
+- Added LinkedIn personal OAuth start/callback with one-time hashed OAuth state tied to the selected client, operator session or active 48-hour Request Connection link, exact redirect URI and OpenID Connect profile lookup. The member `sub` is the provider account identity; users confirm the exact member and client before saving.
+- Tokens are AES-256-GCM encrypted using existing `OAUTH_TOKEN_ENCRYPTION_KEY`; the client/platform/member identity is upserted so reauthorization replaces credentials in the same connection and preserves connected-destination references, drafts, schedules and history.
+- Token expiration is recorded and checked on every Account Health call; expired/expiring/permission-failure states guide reconnection. No automatic LinkedIn token refresh is assumed. Provider errors never expose tokens in the UI.
+- Reused the existing secure Request Connection email and limited-purpose setup page for LinkedIn. Social Accounts shows LinkedIn direct Connect, Request Connection, Account Health, token expiry and Reconnect. Facebook and Instagram remain independently scoped.
+- New files: `lib/linkedin.js`, `lib/linkedin-connection-logic.js`, `app/api/connections/linkedin/{start,callback,confirm}/route.js`, `app/connect/linkedin/{confirm,error}/page.js`, `components/linkedin-account-confirm.js`, `tests/linkedin-connection-logic.test.js`.
+- Updated: `lib/connections.js`, `lib/connection-request-logic.js`, `lib/email.js`, `components/connections-manager.js`, `app/connect/[token]/page.js`, `app/(app)/connections/page.js`, `.env.example`, and this phase record.
+- Verification: code inspected on GitHub; focused LinkedIn health tests authored, **not executed**. Full `npm test`, `npm run lint`, and `npm run build` remain **not executed**, because the execution container cannot reach GitHub to check out the repository. Do not treat authored tests or source review as passing checks.
+- Required manual steps: in the LinkedIn developer app add/provision **Sign In with LinkedIn using OpenID Connect** to obtain `openid` and `profile` in addition to existing `w_member_social`. Keep the registered production callback. Add `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` privately to Amplify environment configuration, not to GitHub. Run Node 24.19.0 checks on a checked-out branch, review failures, then merge/deploy only after checks pass.
+- Required production live proof: select `Nicholas_Egner`; consent to personal member OAuth; confirm exact Nicholas Egner member; verify one encrypted client-scoped destination and Healthy Account Health; switch clients and check isolation; separately verify secure emailed connection flow and one-time request invalidation; reconnect that same member and confirm the destination ID/history stays intact and expiry is replaced; verify that expired grants are blocked and display a reconnect action. No live OAuth, database, email, reconnect, or expired-token behavior has been verified yet.
+- Blockers: external OpenID Connect product availability and private Amplify credential configuration; tests/deployment/live validation outstanding. LinkedIn Company Page `L5-LI-03` remains BLOCKED by Community Management API approval; Google approval still pending. **Do not mark L5-LI-02 DONE or activate another task until evidence is recorded.**
