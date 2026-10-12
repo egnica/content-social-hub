@@ -380,7 +380,7 @@ function ClientConnectionsManager({
                   </div>
                   {connection.platform === "linkedin" && (
                     <a className={styles.buttonSecondary}
-                      href={`/api/connections/linkedin/start?clientId=${connection.clientId}`}>
+                      href={`/api/connections/linkedin/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>
                       Reconnect
                     </a>
                   )}
