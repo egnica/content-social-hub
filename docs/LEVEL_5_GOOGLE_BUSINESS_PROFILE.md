@@ -71,8 +71,8 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | ID | Status | Task | Dependency / required evidence |
 | --- | --- | --- | --- |
 | L5-GBP-00 | `DONE` | Baseline maintenance checkpoint | Accepted October 2, 2026 with deployed smoke evidence; unavailable live edge cases explicitly deferred |
-| UX-01 | `DONE` | Approved post composer experience | Local editor implementation verified; authorize publication, deploy, and review live smoke checks |
-| L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | Resume after UX-01 deployed smoke review; verify project approval/eligibility and exact test client/location |
+| UX-01 | `DONE` | Approved post composer experience | Accepted for roadmap progression October 12 after editor changes and user review |
+| L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | API application submitted October 12; await approval, then verify exact test client/location and remaining readiness |
 | L5-GBP-02 | `WAITING` | Direct OAuth, location selection, credential renewal, Account Health | Access checkpoint accepted; real location saved Healthy under correct client |
 | L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
 | L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
