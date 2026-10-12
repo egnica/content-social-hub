@@ -99,7 +99,7 @@ End every implementation session with:
 - Closed Facebook, publishing, scheduling, and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`
 - Active Level 5 LinkedIn plan and progress log: `docs/LEVEL_5_LINKEDIN.md`
 - Paused Google Business Profile phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` (L5-GBP-01 MANUAL, API approval pending, case `1-5407000042073`)
-- Current task: `L5-LI-02` — Personal Profile OAuth and Account Health (`READY`). L5-LI-01 DONE after Share on LinkedIn Default Tier, w_member_social and redirect confirmation. Company Page L5-LI-03 BLOCKED pending API access.
+- Current task: `L5-LI-02 MANUAL (code on feat/l5-li-02-personal-oauth, tests/deployment/live verification pending)`). L5-LI-01 DONE after Share on LinkedIn Default Tier, w_member_social and redirect confirmation. Company Page L5-LI-03 BLOCKED pending API access.
 - UX-01 accepted for roadmap progression October 12. Do not reopen without a demonstrated issue.
 - Current priority: LinkedIn, YouTube, TikTok; resume Google when approved. X and Pinterest are optional. Level 6 remains gated.
 
