@@ -86,7 +86,7 @@ export default async function ConnectionRequestPage({ params }) {
               <form action={`/api/connections/${platform}/start`} method="get">
                 <input type="hidden" name="requestToken" value={token} />
                 <button className={styles.button} type="submit">
-                  Continue with {platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : "Facebook}
+                  Continue with {platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : "Facebook"}
                 </button>
               </form>
             </div>
