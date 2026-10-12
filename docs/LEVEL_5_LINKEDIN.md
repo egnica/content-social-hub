@@ -54,3 +54,12 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - Checks: GitHub file writes confirmed. No local test, lint, or build run; public deployment/live HTTP availability is unverified.
 - Manual: review policy wording for accuracy and confirm the URL loads publicly before entering it in the LinkedIn developer app. Finish developer app/Page association and inspect API products.
 - No LinkedIn OAuth implementation, authorization, or publishing has occurred. L5-LI-02 remains WAITING.
+
+
+### October 12, 2026: LinkedIn token-renewal decision
+
+- Task: **L5-LI-01**; developer app created and Share on LinkedIn Default Tier provisioned. Personal posting OAuth callback and scopes still require final verification.
+- Decision: Nicholas chose to continue the build without applying for LinkedIn Marketing Developer Platform expanded approval now.
+- Credential design requirement for **L5-LI-02**: treat member access tokens as expiring (LinkedIn dashboard lists two months); support secure account reauthorization and replacement of encrypted credentials without losing client-scoped connection identity, drafts, schedules, or historical publish records. Surface expiry and reconnect requirements rather than silently attempting expired scheduled publishes.
+- Deferred enhancement: investigate MDP / programmatic refresh-token approval and implement automatic renewal if eligible. Do not assume access to refresh tokens today, or promise permanent tokens.
+- No LinkedIn secrets recorded here. OAuth code, provider publication, automatic token refresh, and Company Page approval remain unverified.
