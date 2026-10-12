@@ -20,11 +20,11 @@ function labelHealth(status) {
 function labelConnectionPlatform(connection) {
   return connection.platform === "instagram"
     ? "Instagram Professional"
-    : "Facebook Page";
+    : connection.platform === "linkedin" ? "LinkedIn personal profile" : "Facebook Page";
 }
 
 function labelRequestPlatform(platform) {
-  return platform === "instagram" ? "Instagram" : "Facebook Pages";
+  return platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : "Facebook Pages";
 }
 
 function formatRequestPlatforms(request) {
@@ -283,6 +283,35 @@ function ClientConnectionsManager({
             </div>
           </article>
 
+          {!configuration.linkedinReady ? (
+            <div className={styles.notice}>
+              LinkedIn setup is waiting for these Amplify variables:{" "}
+              <strong>{configuration.missingLinkedin.join(", ")}</strong>
+            </div>
+          ) : null}
+
+          <article className={styles.connectionProviderCard}>
+            <div className={styles.providerMark}>in</div>
+            <div className={styles.connectionProviderBody}>
+              <strong>LinkedIn personal profile</strong>
+              <p>Connect your own profile, or email a secure 48-hour setup link. Company Pages require separate API approval.</p>
+            </div>
+            <div className={styles.connectionActions}>
+              {configuration.linkedinReady ? (
+                <a className={styles.button}
+                  href={`/api/connections/linkedin/start?clientId=${selectedClient._id}`}>Connect</a>
+              ) : (
+                <button className={styles.button} type="button" disabled>Connect</button>
+              )}
+              <button className={styles.buttonSecondary} type="button"
+                onClick={() => sendRequest("linkedin")}
+                disabled={Boolean(sendingPlatform) || !configuration.linkedinReady ||
+                  !configuration.emailReady || !selectedClient.approvalReportEmail}>
+                {sendingPlatform === "linkedin" ? "Sending" : "Request Connection"}
+              </button>
+            </div>
+          </article>
+
           {!selectedClient.approvalReportEmail ? (
             <p className={styles.fieldHint}>
               Add an Approval / Report Email to this client before requesting
@@ -331,6 +360,9 @@ function ClientConnectionsManager({
                     {connection.healthMessage ? (
                       <p>{connection.healthMessage}</p>
                     ) : null}
+                    {connection.platform === "linkedin" && connection.tokenExpiresAt ? (
+                      <p>Authorization expires {formatDate(connection.tokenExpiresAt)}</p>
+                    ) : null}
                   </div>
                   <div className={styles.connectionHealth}>
                     <span
@@ -346,6 +378,12 @@ function ClientConnectionsManager({
                       Checked {formatDate(connection.lastHealthCheckAt)}
                     </span>
                   </div>
+                  {connection.platform === "linkedin" && (
+                    <a className={styles.buttonSecondary}
+                      href={`/api/connections/linkedin/start?clientId=${connection.clientId}`}>
+                      Reconnect
+                    </a>
+                  )}
                   <button
                     className={styles.buttonGhost}
                     type="button"
