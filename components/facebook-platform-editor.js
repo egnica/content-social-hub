@@ -104,10 +104,12 @@ function FacebookPreview({
 
   return (
     <div>
-      <div className={styles.sectionHeader}>
-        <h2>Facebook Preview</h2>
-        <p>Approximate preview only. Facebook controls final rendering.</p>
-      </div>
+      {!published ? (
+        <div className={styles.sectionHeader}>
+          <h2>Facebook Preview</h2>
+          <p>Approximate preview only. Facebook controls final rendering.</p>
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -649,28 +651,255 @@ export function FacebookVersionEditor({
     router.refresh();
   }
 
+  const postDetails = (
+    <details className={styles.editorContentDetails} open={!published}>
+      <summary>{published ? "Post details" : "Post text and media"}</summary>
+      <fieldset className={styles.editorFieldset} disabled={published}>
+        <div className={styles.fieldGrid}>
+          <label className={styles.fieldFull}>
+            <span className={styles.label}>Facebook message</span>
+            <textarea
+              className={styles.textarea}
+              value={form.message}
+              onChange={(event) => update("message", event.target.value)}
+              placeholder="Write the Facebook-specific message."
+            />
+          </label>
+
+          <label className={styles.fieldFull}>
+            <span className={styles.label}>Link to share</span>
+            <input
+              className={styles.input}
+              type="url"
+              value={form.destinationUrl}
+              onChange={(event) => update("destinationUrl", event.target.value)}
+              placeholder="https://example.com/page"
+            />
+            {form.destinationUrl ? (
+              <span
+                style={{
+                  display: "block",
+                  marginTop: 6,
+                  color: "#667085",
+                  fontSize: 12,
+                }}
+              >
+                {linkPreviewStatus === "loading"
+                  ? "Loading page image and link metadata…"
+                  : linkPreviewStatus === "ready"
+                    ? "Link preview loaded from the page's metadata."
+                    : linkPreviewStatus === "unavailable"
+                      ? "Page metadata could not be loaded. Facebook may still create its own link preview when published."
+                      : ""}
+              </span>
+            ) : null}
+          </label>
+        </div>
+
+        {media.length || form.destinationUrl ? (
+          <div style={{ marginTop: 22 }}>
+            <div className={styles.sectionHeader}>
+              <h2>Facebook media</h2>
+              <p>
+                Choose uploaded images or video, or use the website preview.
+              </p>
+            </div>
+            <div className={styles.mediaChoiceGrid}>
+              {media.map((asset) => {
+                const mediaId = stringId(asset._id);
+                const checked = form.mediaIds.includes(mediaId);
+
+                return (
+                  <label className={styles.mediaSelection} key={mediaId}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) =>
+                        toggleMedia(mediaId, event.target.checked)
+                      }
+                    />
+                    <MediaThumbnail asset={asset} />
+                    <span>
+                      <strong>{asset.originalName}</strong>
+                      <span>{asset.contentType || "Media"}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {form.destinationUrl ? (
+              <button
+                className={styles.websiteChoice}
+                type="button"
+                aria-pressed={!form.mediaIds.length}
+                onClick={() => selectPrimaryFacebookMedia("__link_preview__")}
+              >
+                {linkPreview?.imageUrl ? (
+                  <img src={linkPreview.imageUrl} alt="" />
+                ) : (
+                  <span aria-hidden="true">↗</span>
+                )}
+                <span>
+                  <strong>Website preview</strong>
+                  <small>
+                    Image and title from your link. Uploaded media will not be
+                    attached.
+                  </small>
+                </span>
+                {!form.mediaIds.length ? (
+                  <span className={styles.composerStatus}>Selected</span>
+                ) : null}
+              </button>
+            ) : null}
+            {selectedMedia.length > 1 ? (
+              <div className={styles.mediaChoiceSection}>
+                <span className={styles.label}>Main image or video</span>
+                <div className={styles.mediaChoiceGrid}>
+                  {selectedMedia.map((asset) => (
+                    <MediaChoice
+                      key={asset._id}
+                      asset={asset}
+                      selected={primaryMedia === asset}
+                      onSelect={() =>
+                        selectPrimaryFacebookMedia(String(asset._id))
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {primaryIsVideo ? (
+              <div style={{ marginTop: 16 }}>
+                <div className={styles.sectionHeader}>
+                  <h2>Facebook video thumbnail / cover</h2>
+                  <p>
+                    Inherited from Master by default. Change it here only for
+                    Facebook.
+                  </p>
+                </div>
+                <label className={styles.field}>
+                  <span className={styles.label}>Facebook thumbnail</span>
+                  <select
+                    className={styles.select}
+                    value={form.videoThumbnailMediaId}
+                    onChange={(event) =>
+                      update("videoThumbnailMediaId", event.target.value)
+                    }
+                  >
+                    <option value="">Let Facebook choose automatically</option>
+                    {thumbnailOptions.map((asset) => (
+                      <option key={asset._id} value={asset._id}>
+                        {asset.originalName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {resolvedThumbnailAsset ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      width: 220,
+                      overflow: "hidden",
+                      border: "1px solid #d8dde3",
+                      borderRadius: 10,
+                    }}
+                  >
+                    <img
+                      src={mediaPreviewUrl(resolvedThumbnailAsset)}
+                      alt="Facebook video thumbnail"
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        maxHeight: 140,
+                        objectFit: "cover",
+                      }}
+                    />
+                  </div>
+                ) : null}
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={uploadFacebookThumbnail}
+                  hidden
+                />
+                <button
+                  className={styles.buttonSecondary}
+                  type="button"
+                  style={{ marginTop: 10 }}
+                  onClick={() => thumbnailInputRef.current?.click()}
+                  disabled={thumbnailUploading || saving}
+                >
+                  {thumbnailUploading
+                    ? "Uploading Thumbnail…"
+                    : "Upload Facebook Thumbnail"}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className={styles.formActions}>
+          <button
+            className={styles.buttonSecondary}
+            type="button"
+            onClick={resetFromMaster}
+            disabled={saving || thumbnailUploading}
+          >
+            {masterChanged
+              ? "Update from shared content"
+              : "Use shared content"}
+          </button>
+          <button
+            className={styles.button}
+            type="button"
+            onClick={saveVersion}
+            disabled={saving || thumbnailUploading || !dirty}
+          >
+            {saving ? "Saving" : dirty ? "Save Facebook Version" : "Saved"}
+          </button>
+        </div>
+      </fieldset>
+    </details>
+  );
+  const postPreview = (
+    <FacebookPreview
+      published={published}
+      destination={destination}
+      form={form}
+      media={media}
+      videoThumbnailAsset={resolvedThumbnailAsset}
+      linkPreview={linkPreview}
+      linkPreviewStatus={linkPreviewStatus}
+    />
+  );
+
   return (
     <section
       className={styles.platformEditor}
       data-platform="facebook"
       data-published={published}
     >
-      <div className={styles.sectionHeader}>
-        <div className={styles.platformHeading}>
-          <PlatformIcon platform="facebook" />
-          <h2>
-            Facebook ·{" "}
-            {version.destinationName || destination?.accountName || "Account"}
-          </h2>
+      {!published ? (
+        <div className={styles.sectionHeader}>
+          <div className={styles.platformHeading}>
+            <PlatformIcon platform="facebook" />
+            <h2>
+              Facebook ·{" "}
+              {version.destinationName || destination?.accountName || "Account"}
+            </h2>
+          </div>
+          <p>
+            {published
+              ? "Published version"
+              : version.customized
+                ? "Customized for this account"
+                : "Using shared content"}
+          </p>
         </div>
-        <p>
-          {published
-            ? "Published version"
-            : version.customized
-              ? "Customized for this account"
-              : "Using shared content"}
-        </p>
-      </div>
+      ) : null}
 
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
       {message ? <div className={styles.successNotice}>{message}</div> : null}
@@ -693,15 +922,11 @@ export function FacebookVersionEditor({
             ))}
           </ul>
         </div>
-      ) : (
+      ) : !published ? (
         <div className={styles.editorReady}>
-          {published
-            ? "This saved version is live. Create a new draft to share it again."
-            : dirty
-              ? "Unsaved changes"
-              : "Saved draft"}
+          {dirty ? "Unsaved changes" : "Saved draft"}
         </div>
-      )}
+      ) : null}
 
       {!published && validation.warnings.length ? (
         <div className={styles.notice}>
@@ -711,246 +936,12 @@ export function FacebookVersionEditor({
         </div>
       ) : null}
 
-      <div className={styles.composerColumns}>
-        <div>
-          <details className={styles.editorContentDetails} open={!published}>
-            <summary>
-              {published
-                ? "View published text and media"
-                : "Post text and media"}
-            </summary>
-            <fieldset className={styles.editorFieldset} disabled={published}>
-              <div className={styles.fieldGrid}>
-                <label className={styles.fieldFull}>
-                  <span className={styles.label}>Facebook message</span>
-                  <textarea
-                    className={styles.textarea}
-                    value={form.message}
-                    onChange={(event) => update("message", event.target.value)}
-                    placeholder="Write the Facebook-specific message."
-                  />
-                </label>
-
-                <label className={styles.fieldFull}>
-                  <span className={styles.label}>Link to share</span>
-                  <input
-                    className={styles.input}
-                    type="url"
-                    value={form.destinationUrl}
-                    onChange={(event) =>
-                      update("destinationUrl", event.target.value)
-                    }
-                    placeholder="https://example.com/page"
-                  />
-                  {form.destinationUrl ? (
-                    <span
-                      style={{
-                        display: "block",
-                        marginTop: 6,
-                        color: "#667085",
-                        fontSize: 12,
-                      }}
-                    >
-                      {linkPreviewStatus === "loading"
-                        ? "Loading page image and link metadata…"
-                        : linkPreviewStatus === "ready"
-                          ? "Link preview loaded from the page's metadata."
-                          : linkPreviewStatus === "unavailable"
-                            ? "Page metadata could not be loaded. Facebook may still create its own link preview when published."
-                            : ""}
-                    </span>
-                  ) : null}
-                </label>
-              </div>
-
-              {media.length || form.destinationUrl ? (
-                <div style={{ marginTop: 22 }}>
-                  <div className={styles.sectionHeader}>
-                    <h2>Facebook media</h2>
-                    <p>
-                      Choose uploaded images or video, or use the website
-                      preview.
-                    </p>
-                  </div>
-                  <div className={styles.mediaChoiceGrid}>
-                    {media.map((asset) => {
-                      const mediaId = stringId(asset._id);
-                      const checked = form.mediaIds.includes(mediaId);
-
-                      return (
-                        <label className={styles.mediaSelection} key={mediaId}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(event) =>
-                              toggleMedia(mediaId, event.target.checked)
-                            }
-                          />
-                          <MediaThumbnail asset={asset} />
-                          <span>
-                            <strong>{asset.originalName}</strong>
-                            <span>{asset.contentType || "Media"}</span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-
-                  {form.destinationUrl ? (
-                    <button
-                      className={styles.websiteChoice}
-                      type="button"
-                      aria-pressed={!form.mediaIds.length}
-                      onClick={() =>
-                        selectPrimaryFacebookMedia("__link_preview__")
-                      }
-                    >
-                      {linkPreview?.imageUrl ? (
-                        <img src={linkPreview.imageUrl} alt="" />
-                      ) : (
-                        <span aria-hidden="true">↗</span>
-                      )}
-                      <span>
-                        <strong>Website preview</strong>
-                        <small>
-                          Image and title from your link. Uploaded media will
-                          not be attached.
-                        </small>
-                      </span>
-                      {!form.mediaIds.length ? (
-                        <span className={styles.composerStatus}>Selected</span>
-                      ) : null}
-                    </button>
-                  ) : null}
-                  {selectedMedia.length > 1 ? (
-                    <div className={styles.mediaChoiceSection}>
-                      <span className={styles.label}>Main image or video</span>
-                      <div className={styles.mediaChoiceGrid}>
-                        {selectedMedia.map((asset) => (
-                          <MediaChoice
-                            key={asset._id}
-                            asset={asset}
-                            selected={primaryMedia === asset}
-                            onSelect={() =>
-                              selectPrimaryFacebookMedia(String(asset._id))
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {primaryIsVideo ? (
-                    <div style={{ marginTop: 16 }}>
-                      <div className={styles.sectionHeader}>
-                        <h2>Facebook video thumbnail / cover</h2>
-                        <p>
-                          Inherited from Master by default. Change it here only
-                          for Facebook.
-                        </p>
-                      </div>
-                      <label className={styles.field}>
-                        <span className={styles.label}>Facebook thumbnail</span>
-                        <select
-                          className={styles.select}
-                          value={form.videoThumbnailMediaId}
-                          onChange={(event) =>
-                            update("videoThumbnailMediaId", event.target.value)
-                          }
-                        >
-                          <option value="">
-                            Let Facebook choose automatically
-                          </option>
-                          {thumbnailOptions.map((asset) => (
-                            <option key={asset._id} value={asset._id}>
-                              {asset.originalName}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {resolvedThumbnailAsset ? (
-                        <div
-                          style={{
-                            marginTop: 10,
-                            width: 220,
-                            overflow: "hidden",
-                            border: "1px solid #d8dde3",
-                            borderRadius: 10,
-                          }}
-                        >
-                          <img
-                            src={mediaPreviewUrl(resolvedThumbnailAsset)}
-                            alt="Facebook video thumbnail"
-                            style={{
-                              display: "block",
-                              width: "100%",
-                              maxHeight: 140,
-                              objectFit: "cover",
-                            }}
-                          />
-                        </div>
-                      ) : null}
-                      <input
-                        ref={thumbnailInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={uploadFacebookThumbnail}
-                        hidden
-                      />
-                      <button
-                        className={styles.buttonSecondary}
-                        type="button"
-                        style={{ marginTop: 10 }}
-                        onClick={() => thumbnailInputRef.current?.click()}
-                        disabled={thumbnailUploading || saving}
-                      >
-                        {thumbnailUploading
-                          ? "Uploading Thumbnail…"
-                          : "Upload Facebook Thumbnail"}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <div className={styles.formActions}>
-                <button
-                  className={styles.buttonSecondary}
-                  type="button"
-                  onClick={resetFromMaster}
-                  disabled={saving || thumbnailUploading}
-                >
-                  {masterChanged
-                    ? "Update from shared content"
-                    : "Use shared content"}
-                </button>
-                <button
-                  className={styles.button}
-                  type="button"
-                  onClick={saveVersion}
-                  disabled={saving || thumbnailUploading || !dirty}
-                >
-                  {saving
-                    ? "Saving"
-                    : dirty
-                      ? "Save Facebook Version"
-                      : "Saved"}
-                </button>
-              </div>
-            </fieldset>
-          </details>
+      {!published ? (
+        <div className={styles.composerColumns}>
+          <div>{postDetails}</div>
+          {postPreview}
         </div>
-
-        <FacebookPreview
-          published={published}
-          destination={destination}
-          form={form}
-          media={media}
-          videoThumbnailAsset={resolvedThumbnailAsset}
-          linkPreview={linkPreview}
-          linkPreviewStatus={linkPreviewStatus}
-        />
-      </div>
+      ) : null}
       <DestinationPublishingPanel
         published={published}
         attention={[
@@ -973,6 +964,8 @@ export function FacebookVersionEditor({
         }
         publish={
           <FacebookPublishControls
+            publishedPreview={postPreview}
+            publishedDetails={postDetails}
             version={version}
             timezone={masterContent.clientTimezone}
             destination={destination}

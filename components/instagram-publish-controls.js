@@ -115,6 +115,8 @@ export default function InstagramPublishControls({
   dirty,
   busy,
   onPublished,
+  publishedPreview,
+  publishedDetails,
 }) {
   const [publishing, setPublishing] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
@@ -317,7 +319,7 @@ export default function InstagramPublishControls({
   }
 
   return (
-    <div style={{ marginTop: 22 }}>
+    <div style={{ marginTop: controlState.mode === "published" ? 0 : 22 }}>
       {controlState.mode === "published" ? (
         <PublishedPostSummary
           platformLabel="Instagram"
@@ -450,67 +452,85 @@ export default function InstagramPublishControls({
           {checkingStatus ? "Checking…" : "Refresh post link"}
         </button>
       ) : null}
-      <details className={styles.publishHistory}>
-        <summary>Publishing activity</summary>
-        <div className={styles.sectionHeader}>
-          <h2>Publish History</h2>
-          <p>
-            Prior Instagram attempts are preserved and are never overwritten.
-          </p>
-        </div>
+      {controlState.mode === "published" ? (
+        <div className={styles.publishedPreview}>{publishedPreview}</div>
+      ) : null}
+      <div
+        className={
+          controlState.mode === "published"
+            ? styles.publishedRecords
+            : undefined
+        }
+      >
+        {controlState.mode === "published" ? publishedDetails : null}
+        <details className={styles.publishHistory}>
+          <summary>
+            {controlState.mode === "published"
+              ? "Publishing history"
+              : "Publishing activity"}
+          </summary>
+          <div className={styles.sectionHeader}>
+            <h2>Publish History</h2>
+            <p>
+              Prior Instagram attempts are preserved and are never overwritten.
+            </p>
+          </div>
 
-        {historyLoading ? (
-          <div className={styles.notice}>Loading publish history…</div>
-        ) : history.length ? (
-          <div style={{ display: "grid", gap: 10 }}>
-            {history.map((item) => {
-              const itemUrl = normalizeInstagramProviderUrl(
-                item.providerPostUrl || "",
-              );
-              const providerError = item.providerError?.message || "";
+          {historyLoading ? (
+            <div className={styles.notice}>Loading publish history…</div>
+          ) : history.length ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              {history.map((item) => {
+                const itemUrl = normalizeInstagramProviderUrl(
+                  item.providerPostUrl || "",
+                );
+                const providerError = item.providerError?.message || "";
 
-              return (
-                <div
-                  key={item._id}
-                  style={{
-                    padding: 12,
-                    border: "1px solid #e4e7ec",
-                    borderRadius: 10,
-                  }}
-                >
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <strong>{attemptLabel(item.status)}</strong>
-                    <span>Revision {item.platformVersionRevision || "—"}</span>
-                    <span>{item.publishMode || currentPublishMode}</span>
-                    {attemptDate(item) ? (
-                      <span>{attemptDate(item)}</span>
+                return (
+                  <div
+                    key={item._id}
+                    style={{
+                      padding: 12,
+                      border: "1px solid #e4e7ec",
+                      borderRadius: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <strong>{attemptLabel(item.status)}</strong>
+                      <span>
+                        Revision {item.platformVersionRevision || "—"}
+                      </span>
+                      <span>{item.publishMode || currentPublishMode}</span>
+                      {attemptDate(item) ? (
+                        <span>{attemptDate(item)}</span>
+                      ) : null}
+                    </div>
+                    {providerError ? (
+                      <div style={{ marginTop: 6 }}>{providerError}</div>
+                    ) : null}
+                    {itemUrl ? (
+                      <div style={{ marginTop: 8 }}>
+                        <a
+                          className={styles.buttonSecondary}
+                          href={itemUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View Post ↗
+                        </a>
+                      </div>
                     ) : null}
                   </div>
-                  {providerError ? (
-                    <div style={{ marginTop: 6 }}>{providerError}</div>
-                  ) : null}
-                  {itemUrl ? (
-                    <div style={{ marginTop: 8 }}>
-                      <a
-                        className={styles.buttonSecondary}
-                        href={itemUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View Post ↗
-                      </a>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className={styles.notice}>
-            No Instagram publish attempts yet.
-          </div>
-        )}
-      </details>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.notice}>
+              No Instagram publish attempts yet.
+            </div>
+          )}
+        </details>
+      </div>
     </div>
   );
 }

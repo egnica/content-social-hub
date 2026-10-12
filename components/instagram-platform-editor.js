@@ -101,7 +101,13 @@ function PreviewMedia({ asset, label = "" }) {
   );
 }
 
-function InstagramPreview({ destination, form, media, mediaMode }) {
+function InstagramPreview({
+  destination,
+  form,
+  media,
+  mediaMode,
+  published = false,
+}) {
   const selectedMedia = media.filter((asset) =>
     form.mediaIds.includes(stringId(asset._id)),
   );
@@ -114,10 +120,12 @@ function InstagramPreview({ destination, form, media, mediaMode }) {
 
   return (
     <div>
-      <div className={styles.sectionHeader}>
-        <h2>Instagram Preview</h2>
-        <p>Approximate preview only. Instagram controls final rendering.</p>
-      </div>
+      {!published ? (
+        <div className={styles.sectionHeader}>
+          <h2>Instagram Preview</h2>
+          <p>Approximate preview only. Instagram controls final rendering.</p>
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -230,8 +238,9 @@ function InstagramPreview({ destination, form, media, mediaMode }) {
             textAlign: "center",
           }}
         >
-          Preview only. Publish Now supports one compatible image, one
-          Reel/video, or an ordered 2–10 item carousel.
+          {published
+            ? "Saved content preview. View the post on Instagram for its live appearance."
+            : "Preview only. Publish Now supports one compatible image, one Reel/video, or an ordered 2–10 item carousel."}
         </div>
       </div>
     </div>
@@ -379,28 +388,224 @@ export function InstagramVersionEditor({
     router.refresh();
   }
 
+  const postDetails = (
+    <details className={styles.editorContentDetails} open={!published}>
+      <summary>{published ? "Post details" : "Post text and media"}</summary>
+      <fieldset className={styles.editorFieldset} disabled={published}>
+        <div className={styles.fieldGrid}>
+          <label className={styles.fieldFull}>
+            <span className={styles.label}>Instagram caption</span>
+            <textarea
+              className={styles.textarea}
+              value={form.caption}
+              onChange={(event) => update("caption", event.target.value)}
+              placeholder="Write the Instagram-specific caption."
+            />
+          </label>
+        </div>
+
+        <div style={{ marginTop: 22 }}>
+          <div className={styles.sectionHeader}>
+            <h2>Instagram media</h2>
+            <p>
+              Choose an image, a Reel/video, or up to 10 ordered carousel items.
+            </p>
+          </div>
+
+          {media.length ? (
+            <div className={styles.mediaChoiceGrid}>
+              {media.map((asset) => {
+                const mediaId = stringId(asset._id);
+                const checked = form.mediaIds.includes(mediaId);
+                const compatible =
+                  asset.contentType?.startsWith("image/") ||
+                  asset.contentType?.startsWith("video/");
+
+                return (
+                  <label className={styles.mediaSelection} key={mediaId}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={(!compatible && !checked) || saving}
+                      onChange={(event) =>
+                        toggleMedia(mediaId, event.target.checked)
+                      }
+                    />
+                    <MediaThumbnail asset={asset} />
+                    <span>
+                      <strong>{asset.originalName}</strong>
+                      <span>
+                        {asset.contentType || "Media"}
+                        {!compatible ? " · not Instagram compatible" : ""}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.notice}>
+              No media is attached to Master Content. This Instagram version
+              remains incompatible until an image or video is added.
+            </div>
+          )}
+
+          <div className={styles.notice} style={{ marginTop: 12 }}>
+            <strong>Detected Instagram format:</strong>{" "}
+            {instagramMediaModeLabel(validation.mediaMode)}
+          </div>
+
+          {validation.mediaMode === "carousel" ? (
+            <div className={styles.mediaChoiceSection}>
+              <span className={styles.label}>Carousel order</span>
+              {selectedMedia.map((asset, index) => (
+                <div className={styles.mediaOrder} key={asset._id}>
+                  <span className={styles.fieldHint}>
+                    {index + 1}. {asset.originalName}
+                  </span>
+                  <button
+                    className={styles.buttonGhost}
+                    type="button"
+                    disabled={index === 0}
+                    aria-label={`Move ${asset.originalName} earlier`}
+                    onClick={() => {
+                      const ids = [...form.mediaIds];
+                      [ids[index - 1], ids[index]] = [
+                        ids[index],
+                        ids[index - 1],
+                      ];
+                      update("mediaIds", ids);
+                    }}
+                  >
+                    Earlier
+                  </button>
+                  <button
+                    className={styles.buttonGhost}
+                    type="button"
+                    disabled={index === selectedMedia.length - 1}
+                    aria-label={`Move ${asset.originalName} later`}
+                    onClick={() => {
+                      const ids = [...form.mediaIds];
+                      [ids[index + 1], ids[index]] = [
+                        ids[index],
+                        ids[index + 1],
+                      ];
+                      update("mediaIds", ids);
+                    }}
+                  >
+                    Later
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {validation.mediaMode === "reel" ? (
+            <div className={styles.notice} style={{ marginTop: 12 }}>
+              <strong>Reel cover:</strong>{" "}
+              {reelCover
+                ? `Master video thumbnail · ${reelCover.originalName || "selected thumbnail"}`
+                : "No Master video thumbnail is saved; Instagram will use its default video-frame cover."}
+              {reelCover ? (
+                <img
+                  src={mediaPreviewUrl(reelCover)}
+                  alt=""
+                  style={{
+                    display: "block",
+                    width: 120,
+                    maxHeight: 180,
+                    objectFit: "cover",
+                    marginTop: 10,
+                    borderRadius: 8,
+                  }}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          {form.mediaIds.length > 1 && validation.mediaMode !== "carousel" ? (
+            <div className={styles.mediaChoiceSection}>
+              <span className={styles.label}>
+                {validation.mediaMode === "carousel"
+                  ? "Carousel starts with"
+                  : "Main image or video"}
+              </span>
+              <div className={styles.mediaChoiceGrid}>
+                {selectedMedia.map((asset) => (
+                  <MediaChoice
+                    key={asset._id}
+                    asset={asset}
+                    selected={String(asset._id) === form.primaryMediaId}
+                    onSelect={() => update("primaryMediaId", String(asset._id))}
+                    badge={
+                      validation.mediaMode === "carousel"
+                        ? "First in carousel"
+                        : "Main"
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className={styles.formActions}>
+          <button
+            className={styles.buttonSecondary}
+            type="button"
+            onClick={resetFromMaster}
+            disabled={saving}
+          >
+            {masterChanged
+              ? "Update from shared content"
+              : "Use shared content"}
+          </button>
+          <button
+            className={styles.button}
+            type="button"
+            onClick={saveVersion}
+            disabled={saving || !dirty}
+          >
+            {saving ? "Saving" : dirty ? "Save Instagram Version" : "Saved"}
+          </button>
+        </div>
+      </fieldset>
+    </details>
+  );
+  const postPreview = (
+    <InstagramPreview
+      published={published}
+      destination={destination}
+      form={form}
+      media={media}
+      mediaMode={validation.mediaMode}
+    />
+  );
+
   return (
     <section
       className={styles.platformEditor}
       data-platform="instagram"
       data-published={published}
     >
-      <div className={styles.sectionHeader}>
-        <div className={styles.platformHeading}>
-          <PlatformIcon platform="instagram" />
-          <h2>
-            Instagram ·{" "}
-            {version.destinationName || destination?.accountName || "Account"}
-          </h2>
+      {!published ? (
+        <div className={styles.sectionHeader}>
+          <div className={styles.platformHeading}>
+            <PlatformIcon platform="instagram" />
+            <h2>
+              Instagram ·{" "}
+              {version.destinationName || destination?.accountName || "Account"}
+            </h2>
+          </div>
+          <p>
+            {published
+              ? "Published version"
+              : version.customized
+                ? "Customized for this account"
+                : "Using shared content"}
+          </p>
         </div>
-        <p>
-          {published
-            ? "Published version"
-            : version.customized
-              ? "Customized for this account"
-              : "Using shared content"}
-        </p>
-      </div>
+      ) : null}
 
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
       {message ? <div className={styles.successNotice}>{message}</div> : null}
@@ -423,15 +628,11 @@ export function InstagramVersionEditor({
             ))}
           </ul>
         </div>
-      ) : (
+      ) : !published ? (
         <div className={styles.editorReady}>
-          {published
-            ? "This saved version is live. Create a new draft to share it again."
-            : dirty
-              ? "Unsaved changes"
-              : "Saved draft"}
+          {dirty ? "Unsaved changes" : "Saved draft"}
         </div>
-      )}
+      ) : null}
 
       {!published && validation.warnings.length ? (
         <div className={styles.notice}>
@@ -441,212 +642,12 @@ export function InstagramVersionEditor({
         </div>
       ) : null}
 
-      <div className={styles.composerColumns}>
-        <div>
-          <details className={styles.editorContentDetails} open={!published}>
-            <summary>
-              {published
-                ? "View published text and media"
-                : "Post text and media"}
-            </summary>
-            <fieldset className={styles.editorFieldset} disabled={published}>
-              <div className={styles.fieldGrid}>
-                <label className={styles.fieldFull}>
-                  <span className={styles.label}>Instagram caption</span>
-                  <textarea
-                    className={styles.textarea}
-                    value={form.caption}
-                    onChange={(event) => update("caption", event.target.value)}
-                    placeholder="Write the Instagram-specific caption."
-                  />
-                </label>
-              </div>
-
-              <div style={{ marginTop: 22 }}>
-                <div className={styles.sectionHeader}>
-                  <h2>Instagram media</h2>
-                  <p>
-                    Choose an image, a Reel/video, or up to 10 ordered carousel
-                    items.
-                  </p>
-                </div>
-
-                {media.length ? (
-                  <div className={styles.mediaChoiceGrid}>
-                    {media.map((asset) => {
-                      const mediaId = stringId(asset._id);
-                      const checked = form.mediaIds.includes(mediaId);
-                      const compatible =
-                        asset.contentType?.startsWith("image/") ||
-                        asset.contentType?.startsWith("video/");
-
-                      return (
-                        <label className={styles.mediaSelection} key={mediaId}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            disabled={(!compatible && !checked) || saving}
-                            onChange={(event) =>
-                              toggleMedia(mediaId, event.target.checked)
-                            }
-                          />
-                          <MediaThumbnail asset={asset} />
-                          <span>
-                            <strong>{asset.originalName}</strong>
-                            <span>
-                              {asset.contentType || "Media"}
-                              {!compatible ? " · not Instagram compatible" : ""}
-                            </span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className={styles.notice}>
-                    No media is attached to Master Content. This Instagram
-                    version remains incompatible until an image or video is
-                    added.
-                  </div>
-                )}
-
-                <div className={styles.notice} style={{ marginTop: 12 }}>
-                  <strong>Detected Instagram format:</strong>{" "}
-                  {instagramMediaModeLabel(validation.mediaMode)}
-                </div>
-
-                {validation.mediaMode === "carousel" ? (
-                  <div className={styles.mediaChoiceSection}>
-                    <span className={styles.label}>Carousel order</span>
-                    {selectedMedia.map((asset, index) => (
-                      <div className={styles.mediaOrder} key={asset._id}>
-                        <span className={styles.fieldHint}>
-                          {index + 1}. {asset.originalName}
-                        </span>
-                        <button
-                          className={styles.buttonGhost}
-                          type="button"
-                          disabled={index === 0}
-                          aria-label={`Move ${asset.originalName} earlier`}
-                          onClick={() => {
-                            const ids = [...form.mediaIds];
-                            [ids[index - 1], ids[index]] = [
-                              ids[index],
-                              ids[index - 1],
-                            ];
-                            update("mediaIds", ids);
-                          }}
-                        >
-                          Earlier
-                        </button>
-                        <button
-                          className={styles.buttonGhost}
-                          type="button"
-                          disabled={index === selectedMedia.length - 1}
-                          aria-label={`Move ${asset.originalName} later`}
-                          onClick={() => {
-                            const ids = [...form.mediaIds];
-                            [ids[index + 1], ids[index]] = [
-                              ids[index],
-                              ids[index + 1],
-                            ];
-                            update("mediaIds", ids);
-                          }}
-                        >
-                          Later
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                {validation.mediaMode === "reel" ? (
-                  <div className={styles.notice} style={{ marginTop: 12 }}>
-                    <strong>Reel cover:</strong>{" "}
-                    {reelCover
-                      ? `Master video thumbnail · ${reelCover.originalName || "selected thumbnail"}`
-                      : "No Master video thumbnail is saved; Instagram will use its default video-frame cover."}
-                    {reelCover ? (
-                      <img
-                        src={mediaPreviewUrl(reelCover)}
-                        alt=""
-                        style={{
-                          display: "block",
-                          width: 120,
-                          maxHeight: 180,
-                          objectFit: "cover",
-                          marginTop: 10,
-                          borderRadius: 8,
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {form.mediaIds.length > 1 &&
-                validation.mediaMode !== "carousel" ? (
-                  <div className={styles.mediaChoiceSection}>
-                    <span className={styles.label}>
-                      {validation.mediaMode === "carousel"
-                        ? "Carousel starts with"
-                        : "Main image or video"}
-                    </span>
-                    <div className={styles.mediaChoiceGrid}>
-                      {selectedMedia.map((asset) => (
-                        <MediaChoice
-                          key={asset._id}
-                          asset={asset}
-                          selected={String(asset._id) === form.primaryMediaId}
-                          onSelect={() =>
-                            update("primaryMediaId", String(asset._id))
-                          }
-                          badge={
-                            validation.mediaMode === "carousel"
-                              ? "First in carousel"
-                              : "Main"
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className={styles.formActions}>
-                <button
-                  className={styles.buttonSecondary}
-                  type="button"
-                  onClick={resetFromMaster}
-                  disabled={saving}
-                >
-                  {masterChanged
-                    ? "Update from shared content"
-                    : "Use shared content"}
-                </button>
-                <button
-                  className={styles.button}
-                  type="button"
-                  onClick={saveVersion}
-                  disabled={saving || !dirty}
-                >
-                  {saving
-                    ? "Saving"
-                    : dirty
-                      ? "Save Instagram Version"
-                      : "Saved"}
-                </button>
-              </div>
-            </fieldset>
-          </details>
+      {!published ? (
+        <div className={styles.composerColumns}>
+          <div>{postDetails}</div>
+          {postPreview}
         </div>
-
-        <InstagramPreview
-          destination={destination}
-          form={form}
-          media={media}
-          mediaMode={validation.mediaMode}
-        />
-      </div>
+      ) : null}
       <DestinationPublishingPanel
         published={published}
         attention={[
@@ -669,6 +670,8 @@ export function InstagramVersionEditor({
         }
         publish={
           <InstagramPublishControls
+            publishedPreview={postPreview}
+            publishedDetails={postDetails}
             version={version}
             timezone={masterContent.clientTimezone}
             destination={destination}
