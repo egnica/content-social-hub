@@ -27,6 +27,10 @@ export async function GET(request) {
     }
     const token = await exchangeLinkedInCode(code);
     const profile = await getLinkedInProfile(token.accessToken);
+    if (state.expectedProviderAccountId &&
+        state.expectedProviderAccountId !== profile.providerAccountId) {
+      return errorRedirect("identity");
+    }
     const selectionToken = await createLinkedInSelectionFlow({
       clientId: state.clientId,
       requestId: state.requestId,
