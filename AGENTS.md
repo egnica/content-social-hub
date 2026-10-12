@@ -97,11 +97,10 @@ End every implementation session with:
 - Product roadmap and source of truth: `README.md`
 - Level 0-1 setup record: `docs/LEVEL_0_1_SETUP.md`
 - Closed Facebook, publishing, scheduling, and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`
-- Active Level 5 Google Business Profile plan and progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
-- Current task: `UX-01` — Post Composer Experience (`MANUAL`: publication authorized; deployment/live smoke pending). Nicholas approved this bounded editor interlude on October 12, 2026.
-- `L5-GBP-01` is temporarily `WAITING`; restore it as the sole `READY` task after UX-01 is accepted. Full Level 6 Dashboard/Calendar work remains unopened.
-- Required provider order before Level 6: Google Business Profile, YouTube, LinkedIn, TikTok; X and Pinterest are optional
-- Level 6 requires verified required adapters or Nicholas's explicit deferral of documented blockers, plus operational-readiness review
-- Blog / website publishing is planned later and has no active task
+- Active Level 5 LinkedIn plan and progress log: `docs/LEVEL_5_LINKEDIN.md`
+- Paused Google Business Profile phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` (L5-GBP-01 MANUAL, API approval pending, case `1-5407000042073`)
+- Current task: `L5-LI-01` — LinkedIn Developer Access Readiness (`READY`).
+- UX-01 accepted for roadmap progression October 12. Do not reopen without a demonstrated issue.
+- Current priority: LinkedIn, YouTube, TikTok; resume Google when approved. X and Pinterest are optional. Level 6 remains gated.
 
 Always follow the `active_phase_document` named in the README rather than assuming Level 2 will remain active permanently.
