@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PlatformIcon from "@/components/platform-icon";
 import styles from "@/components/ui.module.css";
-import { isYouTubeVersionOutOfSync, validateYouTubeVersionDraft } from "@/lib/platform-version-logic";
+import { isYouTubeVersionOutOfSync, prepareYouTubeDescription, validateYouTubeVersionDraft } from "@/lib/platform-version-logic";
 
 const toDraft = (version) => ({
   title: version.title || "",
@@ -73,9 +73,11 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const masterChanged = isYouTubeVersionOutOfSync(version, masterContent.revision);
   const validation = validateYouTubeVersionDraft({
     ...form, media, thumbnail, masterChanged, customized: version.customized,
+    isShort: masterContent.contentLength !== "long", videoDuration: video?.duration,
     healthStatus: destination?.healthStatus || "unavailable",
     canPublish: destination?.canPublish === true,
   });
+  const preparedDescription = prepareYouTubeDescription(form.description, form.chapters);
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
     setDirty(true); setError(""); setMessage("");
@@ -106,10 +108,11 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       </div>
       <p>{version.customized ? "Customized for this channel" : "Using shared content"}</p>
     </div>
-    <div className={styles.notice}>Draft editor only. YouTube upload, processing, thumbnails submission, Publish Now, and scheduling will be added in later tasks. Saving here does not upload anything.</div>
+    <div className={styles.notice}>Metadata preparation only. YouTube upload, thumbnail submission, Publish Now, and scheduling remain disabled. Saving here does not upload anything.</div>
     {error ? <div className={styles.errorNotice}>{error}</div> : null}
     {message ? <div className={styles.successNotice}>{message}</div> : null}
     {masterChanged ? <div className={styles.notice}>Master Content changed. Your YouTube-specific changes remain intact until you choose Update from Master.</div> : null}
+    {validation.warnings.filter((item) => !item.startsWith("YouTube upload")).map((item) => <div key={item} className={styles.notice}>{item}</div>)}
     {validation.blocking.length ? <div className={styles.errorNotice}><strong>Draft validation</strong>
       <ul>{validation.blocking.map((item) => <li key={item}>{item}</li>)}</ul></div> :
       <div className={styles.editorReady}>{dirty ? "Unsaved changes" : "Valid saved draft"}</div>}
@@ -142,7 +145,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
           <label className={styles.fieldFull}><span className={styles.label}>Manual chapters (optional)</span>
             <textarea className={styles.textarea} rows={5} value={form.chapters} placeholder={"00:00 Intro\n00:30 Main section\n01:20 Wrap-up"}
               onChange={(e) => update("chapters", e.target.value)} />
-            <span className={styles.fieldHint}>At least three ascending timestamps, first at 00:00, each separated by at least 10 seconds. Added to the description during the later publishing task.</span>
+            <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
           </label>
         </div>
         <div className={styles.formActions}>
@@ -161,8 +164,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
           <div style={{ padding: 16 }}>
             <strong style={{ overflowWrap: "anywhere" }}>{form.title || "YouTube title"}</strong>
             <p className={styles.fieldHint}>{destination?.accountName || "YouTube Channel"} · {form.privacyStatus}</p>
-            <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{form.description}</p>
-            {form.chapters ? <pre style={{ whiteSpace: "pre-wrap" }}>{form.chapters}</pre> : null}
+            <p className={styles.fieldHint}>Prepared description ({new TextEncoder().encode(preparedDescription.text).length}/5,000 UTF-8 bytes, including chapters)</p>
+            <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{preparedDescription.text}</p>
           </div>
         </div>
       </div>
