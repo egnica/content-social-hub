@@ -1996,3 +1996,24 @@
   .contentCreateForm { padding: 14px; }
   .clientStep { padding: 12px; }
 }
+
+/* Native thumbnail framing guidance; never crop the uploaded image. */
+.thumbnailAspectFrame {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #d8dde3;
+  border-radius: 10px;
+  background: #f4f6f8;
+}
+.thumbnailAspectWarning {
+  max-width: 440px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #e2d4a8;
+  border-radius: 8px;
+  color: #65501d;
+  background: #fbf7e9;
+  font-size: 12px;
+  line-height: 1.5;
+}
