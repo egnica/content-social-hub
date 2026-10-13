@@ -22,7 +22,7 @@ import {
   publishInstagramReelVersion,
 } from "@/lib/instagram-reel-publishing";
 import { LinkedInPublishConflictError, LinkedInPublishProviderError, publishLinkedInVersion } from "@/lib/linkedin-publishing";
-import { YouTubePublishConflictError, YouTubePublishProviderError, publishYouTubeVersion, resumeYouTubeVersion } from "@/lib/youtube-publishing";
+import { YouTubePublishConflictError, YouTubePublishProviderError, publishYouTubeVersion, resumeYouTubeVersion, getYouTubePublishStatus } from "@/lib/youtube-publishing";
 import { requireApiSession } from "@/lib/session";
 import { assertDestinationNotAwaitingReview } from "@/lib/scheduled-release-guard";
 
@@ -134,7 +134,7 @@ export async function POST(_request, { params }) {
   }
 }
 
-export async function GET(_request, { params }) {
+export async function GET(request, { params }) {
   const unauthorized = await requireApiSession();
   if (unauthorized) return unauthorized;
 
@@ -153,6 +153,8 @@ export async function GET(_request, { params }) {
     }
 
     if (target?.platform === "youtube") {
+      if (new URL(request.url).searchParams.get("statusOnly") === "1")
+        return Response.json(await getYouTubePublishStatus(id));
       return Response.json(await resumeYouTubeVersion(id));
     }
 
