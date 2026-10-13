@@ -567,14 +567,14 @@ export default function MasterContentForm({
   }
 
   return (
-    <form className={styles.formCard} onSubmit={submit}>
-      <section className={styles.formSection} aria-label="Choose client first">
+    <form className={`${styles.formCard} ${styles.contentCreateForm}`} onSubmit={submit}>
+      <section className={styles.clientStep} aria-label="Choose client first">
         <div className={styles.sectionHeader}>
           <h2>1. Choose Client</h2>
           <p>Select the client before starting content or uploading media.</p>
         </div>
-        <div className={styles.fieldGrid}>
-          <label className={styles.field}>
+        <div className={styles.clientStepField}>
+          <label className={styles.fieldFull}>
             <span className={styles.label}>Client</span>
             <select
               className={styles.select}
@@ -595,7 +595,7 @@ export default function MasterContentForm({
           </label>
         </div>
       </section>
-      <div className={styles.sectionHeader}>
+      <div className={styles.creationStepHeader}>
         <h2>2. Start Creating</h2>
         {!form.clientId ? <p>Choose a client above to enable these shortcuts.</p> : null}
       </div>
