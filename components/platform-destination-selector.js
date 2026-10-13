@@ -16,6 +16,7 @@ function activeConnectionIds(platformVersions) {
 function platformLabel(platform) {
   if (platform === "instagram") return "Instagram Professional";
   if (platform === "facebook") return "Facebook Page";
+  if (platform === "linkedin") return "LinkedIn personal profile";
   return platform || "Social destination";
 }
 
@@ -148,7 +149,7 @@ export default function PlatformDestinationSelector({
         </div>
       ) : (
         <div className={styles.notice}>
-          No supported Facebook or Instagram destination is connected to this
+          No supported Facebook, Instagram or LinkedIn destination is connected to this
           client yet. Add one in{" "}
           <Link href="/connections">Social Accounts</Link> before creating a
           platform version.
