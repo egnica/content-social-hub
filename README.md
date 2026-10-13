@@ -2381,9 +2381,9 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_linkedin_personal_oauth_manual_verification
+  current_stage: level_5_linkedin_additional_media_live_verification
   active_phase_document: docs/LEVEL_5_LINKEDIN.md
-  current_task: L5-LI-02
+  current_task: L5-LI-06
   current_task_status: MANUAL
   level_5_provider_selected: linkedin
   required_remaining_provider_order:
@@ -2461,13 +2461,14 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Verify the L5-LI-02 LinkedIn personal OAuth implementation branch, configure private credentials, and complete live Account Health/reconnect validation.
+  goal: Verify L5-LI-06 LinkedIn personal-profile multi-image and video publishing with real posts and persistent exact provider results.
   task_source: docs/LEVEL_5_LINKEDIN.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-LI-02
+  active_task: L5-LI-06
   google_access_status: pending_manual_approval
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
+    - L5-LI-07 scheduling before L5-LI-06 live acceptance
     - L5-LI-03 Company Page connection until Community Management API access is approved
     - Google OAuth before API approval and exact test location confirmation
     - Level 6 before required platform coverage and operational readiness review
@@ -2500,3 +2501,8 @@ Never commit secrets to the repository. Never modify, create, delete, rename, co
 **Next expected work:** `L5-LI-04 READY` in `docs/LEVEL_5_LINKEDIN.md`: add the healthy client-scoped LinkedIn personal profile to the content editor's Posting to choices, with independent destination version, validation, and preview. `L5-LI-02 DONE` by Nicholas's October 13 product-owner acceptance of live OAuth, reconnect, Account Health and secure invitation testing, with deferred full repository test/lint/build, negative two-client isolation, saved connection ID continuity, and failure-edge proofs explicitly retained in the active phase log. Do not implement LinkedIn publishing or scheduling as part of L5-LI-04. Company Page access is blocked pending Community Management API approval; do not implement organization publishing yet. Google approval remains pending (case `1-5407000042073`), tracked in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Level 6 remains unopened.
 
 Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. Renewal/recovery maintenance was deployed; some naturally unavailable edge-case proofs remain deferred.
+
+
+### October 13, 2026 LinkedIn task handoff update
+
+The linked active phase document `docs/LEVEL_5_LINKEDIN.md` is authoritative for the LinkedIn queue. Nicholas accepted `L5-LI-05 DONE` following production publishing checks. `L5-LI-06` (personal profile video and organic multi-image) is implemented on `main` and remains `MANUAL` pending live verification and full test/lint/build. `L5-LI-07` remains WAITING. Older descriptions of L5-LI-02/L5-LI-04 as current or next tasks are historical and superseded by this handoff. Overall Level 5 remains open.
