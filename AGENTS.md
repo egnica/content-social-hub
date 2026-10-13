@@ -97,10 +97,12 @@ End every implementation session with:
 - Product roadmap and source of truth: `README.md`
 - Level 0-1 setup record: `docs/LEVEL_0_1_SETUP.md`
 - Closed Facebook, publishing, scheduling, and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`
-- Active Level 5 LinkedIn plan and progress log: `docs/LEVEL_5_LINKEDIN.md`
+- Active Level 5 YouTube plan and progress log: `docs/LEVEL_5_YOUTUBE.md`
+- Parked LinkedIn implementation and accepted-exception review: `docs/LEVEL_5_LINKEDIN.md` (`L5-LI-06/07 MANUAL`, Company Page `L5-LI-03 BLOCKED`, transition review `L5-LI-08 DONE`).
 - Paused Google Business Profile phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` (L5-GBP-01 MANUAL, API approval pending, case `1-5407000042073`)
-- Current task: `L5-LI-07 READY` (LinkedIn personal-profile background scheduling using the existing Level 4 EventBridge/Lambda path). `L5-LI-06 MANUAL`: code implemented; Nicholas declined artificial public test posts, so live media validation is deferred to real content. Run outstanding automated checks and preserve safety. L5-LI-03 Company Page remains BLOCKED pending access. L5-LI-08 WAITING. No scheduling code has been started by this handoff.
+- Current task: `L5-YT-01 READY` (YouTube API, channel and OAuth/upload access **readiness research only**). No YouTube code, credentials or live upload until current provider restrictions and channel selection are verified and Nicholas has the necessary external steps.
+- LinkedIn: personal OAuth/editor and text/link/image publishing accepted; additional media `L5-LI-06 MANUAL` and background scheduling `L5-LI-07 MANUAL` remain without live acceptance, by Nicholas's choice not to publish artificial posts on his professional LinkedIn profile. `L5-LI-08 DONE` is an owner-accepted review with those explicit exceptions, **not** evidence of untested publishing. Company Pages `L5-LI-03 BLOCKED` pending Community Management API.
 - UX-01 accepted for roadmap progression October 12. Do not reopen without a demonstrated issue.
-- Current priority: LinkedIn, YouTube, TikTok; resume Google when approved. X and Pinterest are optional. Level 6 remains gated.
+- Current priority: YouTube, then TikTok; resume Google Business Profile when approved. Preserve LinkedIn verification debt for first genuine posts; X and Pinterest optional. Level 6 remains gated.
 
 Always follow the `active_phase_document` named in the README rather than assuming Level 2 will remain active permanently.
