@@ -31,6 +31,7 @@ test("YouTube resumable probe uses status request and honors authoritative offse
       accessToken: "fake-token", size: 1048576,
     });
     assert.equal(seen.method, "PUT");
+    assert.equal(seen.redirect, "manual");
     assert.equal(seen.body, undefined);
     assert.equal(seen.headers["Content-Length"], "0");
     assert.equal(seen.headers["Content-Range"], "bytes */1048576");
@@ -50,6 +51,7 @@ test("YouTube chunk upload uses bounded continuous range and refuses arbitrary b
       sessionUrl, accessToken: "fake-token", mimeType: "video/mp4",
       size: 524288, offset: 0, bytes: new Uint8Array(262144),
     });
+    assert.equal(seen.redirect, "manual");
     assert.equal(seen.headers["Content-Range"], "bytes 0-262143/524288");
     assert.equal(result.offset, 262144);
     await assert.rejects(() => sendYouTubeUploadChunk({
@@ -64,7 +66,7 @@ test("zero-byte status probe never starts another video and keeps expired sessio
   const calls = [];
   const sessionUrl = "https://www.googleapis.com/upload/youtube/v3/videos?upload_id=abc";
   globalThis.fetch = async (url, options) => {
-    calls.push({ url, method: options.method, body: options.body, headers: options.headers });
+    calls.push({ url, method: options.method, redirect: options.redirect, body: options.body, headers: options.headers });
     return new Response(null, { status: 404 });
   };
   try {
@@ -73,8 +75,30 @@ test("zero-byte status probe never starts another video and keeps expired sessio
     }), error => error.status === 404);
     assert.equal(calls.length, 1);
     assert.equal(calls[0].method, "PUT");
+    assert.equal(calls[0].redirect, "manual");
     assert.equal(calls[0].url, sessionUrl);
     assert.equal(calls[0].body, undefined);
     assert.equal(calls[0].headers["Content-Length"], "0");
+  } finally { globalThis.fetch = original; }
+});
+
+test("YouTube upload does not follow a redirect from the resumable session endpoint", async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (_url, options) => {
+    calls += 1;
+    assert.equal(options.redirect, "manual");
+    return new Response(null, {
+      status: 308,
+      headers: { location: "https://not-youtube.example/redirect", range: "bytes=0-262143" },
+    });
+  };
+  try {
+    const result = await probeYouTubeResumableUpload({
+      sessionUrl: "https://www.googleapis.com/upload/youtube/v3/videos?upload_id=abc",
+      accessToken: "fake-token", size: 1048576,
+    });
+    assert.equal(result.offset, 262144);
+    assert.equal(calls, 1);
   } finally { globalThis.fetch = original; }
 });
