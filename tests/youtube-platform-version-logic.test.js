@@ -33,7 +33,9 @@ test("YouTube inherits one Master video and private default but no audience decl
 test("YouTube version normalization preserves independent metadata", () => {
   assert.deepEqual(normalizeYouTubeVersionDraft({ ...ready, chapters: "00:00 Intro", videoThumbnailMediaId: "image-1" }),
     { title: "A video", description: "Description", privacyStatus: "private", madeForKids: false,
-      mediaIds: ["video-1"], primaryMediaId: "video-1", videoThumbnailMediaId: "image-1", chapters: "00:00 Intro" });
+      mediaIds: ["video-1"], primaryMediaId: "video-1", videoThumbnailMediaId: "image-1", chapters: "00:00 Intro",
+      paidPromotion: false, containsSyntheticMedia: false, defaultLanguage: "en",
+      captionCertification: "never_aired_us", tags: [], recordingDate: "", recordingLocation: "" });
 });
 test("YouTube validates visibility, audience, title and UTF-8 description limits", () => {
   assert.equal(validateYouTubeVersionDraft(ready).publishable, true);
