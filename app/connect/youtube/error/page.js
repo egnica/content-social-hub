@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 const messages = {
   expired: "This YouTube authorization expired. Start again.",
   invalid: "Google returned an incomplete authorization response.",
+  request: "This YouTube connection request is no longer available. Ask for a fresh link.",
   cancelled: "Google authorization was cancelled. No connection was saved.",
   identity: "The authorized channel did not match the expected channel, or YouTube could not identify a single channel. No connection was replaced.",
   provider: "Google or YouTube could not verify this authorization. No connection was saved.",
