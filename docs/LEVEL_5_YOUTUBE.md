@@ -6,7 +6,7 @@ Active phase for Content Social Hub beginning October 13, 2026, by Nicholas's ex
 
 - **Status:** OPEN — YouTube connection and emailed authorization passed their main production flows; editor implemented with owner-confirmed production save persistence; publisher and scheduling work remain outstanding.
 - **Active phase document:** `docs/LEVEL_5_YOUTUBE.md`
-- **Current task:** `L5-YT-05 — Video upload, processing, results` is the sole `READY` task. `L5-YT-04 DONE` by explicit product-owner acceptance with retained verification exceptions; `L5-YT-02 MANUAL` still retains token-refresh/reconnect and full-test verification debt.
+- **Current task:** `L5-YT-06 — Thumbnail and chapter preparation` is the sole `READY` task following the owner's approved dependency reorder. `L5-YT-05` is `WAITING` for prepared metadata. `L5-YT-04 DONE` by explicit product-owner acceptance with retained verification exceptions; `L5-YT-02 MANUAL` still retains token-refresh/reconnect and full-test verification debt.
 - **Provider:** `youtube` (proposed internal adapter key; verify existing code conventions before implementation).
 - **Target Content Social Hub client:** `Nicholas_Egner` verified in the live connection and emailed authorization flow.
 - **Exact YouTube channel identity:** `Nicholas Egner`, ID `UCqxKDmlWdNZUld_xKgNoxjg`, shown in production confirmation for `Nicholas_Egner`. Do not hardcode for future clients.
@@ -34,8 +34,8 @@ Implement a client-owned YouTube **channel** destination, preserving one Master 
 | L5-YT-02 | `MANUAL` | Channel OAuth, Account Health, reconnect | Explicit selected channel identity, secure client-scoped tokens, refresh/expiry health and safe same-channel reconnect verified; no credentials in Git |
 | L5-YT-03 | `DONE` (owner acceptance; exceptions) | Secure Request Connection and isolation | Existing limited-purpose emailed authorization adapted; one-time expiry/invalidation and cross-client/channel isolation verified |
 | L5-YT-04 | `DONE` (owner acceptance; exceptions) | YouTube destination editor and validation | Independent title/description/privacy/audience/thumbnail/chapter metadata, video selection and Master revision protections; real provider-specific constraints |
-| L5-YT-05 | `READY` | Video upload, processing, results | Private-S3 transfer through approved YouTube upload flow, persisted recoverable processing, published video URL/ID/history, certainty-aware retries and duplicate protection |
-| L5-YT-06 | `WAITING` | Thumbnail and chapter completion | Supported custom thumbnail/chapters and remaining video metadata handled against current API rules without breaking uploads |
+| L5-YT-06 | `READY` | Thumbnail and chapter preparation | Validate thumbnail formats/dimensions and chapter syntax/timing; prepare stable metadata for publishing. Actual custom-thumbnail API submission requires the video ID produced in L5-YT-05 and is deferred to its integration checkpoint. |
+| L5-YT-05 | `WAITING` | Video upload, processing, results | After L5-YT-06 preparation: private-S3 transfer through approved YouTube upload flow, persisted recoverable processing, video URL/ID/history, certainty-aware retries, duplicate protection and post-upload thumbnail submission using the returned video ID. |
 | L5-YT-07 | `WAITING` | Browser-independent YouTube scheduling | Shared scheduler with release-time Account Health, exact revision, provider processing/resume, safe cancel/reschedule, no duplicate video submission |
 | L5-YT-08 | `WAITING` | Final live integration review | Real intended channel and privacy/visibility evidence, data persistence, worker results, client isolation, regressions and explicit owner acceptance or documented exceptions |
 
@@ -152,3 +152,11 @@ Only **one READY task** at any time. Implement exactly the selected task; do not
 - **Scope and files changed now:** Documentation handoff only, `docs/LEVEL_5_YOUTUBE.md`; no application code, provider API action, token, media, or publishing change.
 - **Checks:** Read current README handoff and full YouTube phase record, inspected latest remote commits and owner-observed production evidence, confirmed one READY task. No local checkout, automated checks, or new live verification for this documentation-only update.
 - **Git:** Commit this phase-note update to remote `main` under the owner's explicit update request; local `git status` is unavailable. Level 5 remains OPEN; the owner has not declared the overall phase complete.
+
+### October 13, 2026: Owner-approved YouTube metadata-before-upload task reorder
+
+- **Decision:** Nicholas requested that thumbnail and chapter completion precede the video upload implementation. Preserve existing task IDs while reordering execution: `L5-YT-06 READY` now comes before `L5-YT-05 WAITING`; L5-YT-04 remains DONE by owner acceptance with documented exceptions. Exactly one task is READY.
+- **L5-YT-06 bounded objective:** Complete provider-specific metadata preparation and validation for thumbnail choice, supported aspect/format/dimensions, compatible chapter timestamps, and safe formatting of intended YouTube description. This task must remain draft-side and make no YouTube upload or provider mutation. Thumbnail submission through `thumbnails.set` cannot run before a provider video ID exists; integrate that action during L5-YT-05 after video creation, with durable recovery semantics.
+- **Dependency and next:** Once L5-YT-06's prepared metadata and checks are accepted, promote L5-YT-05 to READY for resumable uploads, provider processing/result history, and applying the selected thumbnail after obtaining the video ID. L5-YT-07/08 remain WAITING; Level 5 OPEN.
+- **Verification:** Documentation-only reordering; no new app code, tests, live Google calls, video publishing, or production checks. Previously recorded L5-YT-02/L5-YT-04 verification debt remains unchanged.
+- **Files changed:** `docs/LEVEL_5_YOUTUBE.md` only. **Git:** documentation update committed to remote `main` with owner permission; local `git status` unavailable without a checkout.
