@@ -4,8 +4,8 @@ Active phase for Content Social Hub as of October 12, 2026. Nicholas approved mo
 
 ## Phase state
 
-- Status: **OPEN — personal OAuth accepted with documented verification exceptions; content destination editor next**
-- Active task: **L5-LI-04 (`READY` — personal-profile content destination, validation and preview)**
+- Status: **OPEN — LinkedIn destination editor accepted with documented verification exceptions; personal publishing next**
+- Active task: **L5-LI-05 (`READY` — personal-profile text/link/image publishing)**
 - Personal test destination: Nicholas Egner personal profile (`https://www.linkedin.com/in/nicholas-egner`) under Content Social Hub client `Nicholas_Egner`; initial organization Page: `https://www.linkedin.com/company/nicholas-egner-digital-marketing` (association verified in developer app, API publishing approval still unavailable)
 - Developer app created and associated with Nicholas Egner Company Page; Share on LinkedIn Default Tier provisioned; `w_member_social` verified; callback registered. Community Management API Development Tier access request button disabled; organization publishing unapproved, reason not confirmed.
 - LinkedIn integration: **personal OAuth deployed on main; initial authorization and same-member reconnect succeeded in production October 13, 2026**
@@ -22,8 +22,8 @@ Reuse client-scoped social connections, encrypted credentials, independent desti
 | L5-LI-01 | `DONE` | LinkedIn developer access readiness | Verify app requirements, personal sharing and organization API permission/review paths, intended scopes/callback, exact test identity, and non-secret prerequisites or named external blockers |
 | L5-LI-02 | `DONE` | Personal profile OAuth and Account Health | Readiness accepted; encrypted client-scoped credentials, renewal and health checked |
 | L5-LI-03 | `BLOCKED` | Company Page connection | Appropriate permissions approved, exact Page selected and health verified |
-| L5-LI-04 | `READY` | Destination version, validation, preview | Independent platform version and Master protections |
-| L5-LI-05 | `WAITING` | Supported text/link/image publishing | Durable exact provider results, retry and duplicate safety |
+| L5-LI-04 | `DONE` | Destination version, validation, preview | Independent platform version and Master protections |
+| L5-LI-05 | `READY` | Supported text/link/image publishing | Durable exact provider results, retry and duplicate safety |
 | L5-LI-06 | `WAITING` | Additional supported media | Verify current media modes/permissions before implementation |
 | L5-LI-07 | `WAITING` | Background scheduling | Existing worker, safe cancellation, stale revision, browser-closed proof and re-entry |
 | L5-LI-08 | `WAITING` | Final live integration review | Accepted real-account evidence, regression review and handoff |
@@ -140,3 +140,14 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - **Live verification:** Amplify deployment outcome and client-isolation, draft save/reopen/reset, published FB/IG regression checks pending.
 - **Decisions:** Profile drafts only; unsupported video/carousel clearly labeled; explicit platform edits not overwritten by Master changes; existing Facebook/Instagram publishing flow left intact.
 - **Next task:** L5-LI-05 remains WAITING pending L5-LI-04 validation and Nicholas's acceptance; L5-LI-03 remains BLOCKED for Community Management approval.
+
+### October 13, 2026: L5-LI-04 owner acceptance and handoff
+
+- **Outcome:** `L5-LI-04 DONE` with documented verification exceptions. Nicholas reviewed deployed screenshots and explicitly requested closing the editor task and moving on. Sole next `READY` task: `L5-LI-05`.
+- **Production deployment evidence:** AWS Amplify app `d1yfjibipwjpld`, branch `main`, job `167`, commit `1d46bc76a9a87eec58771b18a1899585ebe3f8f6`: `SUCCEED`.
+- **Owner screenshots:** LinkedIn personal-profile account appears under `Nicholas_Egner` in Posting to; destination is selected; LinkedIn tab displays inherited text/link/one image, live preview and `Saved` state. Pre-existing published Facebook and Instagram destinations still render.
+- **Code safeguards reviewed:** Existing client-scoped connection lookup and health/capability eligibility checks; separate LinkedIn platform-version draft, validation and explicit Master reset; no LinkedIn publish or schedule controls.
+- **Automated tests:** `tests/linkedin-platform-version-logic.test.js` added for client eligibility, inheritance, media and validation. Test execution not independently confirmed. AWS successful build/deploy is not proof of test pass or API posting.
+- **Verification exceptions:** Browser hard refresh persistence, edit/save/reopen/reset path, two-client negative UI test, full test/lint run, and regression tests of previously published Facebook/Instagram objects remain unverified; these are logged as follow-up validation, not falsely claimed passed. No LinkedIn provider publishing tested.
+- **Git status:** All implementation changes and the acceptance record pushed to `main`; no local checkout available.
+- **Next task:** `L5-LI-05 READY`, supported personal-profile text/link/image publishing. `L5-LI-03 BLOCKED` by Community Management approval; no later LinkedIn tasks started.
