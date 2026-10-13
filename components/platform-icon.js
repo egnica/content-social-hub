@@ -3,10 +3,10 @@ import styles from "@/components/ui.module.css";
 export default function PlatformIcon({ platform }) {
   return (
     <span
-      className={`${styles.platformIcon} ${platform === "instagram" ? styles.instagramIcon : styles.facebookIcon}`}
+      className={`${styles.platformIcon} ${platform === "instagram" ? styles.instagramIcon : platform === "linkedin" ? styles.linkedinIcon : styles.facebookIcon}`}
       aria-hidden="true"
     >
-      {platform === "instagram" ? (
+      {platform === "linkedin" ? (<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96c0 .84.69 1.52 1.55 1.52h16.9c.86 0 1.55-.68 1.55-1.52V3.52C22 2.68 21.31 2 20.45 2ZM7.93 18.75H4.98V9.2h2.95v9.55ZM6.45 7.89a1.71 1.71 0 1 1 0-3.42 1.71 1.71 0 0 1 0 3.42Zm12.3 10.86H9.55V9.2h2.83v1.3h.04c.39-.74 1.36-1.53 2.8-1.53 3 0 3.53 1.97 3.53 4.53v5.25Z"/></svg>) : platform === "instagram" ? (
         <svg
           viewBox="0 0 24 24"
           fill="none"
