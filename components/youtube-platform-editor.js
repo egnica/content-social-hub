@@ -58,6 +58,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [form, setForm] = useState(() => toDraft(initialVersion));
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishState, setPublishState] = useState(initialVersion.lastPublishStatus || "");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const media = masterContent.media || [];
@@ -100,6 +102,24 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       setError(cause.message);
     } finally { setBusy(false); }
   }
+  async function publishAction(resume = false) {
+    if (!resume && !window.confirm("Upload this video to the selected YouTube channel using the chosen visibility and audience settings? This creates a real YouTube video and cannot be undone by cancelling a schedule.")) return;
+    setPublishing(true); setError(""); setMessage("");
+    try {
+      const response = await fetch(`/api/platform-versions/${version._id}/publish`, {
+        method: resume ? "GET" : "POST", cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "YouTube upload needs review.");
+      const next = data.platformVersion || version;
+      setVersion(next);
+      setPublishState(data.attempt?.status || "processing");
+      setMessage(data.attempt?.status === "succeeded" ? "YouTube upload and processing completed." :
+        "YouTube upload is recorded. Use Continue / Check status until processing completes.");
+      router.refresh();
+    } catch (cause) { setError(cause.message); }
+    finally { setPublishing(false); }
+  }
   return <section className={styles.platformEditor} data-platform="youtube">
     <div className={styles.sectionHeader}>
       <div className={styles.platformHeading}>
@@ -108,7 +128,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       </div>
       <p>{version.customized ? "Customized for this channel" : "Using shared content"}</p>
     </div>
-    <div className={styles.notice}>Metadata preparation only. YouTube upload, thumbnail submission, Publish Now, and scheduling remain disabled. Saving here does not upload anything.</div>
+    <div className={styles.notice}>YouTube video publishing is available for real content. Upload uses resumable sessions; processing and custom thumbnails may require additional status checks. Scheduling is not enabled yet.</div>
     {error ? <div className={styles.errorNotice}>{error}</div> : null}
     {message ? <div className={styles.successNotice}>{message}</div> : null}
     {masterChanged ? <div className={styles.notice}>Master Content changed. Your YouTube-specific changes remain intact until you choose Update from Master.</div> : null}
@@ -154,6 +174,18 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               requestSave({ action: "reset_from_master" }, true); }}>Update from Master</button>
           <button type="button" className={styles.button} disabled={busy || !dirty || validation.blocking.length > 0}
             onClick={() => requestSave(form)}>{busy ? "Saving…" : dirty ? "Save YouTube Version" : "Saved"}</button>
+          <div className={styles.formActions}>
+            {publishState === "succeeded" || version.lastPublishStatus === "succeeded" ? (
+              version.providerPostUrl ? <a className={styles.button} href={version.providerPostUrl} target="_blank" rel="noreferrer">View YouTube Video</a> :
+              <span>Published on YouTube</span>
+            ) : publishState && publishState !== "failed" ? (
+              <button type="button" className={styles.buttonSecondary} disabled={publishing || busy}
+                onClick={() => publishAction(true)}>{publishing ? "Checking…" : "Continue upload / Check processing"}</button>
+            ) : (
+              <button type="button" className={styles.button} disabled={publishing || busy || dirty || validation.blocking.length > 0}
+                onClick={() => publishAction(false)}>{publishing ? "Starting upload…" : "Upload to YouTube"}</button>
+            )}
+          </div>
         </div>
       </div>
       <div>
