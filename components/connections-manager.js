@@ -20,7 +20,7 @@ function labelHealth(status) {
 function labelConnectionPlatform(connection) {
   return connection.platform === "instagram"
     ? "Instagram Professional"
-    : connection.platform === "linkedin" ? "LinkedIn personal profile" : "Facebook Page";
+    : connection.platform === "linkedin" ? "LinkedIn personal profile" : connection.platform === "youtube" ? "YouTube channel" : "Facebook Page";
 }
 
 function labelRequestPlatform(platform) {
@@ -312,6 +312,21 @@ function ClientConnectionsManager({
             </div>
           </article>
 
+          {!configuration.youtubeReady ? (
+            <div className={styles.notice}>YouTube setup is waiting for: <strong>{configuration.missingYoutube.join(", ")}</strong></div>
+          ) : null}
+          <article className={styles.connectionProviderCard}>
+            <div className={styles.providerMark}>YT</div>
+            <div className={styles.connectionProviderBody}>
+              <strong>YouTube channel</strong>
+              <p>Authorize Google, then confirm the exact YouTube channel before connecting. No videos will be uploaded.</p>
+            </div>
+            <div className={styles.connectionActions}>
+              {configuration.youtubeReady ? (
+                <a className={styles.button} href={`/api/connections/youtube/start?clientId=${selectedClient._id}`}>Connect</a>
+              ) : <button type="button" className={styles.button} disabled>Connect</button>}
+            </div>
+          </article>
           {!selectedClient.approvalReportEmail ? (
             <p className={styles.fieldHint}>
               Add an Approval / Report Email to this client before requesting
@@ -360,7 +375,7 @@ function ClientConnectionsManager({
                     {connection.healthMessage ? (
                       <p>{connection.healthMessage}</p>
                     ) : null}
-                    {connection.platform === "linkedin" && connection.tokenExpiresAt ? (
+                    {["linkedin", "youtube"].includes(connection.platform) && connection.tokenExpiresAt ? (
                       <p>Authorization expires {formatDate(connection.tokenExpiresAt)}</p>
                     ) : null}
                   </div>
@@ -379,6 +394,10 @@ function ClientConnectionsManager({
                     </span>
                   </div>
                   <div className={styles.connectionItemActions}>
+                    {connection.platform === "youtube" && (
+                      <a className={styles.buttonSecondary}
+                        href={`/api/connections/youtube/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>Reconnect</a>
+                    )}
                     {connection.platform === "linkedin" && (
                       <a className={styles.buttonSecondary}
                         href={`/api/connections/linkedin/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>
