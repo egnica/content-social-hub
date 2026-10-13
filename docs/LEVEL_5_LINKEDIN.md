@@ -4,11 +4,11 @@ Active phase for Content Social Hub as of October 12, 2026. Nicholas approved mo
 
 ## Phase state
 
-- Status: **OPEN — personal OAuth code prepared; deployment and live verification pending**
-- Active task: **L5-LI-02 (`MANUAL` — deployment and live account verification pending)**
+- Status: **OPEN — personal OAuth deployed and initial/reconnect live checks passed; remaining acceptance verification pending**
+- Active task: **L5-LI-02 (`MANUAL` — remaining automated and connection-request acceptance checks pending)**
 - Personal test destination: Nicholas Egner personal profile (`https://www.linkedin.com/in/nicholas-egner`) under Content Social Hub client `Nicholas_Egner`; initial organization Page: `https://www.linkedin.com/company/nicholas-egner-digital-marketing` (association verified in developer app, API publishing approval still unavailable)
 - Developer app created and associated with Nicholas Egner Company Page; Share on LinkedIn Default Tier provisioned; `w_member_social` verified; callback registered. Community Management API Development Tier access request button disabled; organization publishing unapproved, reason not confirmed.
-- LinkedIn integration: **personal OAuth code prepared on implementation branch; not deployed or live verified**
+- LinkedIn integration: **personal OAuth deployed on main; initial authorization and same-member reconnect succeeded in production October 13, 2026**
 - Google `L5-GBP-01`: **MANUAL**, pending approval (case `1-5407000042073`, project number `503771980348`).
 
 ## Architecture and boundaries
@@ -28,7 +28,7 @@ Reuse client-scoped social connections, encrypted credentials, independent desti
 | L5-LI-07 | `WAITING` | Background scheduling | Existing worker, safe cancellation, stale revision, browser-closed proof and re-entry |
 | L5-LI-08 | `WAITING` | Final live integration review | Accepted real-account evidence, regression review and handoff |
 
-L5-LI-02 awaits the external configuration, deployment, and live verification checkpoint; no later task is READY. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
+L5-LI-02 awaits remaining test/lint/build, client isolation, and emailed Request Connection evidence; no later task is READY. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
 
 ## L5-LI-01 — Developer Access Readiness
 
@@ -99,3 +99,15 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - Files changed: `lib/linkedin.js`, `app/api/connections/linkedin/callback/route.js`, `app/connect/linkedin/error/page.js`, this phase document.
 - Automated checks: not executed in this environment. Pending build/lint/unit tests and real Reconnect retest after deployment. No LinkedIn publication, company Page access, or unrelated roadmap work attempted.
 - Next verification: wait for Amplify deployment, retry Reconnect with the same personal profile, inspect the newly logged operation/status if it still fails, verify the existing connection ID and Account Health, then document the outcome before marking L5-LI-02 DONE.
+
+### October 13, 2026: Personal OAuth and reconnect production evidence
+
+- Task: **L5-LI-02**; status stays **MANUAL** because several acceptance checks remain unproven. No new roadmap task opened.
+- External configuration verified by observed real authorization: private Amplify `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` configured; LinkedIn Share on LinkedIn and Sign In with LinkedIn using OpenID Connect both provisioned; real callback works. Secrets were not copied into project records.
+- Production OAuth: operator selected `Nicholas_Egner`, completed LinkedIn login/consent, confirmed personal profile **Nicholas Egner**, saw 'LinkedIn connected' confirmation and an account with initial **Healthy** status. Initial token expiration displayed **December 12, 2026, 5:35 AM Central**.
+- Reconnect: initial attempt failed; CloudWatch reported a LinkedInApiError on October 13 at 6:44:12 CDT, without a specific provider code. Diagnostics improvement was merged in PR #5, commit `a8e18fd`. Later attempt succeeded: the same Nicholas Egner profile displayed 'LinkedIn connected'; the same connected-account entry stayed **Healthy** and expiration moved to **December 12, 2026, 5:59 AM Central**. Screenshot shows updated health-check time at October 13, 2026, 7:00 AM Central. This confirms UI-level token replacement and same-person reconnect; database-level record ID and historical reference continuity were **not independently checked**.
+- UX regression: LinkedIn 'Check now' originally wrapped due to a fifth grid item; the grouping/no-wrap fix was merged in PR #4 (`6f0f708`), and a later production screenshot shows 'Reconnect' and 'Check now' aligned side by side.
+- Files changed during task: earlier implementation files recorded above; final diagnostics updated `lib/linkedin.js`, `app/api/connections/linkedin/callback/route.js`, `app/connect/linkedin/error/page.js`, and this log. This entry records evidence only.
+- Automated verification: `npm test`, `npm run lint`, `npm run build` **not executed here**; no configured GitHub Actions workflows observed. Run these checks in a local checkout or CI and capture results before DONE.
+- Live acceptance remaining: click LinkedIn **Check now** after reconnect and record result; verify client isolation, emailed 48-hour Request Connection and one-time link invalidation, expiry/permission-failure behavior, and saved connection identifier/history preservation across reconnection. The screenshots support Healthy status, but not all those checks.
+- Decision: preserve L5-LI-02 as MANUAL; L5-LI-03 remains BLOCKED on Community Management API approval, and L5-LI-04 remains WAITING. Do not declare LinkedIn Level 5 complete.
