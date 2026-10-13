@@ -137,23 +137,51 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
     } finally { setBusy(false); }
   }
   async function publishAction(resume = false) {
-    if (!resume && !window.confirm("Upload this video to the selected YouTube channel using the chosen visibility and audience settings? This creates a real YouTube video and cannot be undone by cancelling a schedule.")) return;
+    if (!resume && !window.confirm("Upload this video to the selected YouTube channel using the chosen visibility and audience settings? This creates a real YouTube video.")) return;
     setPublishing(true); setError(""); setMessage("");
     try {
-      const response = await fetch(`/api/platform-versions/${version._id}/publish`, {
-        method: resume ? "GET" : "POST", cache: "no-store",
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "YouTube upload needs review.");
-      const next = data.platformVersion || version;
-      setVersion(next);
-      setPublishState(data.attempt?.status || "processing");
-      setAttempt(data.attempt || null);
-      setMessage(data.attempt?.status === "succeeded" ? "YouTube upload and processing completed." :
-        "YouTube upload is recorded. Use Continue / Check status until processing completes.");
+      // POST creates exactly one upload session. All later calls use GET to reconcile
+      // that same session; the browser must never issue another create request.
+      let method = resume ? "GET" : "POST";
+      let previousOffset = -1;
+      for (let step = 0; step < 100; step += 1) {
+        const response = await fetch(`/api/platform-versions/${version._id}/publish`, {
+          method, cache: "no-store",
+        });
+        method = "GET";
+        const data = await response.json();
+        if (data.attempt) {
+          setAttempt(data.attempt);
+          setPublishState(data.attempt.status);
+        }
+        if (data.platformVersion) setVersion(data.platformVersion);
+        if (!response.ok) throw new Error(data.error || "YouTube upload needs review.");
+        const current = data.attempt;
+        if (!current) throw new Error("YouTube did not return the saved upload attempt.");
+        if (current.status === "uploading") {
+          if (Number(current.bytesUploaded || 0) === previousOffset) {
+            throw new Error("Upload is not advancing. Saved session is preserved; check its status before continuing.");
+          }
+          previousOffset = Number(current.bytesUploaded || 0);
+          setMessage("Transferring video to YouTube using the saved session…");
+          continue;
+        }
+        if (current.status === "processing") {
+          setMessage("Video bytes received by YouTube. Processing is pending; check status to finalize the thumbnail.");
+          break;
+        }
+        if (current.status === "succeeded") {
+          setMessage("YouTube processing complete. See the recorded video and thumbnail status.");
+          break;
+        }
+        setMessage("Upload needs review. No duplicate upload will be started.");
+        break;
+      }
       router.refresh();
-    } catch (cause) { setError(cause.message); await reconcileUpload(); }
-    finally { setPublishing(false); }
+    } catch (cause) {
+      setError(cause.message);
+      await reconcileUpload();
+    } finally { setPublishing(false); }
   }
   return <section className={styles.platformEditor} data-platform="youtube">
     <div className={styles.sectionHeader}>
@@ -224,7 +252,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               <span>Published on YouTube</span>
             ) : publishState && publishState !== "failed" && publishState !== "unknown" && publishState !== "needs_review" && publishState !== "submitting" ? (
               <button type="button" className={styles.buttonSecondary} disabled={publishing || busy}
-                onClick={() => publishAction(true)}>{publishing ? "Checking…" : "Continue upload / Check processing"}</button>
+                onClick={() => publishAction(true)}>{publishing ? "Uploading / checking…" : "Continue upload / Check processing"}</button>
             ) : publishState === "unknown" || publishState === "needs_review" || publishState === "submitting" || publishState === "failed" ? (
               <button type="button" className={styles.buttonSecondary} disabled={publishing} onClick={reconcileUpload}>Refresh saved status</button>
             ) : (
