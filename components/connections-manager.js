@@ -378,20 +378,22 @@ function ClientConnectionsManager({
                       Checked {formatDate(connection.lastHealthCheckAt)}
                     </span>
                   </div>
-                  {connection.platform === "linkedin" && (
-                    <a className={styles.buttonSecondary}
-                      href={`/api/connections/linkedin/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>
-                      Reconnect
-                    </a>
-                  )}
-                  <button
-                    className={styles.buttonGhost}
-                    type="button"
-                    onClick={() => checkHealth(connection._id)}
-                    disabled={checkingId === connection._id}
-                  >
-                    {checkingId === connection._id ? "Checking" : "Check now"}
-                  </button>
+                  <div className={styles.connectionItemActions}>
+                    {connection.platform === "linkedin" && (
+                      <a className={styles.buttonSecondary}
+                        href={`/api/connections/linkedin/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>
+                        Reconnect
+                      </a>
+                    )}
+                    <button
+                      className={styles.buttonGhost}
+                      type="button"
+                      onClick={() => checkHealth(connection._id)}
+                      disabled={checkingId === connection._id}
+                    >
+                      {checkingId === connection._id ? "Checking" : "Check now"}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
