@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseYouTubeUploadRange, isAllowedYouTubeUploadSession, youtubeVideoUrl,
-  nextYouTubeChunkEnd, probeYouTubeResumableUpload, sendYouTubeUploadChunk,
+  nextYouTubeChunkEnd, probeYouTubeResumableUpload, sendYouTubeUploadChunk, readYouTubeVideoThumbnails,
 } from "../lib/youtube-uploader.js";
 test("YouTube session host and upload ID must be trusted", () => {
   assert.equal(isAllowedYouTubeUploadSession("https://www.googleapis.com/upload/youtube/v3/videos?upload_id=xyz"), true);
@@ -100,5 +100,29 @@ test("YouTube upload does not follow a redirect from the resumable session endpo
     });
     assert.equal(result.offset, 262144);
     assert.equal(calls, 1);
+  } finally { globalThis.fetch = original; }
+});
+
+test("YouTube thumbnail readback uses read-only videos.list without any upload request", async () => {
+  const original = globalThis.fetch;
+  const requests = [];
+  const id = "abcdefghijk";
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return new Response(JSON.stringify({ items: [{
+      id, snippet: { channelId: "UC-test", thumbnails: {
+        high: { url: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` },
+      } },
+    }] }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  try {
+    const result = await readYouTubeVideoThumbnails({ accessToken: "fake", videoId: id });
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].options.method, "GET");
+    assert.equal(requests[0].options.body, undefined);
+    assert.match(requests[0].url, /part=snippet/);
+    assert.equal(result.items[0].snippet.channelId, "UC-test");
+    assert.equal(result.items[0].snippet.thumbnails.high.url,
+      `https://i.ytimg.com/vi/${id}/hqdefault.jpg`);
   } finally { globalThis.fetch = original; }
 });
