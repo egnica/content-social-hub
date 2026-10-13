@@ -22,10 +22,27 @@ test("single-image and health validation", () => {
   assert.equal(validateLinkedInPublishDraft(input).publishable,true);
   assert.equal(validateLinkedInPublishDraft({...input,mediaIds:["a","b"]}).publishable,false);
   assert.equal(validateLinkedInPublishDraft({...input,healthStatus:"expired"}).publishable,false);
-  assert.equal(validateLinkedInPublishDraft({...input,mediaAssets:[{_id:"a",contentType:"video/mp4",size:2000}]}).publishable,false);
+  assert.equal(validateLinkedInPublishDraft({...input,mediaAssets:[{_id:"a",contentType:"video/mp4",size:2000}]}).publishMode,"video");
 });
 test("only definitive provider rejections permit resubmission", () => {
   assert.equal(isLinkedInDefinitiveFailure({name:"LinkedInPublishApiError",status:403}),true);
   assert.equal(isLinkedInDefinitiveFailure({name:"LinkedInPublishApiError",status:502}),false);
   assert.equal(isLinkedInDefinitiveFailure(new Error("timeout")),false);
+});
+
+test("LinkedIn media publish modes and safety limits", () => {
+  const asset=(id)=>({_id:id,contentType:"image/jpeg",size:1000});
+  const one={message:"Images",healthStatus:"healthy",canPublish:true,
+    mediaIds:["a","b"],mediaAssets:[asset("a"),asset("b")]};
+  assert.equal(validateLinkedInPublishDraft(one).publishMode,"multi_image");
+  assert.equal(validateLinkedInPublishDraft(one).publishable,true);
+  assert.equal(validateLinkedInPublishDraft({...one,mediaIds:["a","b","c"]}).publishable,false);
+  const video={message:"Video",healthStatus:"healthy",canPublish:true,
+    mediaIds:["v"],mediaAssets:[{_id:"v",contentType:"video/mp4",size:4096}]};
+  assert.equal(validateLinkedInPublishDraft(video).publishMode,"video");
+  assert.equal(validateLinkedInPublishDraft(video).publishable,true);
+  assert.equal(validateLinkedInPublishDraft({...video,mediaIds:["v","a"],
+    mediaAssets:[video.mediaAssets[0],asset("a")]}).publishable,false);
+  assert.equal(validateLinkedInPublishDraft({...video,mediaAssets:[{...video.mediaAssets[0],
+    size:501*1024*1024}]}).publishable,false);
 });
