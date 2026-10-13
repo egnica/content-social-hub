@@ -55,15 +55,23 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
           <label className={styles.fieldFull}><span className={styles.label}>Link to share (optional)</span>
             <input className={styles.input} type="url" value={form.destinationUrl} placeholder="https://example.com"
               onChange={(event)=>update("destinationUrl",event.target.value)} /></label>
-          <label className={styles.fieldFull}><span className={styles.label}>Attached image (optional)</span>
-            <select className={styles.select} value={form.mediaIds[0] || ""} onChange={(event)=>update("mediaIds",event.target.value ? [event.target.value] : [])}>
-              <option value="">No image</option>
-              {media.filter((asset)=>asset.contentType?.startsWith("image/")).map((asset)=>
-                <option key={String(asset._id)} value={String(asset._id)}>{asset.originalName || "Image"}</option>)}
-            </select>
-          </label>
+          <fieldset className={styles.fieldFull} style={{border:"1px solid #d8dde3",borderRadius:8,padding:12}}>
+            <legend className={styles.label}>LinkedIn media (up to 20 images or one MP4 video)</legend>
+            {media.filter((asset)=>/^(image\/(jpeg|png|gif)|video\/mp4)$/.test(asset.contentType||"")).map((asset)=>{
+              const id=String(asset._id);
+              const checked=form.mediaIds.includes(id);
+              const isVideo=asset.contentType==="video/mp4";
+              const hasVideo=media.some((a)=>form.mediaIds.includes(String(a._id))&&a.contentType==="video/mp4");
+              return <label key={id} style={{display:"block",margin:"8px 0"}}>
+                <input type="checkbox" checked={checked}
+                  disabled={!checked&&(form.mediaIds.length>=20||hasVideo||(isVideo&&form.mediaIds.length>0))}
+                  onChange={(event)=>update("mediaIds",event.target.checked?[...form.mediaIds,id]:form.mediaIds.filter((x)=>x!==id))} />
+                {" "}{asset.originalName||"Attached media"} {isVideo?"(video)":"(image)"}
+              </label>;
+            })}
+          </fieldset>
         </div>
-        <p className={styles.fieldHint}>Video and carousel LinkedIn drafts are not supported yet.</p>
+        <p className={styles.fieldHint}>Multi-image is an organic post with 2–20 images, not a LinkedIn carousel ad. A video must be selected alone.</p>
         <div className={styles.formActions}>
           <button className={styles.buttonSecondary} type="button" disabled={busy}
             onClick={()=>{if((dirty || version.customized) && !window.confirm("Replace LinkedIn edits with Master Content?")) return; save({action:"reset_from_master"},true);}}>Update from Master</button>
@@ -80,6 +88,8 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
           <p style={{whiteSpace:"pre-wrap",padding:16,overflowWrap:"anywhere"}}>{form.message || "Your LinkedIn post text"}</p>
           {selected && selected.contentType?.startsWith("image/") ?
             <img src={selected.previewUrl || `/api/media/${selected._id}/url`} alt="" style={{display:"block",width:"100%",maxHeight:400,objectFit:"contain"}}/> : null}
+          {selected?.contentType==="video/mp4" ? <p style={{padding:16}}>Video selected: {selected.originalName || "MP4 video"}</p> : null}
+          {form.mediaIds.length>1 ? <p style={{padding:16}}>Multi-image post · {form.mediaIds.length} images</p> : null}
           {form.destinationUrl ? <div style={{padding:16,background:"#f5f7f9",overflowWrap:"anywhere"}}>Link: {form.destinationUrl}</div> : null}
         </div>
       </div>
