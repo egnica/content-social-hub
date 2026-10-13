@@ -36,6 +36,7 @@ export default async function EditContentPage({ params }) {
     _id: content._id,
     clientId: content.clientId,
     revision: content.revision,
+    contentLength: content.contentLength || "short",
     text: content.text,
     primaryUrl: content.primaryUrl,
     media: content.media || [],
