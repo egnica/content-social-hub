@@ -88,12 +88,22 @@ export default function DestinationScheduleControls({
   const [destinationLocalDateTime, setDestinationLocalDateTime] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const platform = version.platform === "instagram" ? "instagram" : "facebook";
-  const platformLabel = platform === "instagram" ? "Instagram" : "Facebook";
+  const platform = ["facebook", "instagram", "linkedin"].includes(version.platform)
+    ? version.platform
+    : "facebook";
+  const platformLabel = {
+    facebook: "Facebook",
+    instagram: "Instagram",
+    linkedin: "LinkedIn",
+  }[platform];
   const destinationName =
     version.destinationName ||
     destination?.accountName ||
-    (platform === "instagram" ? "Instagram account" : "Facebook Page");
+    (platform === "instagram"
+      ? "Instagram account"
+      : platform === "linkedin"
+        ? "LinkedIn personal profile"
+        : "Facebook Page");
   const clientTimezone =
     scheduleState?.clientTimezone || masterContent.clientTimezone || "";
 
@@ -166,11 +176,15 @@ export default function DestinationScheduleControls({
       releaseSource,
     ],
   );
-  const choiceError = releaseChoiceError(
-    resolvedChoice,
-    version,
-    platformLabel,
-  );
+  const tokenExpiresBeforeRelease =
+    platform === "linkedin" &&
+    Boolean(scheduleState?.tokenExpiresAt) &&
+    resolvedChoice.ok &&
+    new Date(scheduleState.tokenExpiresAt).getTime() <=
+      resolvedChoice.releaseAt.getTime();
+  const choiceError = tokenExpiresBeforeRelease
+    ? "LinkedIn authorization expires before this release. Reconnect closer to the release date before scheduling."
+    : releaseChoiceError(resolvedChoice, version, platformLabel);
   const activeSchedule = scheduleState?.schedule?.active === true;
   const currentSchedule = scheduleState?.schedule || null;
   const serverBlocking = scheduleState?.validation?.blocking || [];

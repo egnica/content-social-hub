@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import PlatformIcon from "@/components/platform-icon";
 import LinkedInPublishControls from "@/components/linkedin-publish-controls";
+import DestinationScheduleControls from "@/components/facebook-schedule-controls";
+import DestinationPublishingPanel from "@/components/destination-publishing-panel";
 import styles from "@/components/ui.module.css";
 import { isLinkedInVersionOutOfSync, validateLinkedInVersionDraft } from "@/lib/platform-version-logic";
 
@@ -23,6 +25,10 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
     canPublish: destination?.canPublish });
   const selected = media.find((asset) => form.mediaIds.includes(String(asset._id)));
   const accountName = version.destinationName || destination?.accountName || "LinkedIn profile";
+  const published = Number(version.publishedRevision || 0) === Number(version.revision || 1);
+  const publishAttention = ["submitting", "processing", "unknown"].includes(
+    String(version.lastPublishStatus || "").toLowerCase(),
+  );
   const update = (key, value) => { setForm((prev) => ({...prev,[key]:value})); setDirty(true); setError(""); setMessage(""); };
   async function save(payload, reset = false) {
     setBusy(true); setError(""); setMessage("");
@@ -94,8 +100,37 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
         </div>
       </div>
     </div>
-    <LinkedInPublishControls version={version} destination={destination} form={form} media={media}
-      dirty={dirty} busy={busy} timezone={masterContent.clientTimezone} onPublished={handlePublished} />
-    <div className={styles.notice}>LinkedIn background scheduling is not enabled yet.</div>
+    <DestinationPublishingPanel
+      published={published}
+      attention={publishAttention}
+      destinationName={accountName}
+      schedule={
+        <div>
+          <p className={styles.fieldHint}>
+            Scheduled LinkedIn publishing supports text, links, or one image.
+            Multi-image and video scheduling awaits live verification.
+          </p>
+          <DestinationScheduleControls
+            version={version}
+            destination={destination}
+            masterContent={masterContent}
+            dirty={dirty}
+            busy={busy}
+          />
+        </div>
+      }
+      publish={
+        <LinkedInPublishControls
+          version={version}
+          destination={destination}
+          form={form}
+          media={media}
+          dirty={dirty}
+          busy={busy}
+          timezone={masterContent.clientTimezone}
+          onPublished={handlePublished}
+        />
+      }
+    />
   </section>;
 }

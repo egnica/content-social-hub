@@ -319,3 +319,107 @@ test("success fields preserve provider result and deactivate schedule", () => {
     },
   );
 });
+
+const linkedInVersion = {
+  ...version,
+  platform: "linkedin",
+  clientId: "client-A",
+  socialConnectionId: "connection-A",
+  providerAccountId: "member-A",
+};
+const linkedInSchedule = {
+  ...schedule,
+  platform: "linkedin",
+  clientId: "client-A",
+  socialConnectionId: "connection-A",
+  providerAccountId: "member-A",
+};
+
+test("LinkedIn scheduled personal post is claimable with the exact saved member", () => {
+  assert.deepEqual(
+    evaluateScheduledReleaseDispatch({
+      schedule: linkedInSchedule,
+      version: linkedInVersion,
+    }),
+    { action: "claim", reason: "ready" },
+  );
+});
+
+test("LinkedIn scheduled member, client and connection cannot be swapped", () => {
+  for (const changed of [
+    { clientId: "client-B" },
+    { socialConnectionId: "connection-B" },
+    { providerAccountId: "member-B" },
+    { providerAccountId: "" },
+  ]) {
+    assert.deepEqual(
+      evaluateScheduledReleaseDispatch({
+        schedule: { ...linkedInSchedule, ...changed },
+        version: linkedInVersion,
+      }),
+      { action: "noop", reason: "destination_mismatch" },
+    );
+  }
+});
+
+test("LinkedIn cancelled, stale, published and succeeded schedules never resubmit", () => {
+  for (const [scheduled, actual] of [
+    [{ ...linkedInSchedule, state: "cancelled", active: false }, linkedInVersion],
+    [{ ...linkedInSchedule, platformVersionRevision: 5 }, linkedInVersion],
+    [linkedInSchedule, { ...linkedInVersion, publishedRevision: 6 }],
+    [{ ...linkedInSchedule, state: "succeeded", active: false }, linkedInVersion],
+  ]) {
+    assert.equal(
+      evaluateScheduledReleaseDispatch({ schedule: scheduled, version: actual }).action,
+      "noop",
+    );
+  }
+});
+
+test("LinkedIn definite transient errors retry within the shared bound", () => {
+  const error = {
+    name: "LinkedInPublishProviderError",
+    attempt: { status: "failed", providerError: { isTransient: true } },
+  };
+  assert.equal(
+    classifyScheduledDispatchError(error, linkedInSchedule).outcome,
+    "retry",
+  );
+  assert.equal(
+    classifyScheduledDispatchError(error, {
+      ...linkedInSchedule, retryCount: MAX_SCHEDULED_RELEASE_AUTOMATIC_RETRIES,
+    }).outcome,
+    "failed",
+  );
+});
+
+test("LinkedIn ambiguous publish and conflict outcomes lock without retries", () => {
+  for (const error of [
+    {
+      name: "LinkedInPublishProviderError",
+      attempt: { status: "unknown", providerError: { isTransient: true } },
+    },
+    {
+      name: "LinkedInPublishConflictError",
+      attempt: { status: "submitting" },
+    },
+  ]) {
+    assert.equal(
+      classifyScheduledDispatchError(error, linkedInSchedule).outcome,
+      "review_required",
+    );
+  }
+});
+
+test("LinkedIn scheduled success stores exact remote ID and URL", () => {
+  const data = buildScheduleSuccessFields({
+    attempt: {
+      _id: "attempt-1",
+      providerPostId: "urn:li:ugcPost:1234",
+      providerPostUrl: "https://www.linkedin.com/feed/update/urn%3Ali%3AugcPost%3A1234/",
+    },
+  });
+  assert.equal(data.active, false);
+  assert.equal(data.providerPostId, "urn:li:ugcPost:1234");
+  assert.match(data.providerPostUrl, /linkedin.com\/feed\/update/);
+});
