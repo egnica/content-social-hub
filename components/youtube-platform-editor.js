@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import PlatformIcon from "@/components/platform-icon";
 import styles from "@/components/ui.module.css";
@@ -60,6 +60,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [busy, setBusy] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishState, setPublishState] = useState(initialVersion.lastPublishStatus || "");
+  const [attempt, setAttempt] = useState(null);
+  const [statusLoaded, setStatusLoaded] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const media = masterContent.media || [];
@@ -80,6 +82,38 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
     canPublish: destination?.canPublish === true,
   });
   const preparedDescription = prepareYouTubeDescription(form.description, form.chapters);
+  async function reconcileUpload() {
+    try {
+      const response = await fetch(`/api/platform-versions/${version._id}/publish?statusOnly=1`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Upload status unavailable. Do not start another upload until it is checked.");
+      const data = await response.json();
+      if (data.attempt) {
+        setAttempt(data.attempt);
+        setPublishState(data.attempt.status);
+      }
+      if (data.platformVersion) setVersion(data.platformVersion);
+      return data.attempt;
+    } catch (cause) {
+      setError(cause.message);
+      setPublishState("unknown");
+      return null;
+    } finally { setStatusLoaded(true); }
+  }
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/platform-versions/${initialVersion._id}/publish?statusOnly=1`, { cache: "no-store" })
+      .then(async response => {
+        if (!response.ok) throw new Error("Upload status unavailable. Starting another upload is blocked.");
+        return response.json();
+      }).then(data => {
+        if (cancelled) return;
+        if (data.attempt) { setAttempt(data.attempt); setPublishState(data.attempt.status); }
+        if (data.platformVersion) setVersion(data.platformVersion);
+      }).catch(cause => {
+        if (!cancelled) { setError(cause.message); setPublishState("unknown"); }
+      }).finally(() => { if (!cancelled) setStatusLoaded(true); });
+    return () => { cancelled = true; };
+  }, [initialVersion._id]);
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
     setDirty(true); setError(""); setMessage("");
@@ -114,10 +148,11 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       const next = data.platformVersion || version;
       setVersion(next);
       setPublishState(data.attempt?.status || "processing");
+      setAttempt(data.attempt || null);
       setMessage(data.attempt?.status === "succeeded" ? "YouTube upload and processing completed." :
         "YouTube upload is recorded. Use Continue / Check status until processing completes.");
       router.refresh();
-    } catch (cause) { setError(cause.message); }
+    } catch (cause) { setError(cause.message); await reconcileUpload(); }
     finally { setPublishing(false); }
   }
   return <section className={styles.platformEditor} data-platform="youtube">
@@ -168,6 +203,15 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
           </label>
         </div>
+        <div className={styles.notice} aria-live="polite">
+          <strong>YouTube upload:</strong> {!statusLoaded ? "Checking saved status…" :
+            !attempt && publishState !== "unknown" ? "Not started" :
+            publishState === "unknown" ? "Status unavailable. New uploads disabled." :
+            `${attempt?.status || publishState}${attempt?.bytesUploaded ? ` · ${(attempt.bytesUploaded / (video?.size || 1) * 100).toFixed(1)}% transferred` : ""}`}
+          {attempt?.providerPostUrl ? <span> · <a href={attempt.providerPostUrl} target="_blank" rel="noreferrer">View on YouTube</a></span> : null}
+          {attempt?.providerError ? <p>{typeof attempt.providerError === "string" ? attempt.providerError : attempt.providerError.message}</p> : null}
+          {attempt?.thumbnailStatus ? <p>Thumbnail: {attempt.thumbnailStatus}{attempt.thumbnailError ? ` · ${attempt.thumbnailError}` : ""}</p> : null}
+        </div>
         <div className={styles.formActions} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <button type="button" className={styles.buttonSecondary} disabled={busy}
             onClick={() => { if ((dirty || version.customized) && !window.confirm("Replace YouTube edits with current Master Content?")) return;
@@ -178,11 +222,13 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             {publishState === "succeeded" || version.lastPublishStatus === "succeeded" ? (
               version.providerPostUrl ? <a className={styles.button} href={version.providerPostUrl} target="_blank" rel="noreferrer">View YouTube Video</a> :
               <span>Published on YouTube</span>
-            ) : publishState && publishState !== "failed" ? (
+            ) : publishState && publishState !== "failed" && publishState !== "unknown" && publishState !== "needs_review" && publishState !== "submitting" ? (
               <button type="button" className={styles.buttonSecondary} disabled={publishing || busy}
                 onClick={() => publishAction(true)}>{publishing ? "Checking…" : "Continue upload / Check processing"}</button>
+            ) : publishState === "unknown" || publishState === "needs_review" || publishState === "submitting" || publishState === "failed" ? (
+              <button type="button" className={styles.buttonSecondary} disabled={publishing} onClick={reconcileUpload}>Refresh saved status</button>
             ) : (
-              <button type="button" className={styles.button} disabled={publishing || busy || dirty || validation.blocking.length > 0}
+              <button type="button" className={styles.button} disabled={!statusLoaded || publishing || busy || dirty || validation.blocking.length > 0}
                 onClick={() => publishAction(false)}>{publishing ? "Starting upload…" : "Upload to YouTube"}</button>
             )}
           </div>
