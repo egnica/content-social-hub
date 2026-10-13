@@ -11,7 +11,9 @@ const messages = {
   invalid: "LinkedIn returned an incomplete authorization response.",
   request: "This LinkedIn connection request is no longer available. Ask for a fresh link.",
   identity: "The authorized LinkedIn profile is different from the profile being reconnected. No credentials were replaced.",
-  provider: "LinkedIn could not complete this connection. Check app permissions and try again.",
+  authorization: "LinkedIn rejected this authorization request. Check the developer app permissions and redirect URL.",
+  storage: "The connection could not be saved or verified. Please try again. Your existing connection was not replaced.",
+  provider: "LinkedIn could not verify this authorization. Your existing connection was not replaced. Please try again or contact support.",
 };
 export default async function LinkedInConnectionErrorPage({ searchParams }) {
   const params = await searchParams;
