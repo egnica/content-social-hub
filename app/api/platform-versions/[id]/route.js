@@ -37,6 +37,7 @@ export async function PATCH(request, { params }) {
         tags: body?.tags,
         recordingDate: body?.recordingDate,
         recordingLocation: body?.recordingLocation,
+        playlistIds: body?.playlistIds,
         message: body?.message,
         destinationUrl: body?.destinationUrl,
         caption: body?.caption,

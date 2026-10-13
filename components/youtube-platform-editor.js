@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import PlatformIcon from "@/components/platform-icon";
@@ -17,6 +17,7 @@ const toDraft = (version) => ({
   mediaIds: (version.mediaIds || []).map(String),
   videoThumbnailMediaId: String(version.videoThumbnailMediaId || ""),
   chapters: version.chapters || "",
+  playlistIds: version.playlistIds || [],
   paidPromotion: version.paidPromotion ?? false,
   containsSyntheticMedia: version.containsSyntheticMedia ?? false,
   defaultLanguage: version.defaultLanguage ?? "en",
@@ -75,6 +76,16 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [statusLoaded, setStatusLoaded] = useState(false);
   const [checkingSession, setCheckingSession] = useState(false);
   const [checkingThumbnail, setCheckingThumbnail] = useState(false);
+  const [playlists, setPlaylists] = useState([]);
+  const [playlistsLoading, setPlaylistsLoading] = useState(true);
+  const [playlistError, setPlaylistError] = useState("");
+  const [playlistCanManage, setPlaylistCanManage] = useState(false);
+  const [playlistReconnectUrl, setPlaylistReconnectUrl] = useState("");
+  const [newPlaylistTitle, setNewPlaylistTitle] = useState("");
+  const [newPlaylistPrivacy, setNewPlaylistPrivacy] = useState("private");
+  const [creatingPlaylist, setCreatingPlaylist] = useState(false);
+  const [assigningPlaylist, setAssigningPlaylist] = useState(false);
+  const [playlistMessage, setPlaylistMessage] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const media = masterContent.media || [];
@@ -173,6 +184,55 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       }).finally(() => { if (!cancelled) setStatusLoaded(true); });
     return () => { cancelled = true; };
   }, [initialVersion._id]);
+  const loadPlaylists = useCallback(async () => {
+    setPlaylistsLoading(true); setPlaylistError("");
+    try {
+      const response = await fetch(`/api/platform-versions/${version._id}/playlists`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not load channel playlists.");
+      setPlaylists(data.playlists || []);
+      setPlaylistCanManage(data.canManage === true);
+      setPlaylistReconnectUrl(data.reconnectUrl || "");
+    } catch (cause) { setPlaylistError(cause.message); }
+    finally { setPlaylistsLoading(false); }
+  }, [version._id]);
+  useEffect(() => { loadPlaylists(); }, [loadPlaylists]);
+  async function createPlaylist() {
+    if (!playlistCanManage || !newPlaylistTitle.trim()) return;
+    if (!window.confirm(`Create a ${newPlaylistPrivacy} YouTube playlist named "${newPlaylistTitle.trim()}" on this channel?`)) return;
+    setCreatingPlaylist(true); setPlaylistError(""); setPlaylistMessage("");
+    try {
+      const response = await fetch(`/api/platform-versions/${version._id}/playlists`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", title: newPlaylistTitle.trim(), privacyStatus: newPlaylistPrivacy }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Playlist creation could not be confirmed. Refresh the list before retrying.");
+      const created = data.playlist;
+      setPlaylists((current) => [...current.filter(item => item.id !== created.id), created]);
+      update("playlistIds", [...new Set([...(form.playlistIds || []), created.id])]);
+      setNewPlaylistTitle("");
+      setPlaylistMessage("Playlist created and selected. Save the YouTube draft to keep this selection.");
+    } catch (cause) { setPlaylistError(cause.message); }
+    finally { setCreatingPlaylist(false); }
+  }
+  async function applyPlaylistsToVideo() {
+    if (dirty) { setPlaylistError("Save the YouTube draft before attaching playlists."); return; }
+    setAssigningPlaylist(true); setPlaylistError(""); setPlaylistMessage("");
+    try {
+      const response = await fetch(`/api/platform-versions/${version._id}/playlists`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "attach" }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Playlist attachment was not confirmed.");
+      setPlaylistMessage(data.status === "added" ? "Video is in the selected playlists." :
+        data.status === "needs_reconnect" ? "Reconnect YouTube for playlist management." :
+        data.status === "none" ? "No playlists were selected." :
+        "Playlist attachment requires review. No duplicate video upload occurred.");
+    } catch (cause) { setPlaylistError(cause.message); }
+    finally { setAssigningPlaylist(false); }
+  }
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
     setDirty(true); setError(""); setMessage("");
@@ -291,6 +351,52 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
           </label>
         </div>
+        <div className={styles.notice} style={{ marginTop: 12 }}>
+          <strong>Playlists</strong>
+          <p className={styles.fieldHint}>Choose one or more playlists for this video. The video is attached after YouTube processing succeeds.</p>
+          <details style={{ marginTop: 8 }}>
+            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Select playlists ({form.playlistIds.length})</summary>
+            {playlistsLoading ? <p>Loading channel playlists…</p> : playlists.length ? (
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {playlists.map((playlist) => (
+                  <label key={playlist.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="checkbox" checked={form.playlistIds.includes(playlist.id)}
+                      onChange={(e) => update("playlistIds", e.target.checked ?
+                        [...new Set([...form.playlistIds, playlist.id])] :
+                        form.playlistIds.filter((id) => id !== playlist.id))} />
+                    <span>{playlist.title} <small>({playlist.privacyStatus})</small></span>
+                  </label>
+                ))}
+              </div>
+            ) : <p className={styles.fieldHint}>No playlists loaded for this channel yet.</p>}
+          </details>
+          {form.playlistIds.length ? <p className={styles.fieldHint}>Selected: {form.playlistIds.map(id => playlists.find(p => p.id === id)?.title || id).join(", ")}</p> : null}
+          <button type="button" className={styles.buttonSecondary} disabled={playlistsLoading} onClick={loadPlaylists}>Refresh playlists</button>
+          {playlistCanManage ? (
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 8, marginTop: 12 }}>
+              <label><span className={styles.label}>Create playlist</span>
+                <input className={styles.input} value={newPlaylistTitle} maxLength={150}
+                  placeholder="New playlist title" onChange={(e) => setNewPlaylistTitle(e.target.value)} /></label>
+              <select className={styles.input} aria-label="New playlist visibility" value={newPlaylistPrivacy}
+                onChange={(e) => setNewPlaylistPrivacy(e.target.value)}>
+                <option value="private">Private</option><option value="unlisted">Unlisted</option>
+                <option value="public">Public</option>
+              </select>
+              <button type="button" className={styles.buttonSecondary}
+                disabled={creatingPlaylist || !newPlaylistTitle.trim()}
+                onClick={createPlaylist}>{creatingPlaylist ? "Creating…" : "+ Create Playlist"}</button>
+            </div>
+          ) : <p className={styles.fieldHint}>Playlist write access isn't granted yet.
+            {playlistReconnectUrl ? <> <a href={playlistReconnectUrl}>Reconnect YouTube for playlist access</a>.</> : null}
+            Existing video uploading remains available without this extra permission.
+          </p>}
+          {playlistError ? <div className={styles.errorNotice}>{playlistError}</div> : null}
+          {playlistMessage ? <p className={styles.fieldHint}>{playlistMessage}</p> : null}
+          {(publishState === "succeeded" || version.lastPublishStatus === "succeeded") ?
+            <button type="button" className={styles.buttonSecondary}
+              disabled={assigningPlaylist || dirty || !playlistCanManage}
+              onClick={applyPlaylistsToVideo}>{assigningPlaylist ? "Checking assignment…" : "Check / apply saved playlist assignment"}</button> : null}
+        </div>
         <details className={styles.notice} style={{ marginTop: 12 }}>
           <summary style={{ cursor: "pointer", fontWeight: 600 }}>Additional YouTube Settings</summary>
           <p className={styles.fieldHint}>Presets are editable for this video. Channel-specific defaults are used when configured.</p>
@@ -346,6 +452,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             `${attempt?.status || publishState}${attempt?.bytesUploaded ? ` · ${(attempt.bytesUploaded / (video?.size || 1) * 100).toFixed(1)}% transferred` : ""}`}
           {attempt?.providerPostUrl ? <span> · <a href={attempt.providerPostUrl} target="_blank" rel="noreferrer">View on YouTube</a></span> : null}
           {attempt?.providerError ? <p>{typeof attempt.providerError === "string" ? attempt.providerError : attempt.providerError.message}</p> : null}
+          {attempt?.playlistAssignmentStatus ? <p>Playlist assignment: {attempt.playlistAssignmentStatus}</p> : null}
           {attempt?.videoThumbnailMediaAssetId || attempt?.thumbnailStatus ? (
             <p><strong>Custom thumbnail:</strong> {youtubeThumbnailStatusLabel(attempt)}.
               {" "}For Shorts, verify the actual image in YouTube Studio on a computer.
