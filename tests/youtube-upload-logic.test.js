@@ -30,6 +30,9 @@ test("YouTube resumable probe uses status request and honors authoritative offse
       sessionUrl: "https://www.googleapis.com/upload/youtube/v3/videos?upload_id=abc",
       accessToken: "fake-token", size: 1048576,
     });
+    assert.equal(seen.method, "PUT");
+    assert.equal(seen.body, undefined);
+    assert.equal(seen.headers["Content-Length"], "0");
     assert.equal(seen.headers["Content-Range"], "bytes */1048576");
     assert.equal(result.offset, 262144);
   } finally { globalThis.fetch = original; }
@@ -53,5 +56,25 @@ test("YouTube chunk upload uses bounded continuous range and refuses arbitrary b
       sessionUrl, accessToken: "fake-token", mimeType: "video/mp4",
       size: 524288, offset: 0, bytes: new Uint8Array(1000),
     }));
+  } finally { globalThis.fetch = original; }
+});
+
+test("zero-byte status probe never starts another video and keeps expired session recoverable", async () => {
+  const original = globalThis.fetch;
+  const calls = [];
+  const sessionUrl = "https://www.googleapis.com/upload/youtube/v3/videos?upload_id=abc";
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, method: options.method, body: options.body, headers: options.headers });
+    return new Response(null, { status: 404 });
+  };
+  try {
+    await assert.rejects(() => probeYouTubeResumableUpload({
+      sessionUrl, accessToken: "fake-token", size: 500000,
+    }), error => error.status === 404);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].method, "PUT");
+    assert.equal(calls[0].url, sessionUrl);
+    assert.equal(calls[0].body, undefined);
+    assert.equal(calls[0].headers["Content-Length"], "0");
   } finally { globalThis.fetch = original; }
 });
