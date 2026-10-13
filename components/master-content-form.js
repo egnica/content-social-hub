@@ -29,6 +29,20 @@ function orientation(width, height) {
   return width > height ? "landscape" : "portrait";
 }
 
+function thumbnailAspectGuidance(asset, contentLength) {
+  const width = Number(asset?.width);
+  const height = Number(asset?.height);
+  if (!(width > 0 && height > 0)) return { dimensions: "", warning: "Image dimensions are unavailable; review the framing before publishing." };
+  const target = contentLength === "long" ? 16 / 9 : 9 / 16;
+  const ratio = width / height;
+  return {
+    dimensions: `${width} × ${height}`,
+    warning: Math.abs(ratio - target) / target > 0.06
+      ? `This image is not ${contentLength === "long" ? "16:9" : "9:16"}. The original will be preserved; check cropping in each platform's destination preview.`
+      : "",
+  };
+}
+
 function inspectImage(file) {
   return new Promise((resolve) => {
     const objectUrl = URL.createObjectURL(file);
@@ -965,27 +979,32 @@ export default function MasterContentForm({
               </select>
             </label>
 
+            <p className={styles.fieldHint} style={{ marginTop: 10 }}>
+              Recommended for {form.contentLength === "long" ? "long-form" : "short-form"} video: <strong>{form.contentLength === "long" ? "16:9 landscape" : "9:16 portrait"}</strong>. The preview frame changes with your selection; the uploaded image is never cropped or altered.
+            </p>
             {selectedThumbnail ? (
-              <div
-                style={{
-                  marginTop: 12,
-                  width: 220,
-                  overflow: "hidden",
-                  border: "1px solid #d8dde3",
-                  borderRadius: 10,
-                  background: "#f4f6f8",
-                }}
-              >
-                <img
-                  src={mediaPreviewUrl(selectedThumbnail)}
-                  alt="Selected video thumbnail"
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    maxHeight: 140,
-                    objectFit: "cover",
-                  }}
-                />
+              <div style={{ marginTop: 12 }}>
+                <div className={styles.thumbnailAspectFrame} style={{
+                  aspectRatio: form.contentLength === "long" ? "16 / 9" : "9 / 16",
+                  width: form.contentLength === "long" ? "min(100%, 320px)" : "min(100%, 188px)",
+                }}>
+                  <img
+                    src={mediaPreviewUrl(selectedThumbnail)}
+                    alt="Selected video thumbnail shown without cropping"
+                    style={{ display: "block", width: "100%", height: "100%", objectFit: "contain" }}
+                  />
+                </div>
+                <p className={styles.fieldHint} style={{ marginTop: 7 }}>
+                  {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).dimensions
+                    ? `Original: ${thumbnailAspectGuidance(selectedThumbnail, form.contentLength).dimensions}`
+                    : "Original dimensions unavailable"}
+                  {" · "}Preview frame: {form.contentLength === "long" ? "16:9" : "9:16"}
+                </p>
+                {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).warning ? (
+                  <div className={styles.thumbnailAspectWarning} role="status">
+                    {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).warning}
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
