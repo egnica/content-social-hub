@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import PlatformIcon from "@/components/platform-icon";
+import LinkedInPublishControls from "@/components/linkedin-publish-controls";
 import styles from "@/components/ui.module.css";
 import { isLinkedInVersionOutOfSync, validateLinkedInVersionDraft } from "@/lib/platform-version-logic";
 
@@ -11,6 +12,8 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
   const [version, setVersion] = useState(initialVersion);
   const [form, setForm] = useState(() => draft(initialVersion));
   const [dirty, setDirty] = useState(false);
+  const published = version.publishedRevision === version.revision && version.lastPublishStatus === "succeeded";
+  function handlePublished(saved) { setVersion(saved); setForm(draft(saved)); setDirty(false); router.refresh(); }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -82,6 +85,8 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
         </div>
       </div>
     </div>
-    <div className={styles.notice}>LinkedIn publishing and scheduling are not enabled. Saving stores a draft only.</div>
+    <LinkedInPublishControls version={version} destination={destination} form={form} media={media}
+      dirty={dirty} busy={busy} timezone={masterContent.clientTimezone} onPublished={handlePublished} />
+    <div className={styles.notice}>LinkedIn background scheduling is not enabled yet.</div>
   </section>;
 }
