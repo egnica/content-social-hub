@@ -12,7 +12,6 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
   const [version, setVersion] = useState(initialVersion);
   const [form, setForm] = useState(() => draft(initialVersion));
   const [dirty, setDirty] = useState(false);
-  const published = version.publishedRevision === version.revision && version.lastPublishStatus === "succeeded";
   function handlePublished(saved) { setVersion(saved); setForm(draft(saved)); setDirty(false); router.refresh(); }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
