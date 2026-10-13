@@ -22,6 +22,7 @@ import {
   publishInstagramReelVersion,
 } from "@/lib/instagram-reel-publishing";
 import { LinkedInPublishConflictError, LinkedInPublishProviderError, publishLinkedInVersion } from "@/lib/linkedin-publishing";
+import { YouTubePublishConflictError, YouTubePublishProviderError, publishYouTubeVersion, resumeYouTubeVersion } from "@/lib/youtube-publishing";
 import { requireApiSession } from "@/lib/session";
 import { assertDestinationNotAwaitingReview } from "@/lib/scheduled-release-guard";
 
@@ -30,7 +31,7 @@ export const dynamic = "force-dynamic";
 function publishErrorResponse(error) {
   if (
     error instanceof PublishConflictError ||
-    error instanceof InstagramPublishConflictError || error instanceof LinkedInPublishConflictError
+    error instanceof InstagramPublishConflictError || error instanceof LinkedInPublishConflictError || error instanceof YouTubePublishConflictError
   ) {
     return Response.json(
       { error: error.message, attempt: error.attempt },
@@ -40,7 +41,7 @@ function publishErrorResponse(error) {
 
   if (
     error instanceof PublishProviderError ||
-    error instanceof InstagramPublishProviderError || error instanceof LinkedInPublishProviderError
+    error instanceof InstagramPublishProviderError || error instanceof LinkedInPublishProviderError || error instanceof YouTubePublishProviderError
   ) {
     return Response.json(
       { error: error.message, attempt: error.attempt },
@@ -110,6 +111,11 @@ export async function POST(_request, { params }) {
       return Response.json(await publishInstagramSingleImageVersion(id));
     }
 
+    if (target?.platform === "youtube") {
+      await assertDestinationNotAwaitingReview(id);
+      return Response.json(await publishYouTubeVersion(id));
+    }
+
     if (target?.platform === "linkedin") {
       await assertDestinationNotAwaitingReview(id);
       return Response.json(await publishLinkedInVersion(id));
@@ -144,6 +150,10 @@ export async function GET(_request, { params }) {
         return Response.json(await checkInstagramReelPublishStatus(id));
       }
       return Response.json(await checkInstagramPublishStatus(id));
+    }
+
+    if (target?.platform === "youtube") {
+      return Response.json(await resumeYouTubeVersion(id));
     }
 
     if (target?.platform === "facebook") {
