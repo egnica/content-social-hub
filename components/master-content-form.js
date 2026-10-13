@@ -826,7 +826,9 @@ export default function MasterContentForm({
                     update("defaultPrimaryMediaId", String(asset._id))
                   }
                 >
-                  <MediaThumbnail asset={asset} />
+                  <span className={form.contentLength === "short" && asset.contentType?.startsWith("video/") ? styles.masterMediaPortraitPreview : undefined}>
+                    <MediaThumbnail asset={asset} />
+                  </span>
                   <span className={styles.masterMediaName}>
                     {asset.originalName}
                   </span>
