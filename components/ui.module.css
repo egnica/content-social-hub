@@ -1943,3 +1943,56 @@
 }
 
 .linkedinIcon { color: #0a66c2; background: #e8f2fc; }
+
+/* Create Content: compact, clearly prioritized client selection. */
+.contentCreateForm {
+  padding: 18px 22px;
+}
+.clientStep {
+  padding: 14px 16px;
+  border: 1px solid #c4ddcc;
+  border-radius: 12px;
+  background: #edf6ef;
+  margin-bottom: 14px;
+}
+.clientStep .sectionHeader {
+  margin-bottom: 9px;
+}
+.clientStep .sectionHeader h2 {
+  font-size: 16px;
+}
+.clientStep .sectionHeader p {
+  margin-top: 3px;
+}
+.clientStepField {
+  display: block;
+}
+.clientStepField > label {
+  width: 100%;
+}
+.clientStepField select {
+  width: 100%;
+  background: #fff;
+}
+.creationStepHeader {
+  margin: 0 0 9px;
+}
+.creationStepHeader h2 {
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+.creationStepHeader p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.contentCreateForm .entryOptions {
+  margin-bottom: 16px;
+}
+.contentCreateForm .entryOption {
+  padding: 10px;
+}
+@media (max-width: 700px) {
+  .contentCreateForm { padding: 14px; }
+  .clientStep { padding: 12px; }
+}
