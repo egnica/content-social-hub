@@ -6,7 +6,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **PAUSED — Google API access approval pending; LinkedIn is the active phase**
+- Status: **PAUSED — Google API access approval pending; YouTube is the active phase as of October 13, 2026**
 - Opened: **October 2, 2026**
 - Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Provider: **Google Business Profile**
@@ -15,7 +15,7 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 - API access: **unverified**
 - Live-test client and exact business location: **unconfirmed**
 - Current Google task: **L5-GBP-01 — Access Readiness (`MANUAL`: Google approval pending)**
-- Active phase: `docs/LEVEL_5_LINKEDIN.md`
+- Active phase: `docs/LEVEL_5_YOUTUBE.md`
 - No Google adapter, OAuth credentials, API access approval, or live publication is proven by opening this document
 
 ## Scope and phase pass condition
@@ -391,3 +391,10 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - No API approval, enabled quota, OAuth configuration, location-scoped connection, or Google publication is yet verified. Check the approval email and project quotas; do not submit a duplicate request. Resume L5-GBP-01 when Google replies.
 - Active handoff moves to `docs/LEVEL_5_LINKEDIN.md`, with `L5-LI-01` READY. Google OAuth and later Google tasks stay WAITING. Level 6 remains unopened.
 - Evidence: user's screenshots of new project, application, and support-case confirmation. Documentation-only GitHub update; no application code, automated tests, or live publishing. Modified `README.md`, `AGENTS.md`, and this file, plus new LinkedIn phase document. Publication explicitly authorized; verify commit results separately.
+
+### October 13, 2026: Active handoff advanced to YouTube
+
+- Google `L5-GBP-01` remains `MANUAL` while Google evaluates case `1-5407000042073`. No new approval, quota, OAuth, exact location selection or Business Profile publishing has been verified, and no additional Google application was submitted.
+- Nicholas approved moving beyond the implemented LinkedIn personal-profile functionality **without artificial live-profile tests**. Deferred LinkedIn `L5-LI-06/07` real-post validation remains recorded in `docs/LEVEL_5_LINKEDIN.md`; the LinkedIn final transition review is owner-accepted with exceptions, not a claim of full provider verification.
+- The next active phase is `docs/LEVEL_5_YOUTUBE.md` with sole `L5-YT-01 READY` for API and target-channel access readiness. YouTube credentials/approval must be validated independently of this Google Business Profile access request. Google Business Profile OAuth and later implementation tasks remain WAITING.
+- This entry is a **documentation-only handoff**. No new Google API calls, tests, builds, or live posts were performed. Keep the current Google access case and any legitimate future approval evidence here.
