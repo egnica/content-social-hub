@@ -130,3 +130,13 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - **Acceptance for L5-LI-04:** connected healthy LinkedIn personal member appears only for its owning client; selection and save persist independent LinkedIn destination state; edited LinkedIn text/link preview reflects that destination only; unsupported media/content modes are accurately blocked or labeled; Master defaults do not override explicit platform edits; existing published Facebook/Instagram versions and results remain unchanged; relevant automated checks are recorded. No LinkedIn API publishing is part of L5-LI-04, and L5-LI-05 stays WAITING.
 - **Blockers / sequence:** L5-LI-03 Company Page remains BLOCKED pending Community Management API access; it does not block personal-profile L5-LI-04. Google GBP remains MANUAL pending approval. LinkedIn text/link/image publishing is separately scoped to L5-LI-05 after editor acceptance; background scheduling to L5-LI-07. Do not start either early.
 - **Files changed:** `docs/LEVEL_5_LINKEDIN.md`, `README.md`, `AGENTS.md` (handoff documentation only). **Checks:** documentation consistency review; no application code changes, automated test run, deployment, or publishing live-test in this status update.
+
+### October 13, 2026: L5-LI-04 LinkedIn draft editor implementation
+
+- **Task/status:** L5-LI-04 implementation pushed to `main`; live acceptance still pending (do not mark DONE yet).
+- **Objective:** Include eligible client-owned LinkedIn personal profile destinations in Posting to; independent text/link/single-image draft, preview and explicit Master reset. No LinkedIn publish/schedule actions are available.
+- **Files:** `lib/platform-version-logic.js`, `lib/platform-versions.js`, `components/content-composer.js`, `components/platform-destination-selector.js`, `components/platform-icon.js`, `components/ui.module.css`, `components/linkedin-platform-editor.js`, this document.
+- **Automated verification:** Direct code read and patch application completed. npm test, lint and build cannot run here because GitHub cannot be cloned in the execution container; no passing test/build claim.
+- **Live verification:** Amplify deployment outcome and client-isolation, draft save/reopen/reset, published FB/IG regression checks pending.
+- **Decisions:** Profile drafts only; unsupported video/carousel clearly labeled; explicit platform edits not overwritten by Master changes; existing Facebook/Instagram publishing flow left intact.
+- **Next task:** L5-LI-05 remains WAITING pending L5-LI-04 validation and Nicholas's acceptance; L5-LI-03 remains BLOCKED for Community Management approval.
