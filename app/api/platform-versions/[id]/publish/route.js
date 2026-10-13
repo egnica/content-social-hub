@@ -21,6 +21,7 @@ import {
   checkInstagramReelPublishStatus,
   publishInstagramReelVersion,
 } from "@/lib/instagram-reel-publishing";
+import { LinkedInPublishConflictError, LinkedInPublishProviderError, publishLinkedInVersion } from "@/lib/linkedin-publishing";
 import { requireApiSession } from "@/lib/session";
 import { assertDestinationNotAwaitingReview } from "@/lib/scheduled-release-guard";
 
@@ -29,7 +30,7 @@ export const dynamic = "force-dynamic";
 function publishErrorResponse(error) {
   if (
     error instanceof PublishConflictError ||
-    error instanceof InstagramPublishConflictError
+    error instanceof InstagramPublishConflictError || error instanceof LinkedInPublishConflictError
   ) {
     return Response.json(
       { error: error.message, attempt: error.attempt },
@@ -39,7 +40,7 @@ function publishErrorResponse(error) {
 
   if (
     error instanceof PublishProviderError ||
-    error instanceof InstagramPublishProviderError
+    error instanceof InstagramPublishProviderError || error instanceof LinkedInPublishProviderError
   ) {
     return Response.json(
       { error: error.message, attempt: error.attempt },
@@ -107,6 +108,11 @@ export async function POST(_request, { params }) {
         return Response.json(await publishInstagramReelVersion(id));
       }
       return Response.json(await publishInstagramSingleImageVersion(id));
+    }
+
+    if (target?.platform === "linkedin") {
+      await assertDestinationNotAwaitingReview(id);
+      return Response.json(await publishLinkedInVersion(id));
     }
 
     if (target?.platform === "facebook") {
