@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import PlatformIcon from "@/components/platform-icon";
 import styles from "@/components/ui.module.css";
+import { youtubeThumbnailStatusLabel } from "@/lib/youtube-thumbnail-logic";
 import { isYouTubeVersionOutOfSync, prepareYouTubeDescription, validateYouTubeVersionDraft } from "@/lib/platform-version-logic";
 
 const toDraft = (version) => ({
@@ -64,6 +66,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [diagnostics, setDiagnostics] = useState(null);
   const [statusLoaded, setStatusLoaded] = useState(false);
   const [checkingSession, setCheckingSession] = useState(false);
+  const [checkingThumbnail, setCheckingThumbnail] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const media = masterContent.media || [];
@@ -122,6 +125,27 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       setError(cause.message);
     } finally {
       setCheckingSession(false);
+    }
+  }
+  async function checkYouTubeThumbnail() {
+    if (checkingThumbnail || publishing) return;
+    setCheckingThumbnail(true); setError(""); setMessage("");
+    try {
+      const response = await fetch(`/api/platform-versions/${version._id}/youtube-thumbnail`, {
+        method: "POST", cache: "no-store",
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error || "YouTube thumbnail could not be checked.");
+      setDiagnostics(data?.diagnostics || null);
+      if (data?.attempt) {
+        setAttempt(data.attempt);
+        setPublishState(data.attempt.status);
+      }
+      setMessage("YouTube thumbnail metadata checked. Confirm the actual image in YouTube Studio.");
+    } catch (cause) {
+      setError(cause.message);
+    } finally {
+      setCheckingThumbnail(false);
     }
   }
   useEffect(() => {
@@ -265,7 +289,12 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             `${attempt?.status || publishState}${attempt?.bytesUploaded ? ` · ${(attempt.bytesUploaded / (video?.size || 1) * 100).toFixed(1)}% transferred` : ""}`}
           {attempt?.providerPostUrl ? <span> · <a href={attempt.providerPostUrl} target="_blank" rel="noreferrer">View on YouTube</a></span> : null}
           {attempt?.providerError ? <p>{typeof attempt.providerError === "string" ? attempt.providerError : attempt.providerError.message}</p> : null}
-          {attempt?.thumbnailStatus ? <p>Thumbnail: {attempt.thumbnailStatus}{attempt.thumbnailError ? ` · ${attempt.thumbnailError}` : ""}</p> : null}
+          {attempt?.videoThumbnailMediaAssetId || attempt?.thumbnailStatus ? (
+            <p><strong>Custom thumbnail:</strong> {youtubeThumbnailStatusLabel(attempt)}.
+              {" "}For Shorts, verify the actual image in YouTube Studio on a computer.
+              {attempt.thumbnailError ? ` ${attempt.thumbnailError}` : ""}
+            </p>
+          ) : null}
         </div>
         <details className={styles.notice} style={{ marginTop: 12 }}>
           <summary style={{ cursor: "pointer", fontWeight: 600 }}>Upload Diagnostics (read-only)</summary>
@@ -286,7 +315,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
                 ["Video ID", diagnostics.videoId || "Not recorded"],
                 ["YouTube processing", diagnostics.providerProcessingStatus || "Not checked / not recorded"],
                 ["YouTube upload state", diagnostics.providerUploadStatus || "Not checked / not recorded"],
-                ["Thumbnail", diagnostics.thumbnailStatus || "Not confirmed"],
+                ["Thumbnail", diagnostics.thumbnailLabel || "Not confirmed"],
               ].map(([label, value]) => <div key={label} style={{ minWidth: 0, overflowWrap: "anywhere" }}>
                 <strong style={{ display: "block" }}>{label}</strong>
                 <span>{value}</span>
@@ -314,6 +343,30 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               <p className={styles.fieldHint}>The session check does not update published status or send media.</p>
             </div>
           ) : <p className={styles.fieldHint}>YouTube session has not been checked by this diagnostic.</p>}
+          {diagnostics?.thumbnailProviderCheck ? (
+            <div style={{ marginTop: 12, padding: 12, border: "1px solid #b7c6bc", borderRadius: 8 }}>
+              <strong>YouTube thumbnail readback: {diagnostics.thumbnailProviderCheck.result}</strong>
+              <p className={styles.fieldHint}>
+                Checked {diagnostics.thumbnailProviderCheck.checkedAt ?
+                  new Date(diagnostics.thumbnailProviderCheck.checkedAt).toLocaleString() : "at an unknown time"}.
+                This is a provider-reported thumbnail, not visual verification of your selected file.
+              </p>
+              {diagnostics.thumbnailProviderCheck.url ? (
+                <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                  <a href={diagnostics.thumbnailProviderCheck.url} target="_blank" rel="noreferrer">
+                    <Image src={diagnostics.thumbnailProviderCheck.url} alt="Thumbnail currently reported by YouTube"
+                      width={160} height={110} unoptimized style={{ maxWidth: 160, width: "auto", height: "auto", borderRadius: 6 }} />
+                    <span style={{ display: "block" }}>View reported thumbnail</span>
+                  </a>
+                  <p className={styles.fieldHint} style={{ maxWidth: 280 }}>
+                    Compare this with the selected thumbnail in the draft preview. YouTube may use a
+                    generated frame or a different crop on Shorts surfaces.
+                  </p>
+                </div>
+              ) : null}
+              {diagnostics.thumbnailProviderCheck.message ? <p>{diagnostics.thumbnailProviderCheck.message}</p> : null}
+            </div>
+          ) : null}
           {diagnostics?.videoUrl ? <p><a href={diagnostics.videoUrl} target="_blank" rel="noreferrer">View recorded YouTube video</a></p> : null}
           {diagnostics?.lastError ? <p><strong>Last upload error:</strong> {diagnostics.lastError}</p> : null}
           {diagnostics?.thumbnailError ? <p><strong>Thumbnail error:</strong> {diagnostics.thumbnailError}</p> : null}
@@ -325,6 +378,11 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
                 diagnostics.sessionState === "not saved"}
               onClick={checkYouTubeSession}>
               {checkingSession ? "Checking YouTube…" : "Check YouTube Session (no upload)"}
+            </button>
+            <button type="button" className={styles.buttonSecondary}
+              disabled={publishing || checkingThumbnail || checkingSession || !diagnostics?.videoId}
+              onClick={checkYouTubeThumbnail}>
+              {checkingThumbnail ? "Checking thumbnail…" : "Check YouTube thumbnail (read-only)"}
             </button>
           </div>
         </details>
