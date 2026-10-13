@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import PlatformIcon from "@/components/platform-icon";
 import styles from "@/components/ui.module.css";
+import youtubeStyles from "./youtube-editor.module.css";
 import { youtubeThumbnailStatusLabel } from "@/lib/youtube-thumbnail-logic";
 import { parseYouTubeTags } from "@/lib/youtube-metadata-defaults";
 import { isYouTubeVersionOutOfSync, prepareYouTubeDescription, validateYouTubeVersionDraft } from "@/lib/platform-version-logic";
@@ -303,59 +304,80 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       await reconcileUpload();
     } finally { setPublishing(false); }
   }
-  return <section className={styles.platformEditor} data-platform="youtube">
-    <div className={styles.sectionHeader}>
+  return <section className={`${styles.platformEditor} ${youtubeStyles.root}`} data-platform="youtube">
+    <div className={youtubeStyles.topline}>
       <div className={styles.platformHeading}>
         <PlatformIcon platform="youtube" />
-        <h2>YouTube · {version.destinationName || destination?.accountName || "Channel"}</h2>
+        <div>
+          <h2>YouTube · {version.destinationName || destination?.accountName || "Channel"}</h2>
+          <p className={styles.fieldHint}>{masterContent.contentLength === "long" ? "Standard video" : "Short"} · {form.privacyStatus} · {version.customized ? "Channel-specific draft" : "Shared content"}</p>
+        </div>
       </div>
-      <p>{version.customized ? "Customized for this channel" : "Using shared content"}</p>
+      <span className={youtubeStyles.draftBadge}>{dirty ? "Unsaved changes" :
+        publishState === "succeeded" || version.lastPublishStatus === "succeeded" ? "Uploaded" :
+        "Draft"}</span>
     </div>
-    <div className={styles.notice}>YouTube video publishing is available for real content. Upload uses resumable sessions; processing and custom thumbnails may require additional status checks. Scheduling is not enabled yet.</div>
-    {error ? <div className={styles.errorNotice}>{error}</div> : null}
-    {message ? <div className={styles.successNotice}>{message}</div> : null}
-    {masterChanged ? <div className={styles.notice}>Master Content changed. Your YouTube-specific changes remain intact until you choose Update from Master.</div> : null}
+    {error ? <div className={styles.errorNotice} role="alert">{error}</div> : null}
+    {message ? <div className={styles.successNotice} role="status">{message}</div> : null}
+    {masterChanged ? <div className={styles.notice}>Master Content changed. Use Update from Master to replace the YouTube-specific edits.</div> : null}
     {validation.warnings.filter((item) => !item.startsWith("YouTube upload")).map((item) => <div key={item} className={styles.notice}>{item}</div>)}
-    {validation.blocking.length ? <div className={styles.errorNotice}><strong>Draft validation</strong>
-      <ul>{validation.blocking.map((item) => <li key={item}>{item}</li>)}</ul></div> :
-      <div className={styles.editorReady}>{dirty ? "Unsaved changes" : "Valid saved draft"}</div>}
-    <div className={styles.composerColumns}>
-      <div>
-        <div className={styles.fieldGrid}>
-          <label className={styles.fieldFull}><span className={styles.label}>YouTube title ({form.title.length}/100)</span>
-            <input className={styles.input} value={form.title} onChange={(e) => update("title", e.target.value)} maxLength={120}/></label>
-          <label className={styles.fieldFull}><span className={styles.label}>Description (5,000 UTF-8 bytes max)</span>
-            <textarea className={styles.textarea} value={form.description} rows={7} onChange={(e) => update("description", e.target.value)}/></label>
-          <label className={styles.fieldFull}><span className={styles.label}>Video from Master Content</span>
+    {validation.blocking.length ? <div className={styles.errorNotice}><strong>Before you can upload</strong>
+      <ul>{validation.blocking.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+    <div className={youtubeStyles.layout}>
+<section className={youtubeStyles.contentCard} aria-label="Video content">
+    <h3 className={youtubeStyles.sectionTitle}>Content</h3>
+    <div className={youtubeStyles.coreFields}>
+      <label className={styles.fieldFull}><span className={styles.label}>Video from Master Content</span>
             <select className={styles.input} value={form.mediaIds[0] || ""} onChange={(e) => update("mediaIds", e.target.value ? [e.target.value] : [])}>
               <option value="">Choose one video</option>
               {videos.map((asset) => <option key={asset._id} value={String(asset._id)}>{asset.originalName || "Video"}</option>)}
             </select></label>
-          <label className={styles.fieldFull}><span className={styles.label}>Visibility</span>
-            <select className={styles.input} value={form.privacyStatus} onChange={(e) => update("privacyStatus", e.target.value)}>
-              <option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option>
-            </select></label>
-          <label className={styles.fieldFull}><span className={styles.label}>Audience declaration</span>
-            <select className={styles.input} value={form.madeForKids === null ? "" : String(form.madeForKids)}
-              onChange={(e) => update("madeForKids", e.target.value === "" ? null : e.target.value === "true")}>
-              <option value="">Choose an audience</option><option value="false">No, not made for kids</option><option value="true">Yes, made for kids</option>
-            </select></label>
-          <label className={styles.fieldFull}><span className={styles.label}>Custom thumbnail (optional)</span>
+      <label className={styles.fieldFull}><span className={styles.label}>YouTube title ({form.title.length}/100)</span>
+            <input className={styles.input} value={form.title} onChange={(e) => update("title", e.target.value)} maxLength={120}/></label>
+      <label className={styles.fieldFull}><span className={styles.label}>Description (5,000 UTF-8 bytes max)</span>
+            <textarea className={styles.textarea} value={form.description} rows={7} onChange={(e) => update("description", e.target.value)}/></label>
+      <label className={styles.fieldFull}><span className={styles.label}>Custom thumbnail (optional)</span>
             <select className={styles.input} value={form.videoThumbnailMediaId} onChange={(e) => update("videoThumbnailMediaId", e.target.value)}>
               <option value="">No custom thumbnail</option>
               {thumbnailOptions.map((asset) => <option key={asset._id} value={String(asset._id)}>{asset.originalName || "Thumbnail"}</option>)}
             </select></label>
-          <label className={styles.fieldFull}><span className={styles.label}>Manual chapters (optional)</span>
-            <textarea className={styles.textarea} rows={5} value={form.chapters} placeholder={"00:00 Intro\n00:30 Main section\n01:20 Wrap-up"}
-              onChange={(e) => update("chapters", e.target.value)} />
-            <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
-          </label>
+    </div>
+  </section>
+  <aside className={youtubeStyles.previewCard}>
+        <div className={styles.sectionHeader}><h2>Live preview</h2><p>{masterContent.contentLength === "long" ? "16:9 video" : "9:16 Short"} · Draft preview</p></div>
+        <div style={{ border: "1px solid #d8dde3", borderRadius: 12, overflow: "hidden" }}>
+          <YouTubeVideoPreview key={`${video?._id || "none"}-${thumbnail?._id || "none"}-${masterContent.contentLength}`}
+            video={video} thumbnail={thumbnail} isShort={masterContent.contentLength !== "long"} />
+          <div style={{ padding: 16 }}>
+            <strong style={{ overflowWrap: "anywhere" }}>{form.title || "YouTube title"}</strong>
+            <p className={styles.fieldHint}>{destination?.accountName || "YouTube Channel"} · {form.privacyStatus}</p>
+            <p className={styles.fieldHint}>Prepared description ({new TextEncoder().encode(preparedDescription.text).length}/5,000 UTF-8 bytes, including chapters)</p>
+            <p className={youtubeStyles.previewExcerpt} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{preparedDescription.text}</p>
+          </div>
         </div>
-        <div className={styles.notice} style={{ marginTop: 12 }}>
-          <strong>Playlists</strong>
-          <p className={styles.fieldHint}>Choose one or more playlists for this video. The video is attached after YouTube processing succeeds.</p>
-          <details style={{ marginTop: 8 }}>
-            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Select playlists ({form.playlistIds.length})</summary>
+</aside>
+  <section className={youtubeStyles.publishingCard} aria-label="Publishing options">
+    <h3 className={youtubeStyles.sectionTitle}>Publishing</h3>
+    <div className={youtubeStyles.publishFields}>
+      <label className={styles.fieldFull}><span className={styles.label}>Visibility</span>
+            <select className={styles.input} value={form.privacyStatus} onChange={(e) => update("privacyStatus", e.target.value)}>
+              <option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option>
+            </select></label>
+      <label className={styles.fieldFull}><span className={styles.label}>Audience declaration</span>
+            <select className={styles.input} value={form.madeForKids === null ? "" : String(form.madeForKids)}
+              onChange={(e) => update("madeForKids", e.target.value === "" ? null : e.target.value === "true")}>
+              <option value="">Choose an audience</option><option value="false">No, not made for kids</option><option value="true">Yes, made for kids</option>
+            </select></label>
+    </div>
+    <details className={youtubeStyles.playlistDisclosure}>
+      <summary className={youtubeStyles.sectionSummary}>
+        <span>Playlists</span>
+        <small>{form.playlistIds.length} selected · Choose or create</small>
+      </summary>
+      <div className={youtubeStyles.playlistInner}>
+        
+          <div className={youtubeStyles.playlistChoices}>
+            <p className={styles.fieldHint}>Choose from this channel</p>
             {playlistsLoading ? <p>Loading channel playlists…</p> : playlists.length ? (
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {playlists.map((playlist) => (
@@ -369,11 +391,13 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
                 ))}
               </div>
             ) : <p className={styles.fieldHint}>No playlists loaded for this channel yet.</p>}
-          </details>
+          </div>
           {form.playlistIds.length ? <p className={styles.fieldHint}>Selected: {form.playlistIds.map(id => playlists.find(p => p.id === id)?.title || id).join(", ")}</p> : null}
           <button type="button" className={styles.buttonSecondary} disabled={playlistsLoading} onClick={loadPlaylists}>Refresh playlists</button>
           {playlistCanManage ? (
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 8, marginTop: 12 }}>
+            <details className={youtubeStyles.createPlaylist}>
+              <summary>+ Create playlist</summary>
+              <div className={youtubeStyles.createPlaylistControls}>
               <label><span className={styles.label}>Create playlist</span>
                 <input className={styles.input} value={newPlaylistTitle} maxLength={150}
                   placeholder="New playlist title" onChange={(e) => setNewPlaylistTitle(e.target.value)} /></label>
@@ -385,7 +409,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               <button type="button" className={styles.buttonSecondary}
                 disabled={creatingPlaylist || !newPlaylistTitle.trim()}
                 onClick={createPlaylist}>{creatingPlaylist ? "Creating…" : "+ Create Playlist"}</button>
-            </div>
+              </div>
+            </details>
           ) : <p className={styles.fieldHint}>Playlist write access isn't granted yet.
             {playlistReconnectUrl ? <> <a href={playlistReconnectUrl}>Reconnect YouTube for playlist access</a>.</> : null}
             Existing video uploading remains available without this extra permission.
@@ -396,11 +421,13 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             <button type="button" className={styles.buttonSecondary}
               disabled={assigningPlaylist || dirty || !playlistCanManage}
               onClick={applyPlaylistsToVideo}>{assigningPlaylist ? "Checking assignment…" : "Check / apply saved playlist assignment"}</button> : null}
-        </div>
-        <details className={styles.notice} style={{ marginTop: 12 }}>
-          <summary style={{ cursor: "pointer", fontWeight: 600 }}>Additional YouTube Settings</summary>
-          <p className={styles.fieldHint}>Presets are editable for this video. Channel-specific defaults are used when configured.</p>
-          <div className={styles.fieldGrid} style={{ marginTop: 12 }}>
+      </div>
+    </details>
+  </section>
+          <details className={youtubeStyles.advancedCard}>
+          <summary className={youtubeStyles.sectionSummary}><span>Additional settings</span><small>Tags, language, disclosures, chapters &amp; recording details</small></summary>
+          <p className={styles.fieldHint}>These fields use your defaults. Change them only when needed.</p>
+          <div className={youtubeStyles.advancedFields}>
             <label className={styles.fieldFull}><span className={styles.label}>Paid promotion</span>
               <select className={styles.input} value={String(form.paidPromotion)} onChange={(e) => update("paidPromotion", e.target.value === "true")}>
                 <option value="false">No (default)</option><option value="true">Yes</option>
@@ -442,11 +469,18 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               <span className={styles.label}>Upload date</span>
               <p className={styles.fieldHint}>{attempt?.startedAt ? new Date(attempt.startedAt).toLocaleString() : "Automatically recorded when upload begins."}</p>
             </div>
-            <p className={styles.fieldHint}>Playlists are a separate step: selecting/creating playlists requires expanded YouTube authorization.</p>
+
+            <div className={youtubeStyles.chapterField}><label className={styles.fieldFull}><span className={styles.label}>Manual chapters (optional)</span>
+            <textarea className={styles.textarea} rows={5} value={form.chapters} placeholder={"00:00 Intro\n00:30 Main section\n01:20 Wrap-up"}
+              onChange={(e) => update("chapters", e.target.value)} />
+            <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
+          </label></div>
           </div>
         </details>
-        <div className={styles.notice} aria-live="polite">
-          <strong>YouTube upload:</strong> {!statusLoaded ? "Checking saved status…" :
+
+  <section className={youtubeStyles.workflowCard} aria-label="YouTube upload and save">
+            <div className={youtubeStyles.uploadStatus} aria-live="polite">
+          <strong>Upload status:</strong> {!statusLoaded ? "Checking saved status…" :
             !attempt && publishState !== "unknown" ? "Not started" :
             publishState === "unknown" ? "Status unavailable. New uploads disabled." :
             `${attempt?.status || publishState}${attempt?.bytesUploaded ? ` · ${(attempt.bytesUploaded / (video?.size || 1) * 100).toFixed(1)}% transferred` : ""}`}
@@ -460,8 +494,9 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             </p>
           ) : null}
         </div>
-        <details className={styles.notice} style={{ marginTop: 12 }}>
-          <summary style={{ cursor: "pointer", fontWeight: 600 }}>Upload Diagnostics (read-only)</summary>
+
+            <details className={youtubeStyles.diagnostics}>
+          <summary className={youtubeStyles.diagnosticSummary}>Technical details &amp; upload diagnostics</summary>
           <p className={styles.fieldHint}>
             Refresh diagnostics only reads the database. Check YouTube Session asks YouTube how many bytes it received, sends zero video bytes, and saves the result. Neither button starts or resumes an upload.
           </p>
@@ -550,7 +585,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             </button>
           </div>
         </details>
-        <div className={styles.formActions} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+
+            <div className={youtubeStyles.actions}>
           <button type="button" className={styles.buttonSecondary} disabled={busy}
             onClick={() => { if ((dirty || version.customized) && !window.confirm("Replace YouTube edits with current Master Content?")) return;
               requestSave({ action: "reset_from_master" }, true); }}>Update from Master</button>
@@ -571,20 +607,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             )}
           </div>
         </div>
-      </div>
-      <div>
-        <div className={styles.sectionHeader}><h2>YouTube Preview</h2><p>{masterContent.contentLength === "long" ? "16:9 video" : "9:16 Short"} · Play local draft preview, not a YouTube upload</p></div>
-        <div style={{ border: "1px solid #d8dde3", borderRadius: 12, overflow: "hidden" }}>
-          <YouTubeVideoPreview key={`${video?._id || "none"}-${thumbnail?._id || "none"}-${masterContent.contentLength}`}
-            video={video} thumbnail={thumbnail} isShort={masterContent.contentLength !== "long"} />
-          <div style={{ padding: 16 }}>
-            <strong style={{ overflowWrap: "anywhere" }}>{form.title || "YouTube title"}</strong>
-            <p className={styles.fieldHint}>{destination?.accountName || "YouTube Channel"} · {form.privacyStatus}</p>
-            <p className={styles.fieldHint}>Prepared description ({new TextEncoder().encode(preparedDescription.text).length}/5,000 UTF-8 bytes, including chapters)</p>
-            <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{preparedDescription.text}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>;
+  </section>
+</div>
+</section>;
 }

@@ -1,0 +1,236 @@
+/* YouTube editor layout only. Does not change publishing behavior or other platforms. */
+.root {
+  padding: clamp(14px, 2.2vw, 22px);
+  min-width: 0;
+}
+.topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.topline h2 {
+  font-size: clamp(16px, 1.5vw, 19px);
+  margin: 0;
+}
+.topline p { margin: 3px 0 0; }
+.draftBadge {
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  grid-template-areas:
+    "content preview"
+    "publishing preview"
+    "advanced preview"
+    "workflow preview";
+  gap: 16px 22px;
+  align-items: start;
+  min-width: 0;
+}
+.contentCard,
+.publishingCard,
+.advancedCard,
+.workflowCard,
+.previewCard {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.contentCard { grid-area: content; padding: 18px; }
+.publishingCard { grid-area: publishing; padding: 18px; }
+.advancedCard { grid-area: advanced; padding: 0 18px; }
+.workflowCard { grid-area: workflow; padding: 14px 18px 18px; }
+.previewCard {
+  grid-area: preview;
+  position: sticky;
+  top: 18px;
+  align-self: start;
+  padding: 16px;
+}
+.sectionTitle {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.coreFields {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.coreFields > label { grid-column: auto; }
+.coreFields textarea { min-height: 132px; }
+.coreFields input,
+.coreFields textarea,
+.coreFields select { min-width: 0; }
+.publishFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.publishFields > label { grid-column: auto; }
+.sectionSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  cursor: pointer;
+  list-style-position: inside;
+  padding: 13px 0;
+  font-size: 14px;
+  font-weight: 750;
+}
+.sectionSummary small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 450;
+}
+.playlistDisclosure {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+}
+.playlistInner {
+  padding: 2px 0 12px;
+  display: grid;
+  gap: 10px;
+}
+.playlistChoices {
+  display: grid;
+  gap: 10px;
+  max-height: 225px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+.playlistChoices label { padding: 4px 0; cursor: pointer; }
+.playlistInner button { width: fit-content; }
+.createPlaylist {
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+.createPlaylist summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+.createPlaylistControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 150px);
+  gap: 10px;
+  align-items: end;
+  margin-top: 10px;
+}
+.createPlaylistControls button { grid-column: 1 / -1; }
+.advancedCard > summary { border: 0; }
+.advancedCard[open] > summary { border-bottom: 1px solid var(--line); }
+.advancedCard > p { margin-top: 12px; }
+.advancedFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 14px 0 18px;
+}
+.advancedFields > label { grid-column: auto; }
+.advancedFields > label:has(textarea) { grid-column: 1 / -1; }
+.advancedFields textarea { min-height: 88px; }
+.advancedFields > div:not(.chapterField) { grid-column: 1 / -1; }
+.chapterField {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.chapterField textarea { min-height: 100px; }
+.uploadStatus {
+  padding: 11px 12px;
+  background: var(--surface-soft);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.uploadStatus p { margin: 5px 0 0; }
+.diagnostics {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+}
+.diagnosticSummary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+.diagnostics > p { margin-top: 10px; }
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+.actions > div:last-child { margin-left: auto; }
+.previewCard > div:first-child { margin: 0 0 12px; }
+.previewCard > div:first-child h2 { font-size: 15px; }
+.previewCard > div:first-child p { font-size: 12px; }
+.previewCard > div:nth-child(2) { border-color: var(--line); }
+.previewExcerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.5;
+}
+@media (max-width: 1050px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "content"
+      "preview"
+      "publishing"
+      "advanced"
+      "workflow";
+    gap: 14px;
+  }
+  .previewCard {
+    position: static;
+    width: 100%;
+    max-width: none;
+  }
+}
+@media (max-width: 580px) {
+  .contentCard,
+  .publishingCard,
+  .workflowCard,
+  .previewCard { padding: 14px; }
+  .advancedCard { padding: 0 14px; }
+  .publishFields,
+  .advancedFields,
+  .createPlaylistControls { grid-template-columns: minmax(0, 1fr); }
+  .actions { align-items: stretch; }
+  .actions > button,
+  .actions > div:last-child,
+  .actions > div:last-child > button,
+  .actions > div:last-child > a { width: 100%; margin-left: 0 !important; }
+  .actions > div:last-child { display: flex; }
+}
