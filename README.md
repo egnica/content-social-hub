@@ -2074,12 +2074,13 @@ The user does not need to write a separate assignment. Start the new Chat with t
 Current delegation state:
 
 - Completed product stages: **Levels 0–4 plus Level 5 Instagram — Instagram reviewed and closed October 2, 2026**
-- Active product stage: **Level 5 platform expansion — LinkedIn personal OAuth**
-- Active phase document: `docs/LEVEL_5_LINKEDIN.md`
-- Provider selected: **LinkedIn**
-- Current task: **L5-LI-02 — Personal Profile OAuth and Account Health (`MANUAL`, awaiting deployment and live testing)**
-- Objective: complete Node checks, private LinkedIn environment configuration, and real-account OAuth/Account Health/reconnect verification for the implementation branch.
-- Progress must be documented in: `docs/LEVEL_5_LINKEDIN.md`
+- Active product stage: **Level 5 platform expansion — YouTube access readiness**
+- Active phase document: `docs/LEVEL_5_YOUTUBE.md`
+- Provider selected: **YouTube**
+- Current task: **L5-YT-01 — YouTube API & Channel Access Readiness (`READY`)**
+- Objective: verify current developer/API eligibility, audit and upload restrictions, OAuth and quota requirements, and the exact client/channel before any implementation.
+- Progress must be documented in: `docs/LEVEL_5_YOUTUBE.md`
+- LinkedIn exception: `L5-LI-08` transition review accepted; `L5-LI-06/07` remain `MANUAL` until genuine-post evidence; organization connection remains `BLOCKED`.
 - Google Business Profile `L5-GBP-01`: **MANUAL**, Google approval pending (case `1-5407000042073`).
 - UX-01: accepted for progression October 12; no new composer assignment is active.
 - Level 6 remains gated by platform coverage and operational readiness.
@@ -2095,9 +2096,9 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_5_platform_expansion_linkedin
+  status: level_5_platform_expansion_youtube
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_5_LINKEDIN.md
+  active_phase_document: docs/LEVEL_5_YOUTUBE.md
   active_phase_document_status: open
 
 current_infrastructure:
@@ -2504,7 +2505,7 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Next expected work:** `L5-LI-04 READY` in `docs/LEVEL_5_LINKEDIN.md`: add the healthy client-scoped LinkedIn personal profile to the content editor's Posting to choices, with independent destination version, validation, and preview. `L5-LI-02 DONE` by Nicholas's October 13 product-owner acceptance of live OAuth, reconnect, Account Health and secure invitation testing, with deferred full repository test/lint/build, negative two-client isolation, saved connection ID continuity, and failure-edge proofs explicitly retained in the active phase log. Do not implement LinkedIn publishing or scheduling as part of L5-LI-04. Company Page access is blocked pending Community Management API approval; do not implement organization publishing yet. Google approval remains pending (case `1-5407000042073`), tracked in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Level 6 remains unopened.
+**Current next expected work:** `L5-YT-01 READY` in `docs/LEVEL_5_YOUTUBE.md`: research YouTube API, OAuth and upload eligibility, quotas and audit constraints; confirm the exact client and channel before touching credentials or code. LinkedIn `L5-LI-06/07 MANUAL` remain deferred until genuine-post proof; LinkedIn Company Page is BLOCKED on Community Management access. Google Business Profile approval remains pending in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Level 6 remains unopened.
 
 Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. Renewal/recovery maintenance was deployed; some naturally unavailable edge-case proofs remain deferred.
 
