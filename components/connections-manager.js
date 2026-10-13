@@ -153,6 +153,38 @@ function ClientConnectionsManager({
     }
   }
 
+  async function refreshYouTubeNow(connectionId) {
+    setCheckingId(connectionId);
+    setMessage("");
+    setError("");
+
+    try {
+      const response = await fetch(`/api/connections/${connectionId}/refresh-youtube`, {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to refresh YouTube authorization.");
+      }
+
+      setConnections((current) =>
+        current.map((connection) =>
+          connection._id === connectionId ? result.connection : connection,
+        ),
+      );
+
+      if (!["healthy", "expiring_soon"].includes(result.connection.healthStatus)) {
+        throw new Error(result.connection.healthMessage || "YouTube token refresh could not be verified.");
+      }
+
+      setMessage(`${result.connection.accountName}: YouTube access token renewed and channel identity verified.`);
+    } catch (refreshError) {
+      setError(refreshError.message);
+    } finally {
+      setCheckingId("");
+    }
+  }
+
   if (!clients.length) {
     return (
       <div className={styles.emptyState}>
@@ -397,6 +429,16 @@ function ClientConnectionsManager({
                     </span>
                   </div>
                   <div className={styles.connectionItemActions}>
+                    {connection.platform === "youtube" && (
+                      <button
+                        className={styles.buttonSecondary}
+                        type="button"
+                        onClick={() => refreshYouTubeNow(connection._id)}
+                        disabled={checkingId === connection._id}
+                      >
+                        {checkingId === connection._id ? "Refreshing" : "Refresh token now"}
+                      </button>
+                    )}
                     {connection.platform === "youtube" && (
                       <a className={styles.buttonSecondary}
                         href={`/api/connections/youtube/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>Reconnect</a>
