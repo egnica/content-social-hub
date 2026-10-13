@@ -2017,3 +2017,14 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* Taller non-cropping preview for short-form videos in Master media cards. */
+.masterMediaPortraitPreview {
+  display: block;
+}
+.masterMediaPortraitPreview .mediaChoicePreview {
+  aspect-ratio: 5 / 4;
+}
+.masterMediaPortraitPreview .mediaChoicePreview video {
+  object-fit: contain;
+}
