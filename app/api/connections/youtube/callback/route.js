@@ -14,7 +14,11 @@ export async function GET(request) {
   try {
     const state = await consumeYouTubeOauthState(stateValue);
     if (!state) return fail("expired");
-    if (!(await getSession())) return NextResponse.redirect(urlFor("/login"), 303);
+    if (state.mode === "owner") {
+      if (!(await getSession())) return NextResponse.redirect(urlFor("/login"), 303);
+    } else if (state.mode !== "request" || !state.requestId) {
+      return fail("request");
+    }
     if (url.searchParams.get("error")) return fail("cancelled");
     const code = url.searchParams.get("code");
     if (!code) return fail("invalid");
