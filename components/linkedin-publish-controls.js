@@ -45,7 +45,7 @@ export default function LinkedInPublishControls({version,destination,form,media,
       `Publish this LinkedIn post to ${destinationName}?`,"",
       "Text:",form.message||"(none)","",
       "Link:",form.destinationUrl||"(none)","",
-      "Image:",selected[0]?.originalName||"(none)","",
+      "Media:",selected.map((asset)=>asset.originalName||"Attached media").join(", ")||"(none)","",
       "This will create a real public LinkedIn personal-profile post.",
     ].join("\n");
     if(!window.confirm(confirmation))return;
