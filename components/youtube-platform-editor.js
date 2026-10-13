@@ -6,6 +6,7 @@ import Image from "next/image";
 import PlatformIcon from "@/components/platform-icon";
 import styles from "@/components/ui.module.css";
 import { youtubeThumbnailStatusLabel } from "@/lib/youtube-thumbnail-logic";
+import { parseYouTubeTags } from "@/lib/youtube-metadata-defaults";
 import { isYouTubeVersionOutOfSync, prepareYouTubeDescription, validateYouTubeVersionDraft } from "@/lib/platform-version-logic";
 
 const toDraft = (version) => ({
@@ -16,6 +17,13 @@ const toDraft = (version) => ({
   mediaIds: (version.mediaIds || []).map(String),
   videoThumbnailMediaId: String(version.videoThumbnailMediaId || ""),
   chapters: version.chapters || "",
+  paidPromotion: version.paidPromotion ?? false,
+  containsSyntheticMedia: version.containsSyntheticMedia ?? false,
+  defaultLanguage: version.defaultLanguage ?? "en",
+  captionCertification: version.captionCertification ?? "never_aired_us",
+  tagsText: (version.tags || []).join(", "),
+  recordingDate: version.recordingDate || "",
+  recordingLocation: version.recordingLocation || "",
 });
 
 function YouTubeVideoPreview({ video, thumbnail, isShort }) {
@@ -80,8 +88,9 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const thumbnail = thumbnailOptions.find((a) => String(a._id) === form.videoThumbnailMediaId);
   const video = videos.find((a) => form.mediaIds.includes(String(a._id)));
   const masterChanged = isYouTubeVersionOutOfSync(version, masterContent.revision);
+  const metadataDraft = { ...form, tags: parseYouTubeTags(form.tagsText) };
   const validation = validateYouTubeVersionDraft({
-    ...form, media, thumbnail, masterChanged, customized: version.customized,
+    ...metadataDraft, media, thumbnail, masterChanged, customized: version.customized,
     isShort: masterContent.contentLength !== "long", videoDuration: video?.duration,
     healthStatus: destination?.healthStatus || "unavailable",
     canPublish: destination?.canPublish === true,
@@ -282,6 +291,54 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
           </label>
         </div>
+        <details className={styles.notice} style={{ marginTop: 12 }}>
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>Additional YouTube Settings</summary>
+          <p className={styles.fieldHint}>Presets are editable for this video. Channel-specific defaults are used when configured.</p>
+          <div className={styles.fieldGrid} style={{ marginTop: 12 }}>
+            <label className={styles.fieldFull}><span className={styles.label}>Paid promotion</span>
+              <select className={styles.input} value={String(form.paidPromotion)} onChange={(e) => update("paidPromotion", e.target.value === "true")}>
+                <option value="false">No (default)</option><option value="true">Yes</option>
+              </select>
+              <span className={styles.fieldHint}>Saved in Content Social Hub; verify sponsorship disclosure in YouTube Studio when Yes.</span>
+            </label>
+            <label className={styles.fieldFull}><span className={styles.label}>Realistic altered or synthetic content disclosure</span>
+              <select className={styles.input} value={String(form.containsSyntheticMedia)} onChange={(e) => update("containsSyntheticMedia", e.target.value === "true")}>
+                <option value="false">No (default)</option><option value="true">Yes</option>
+              </select>
+              <span className={styles.fieldHint}>Use Yes when YouTube requires disclosure of realistic synthetic or altered material, not for every AI-assisted workflow.</span>
+            </label>
+            <label className={styles.fieldFull}><span className={styles.label}>Video metadata language</span>
+              <select className={styles.input} value={form.defaultLanguage} onChange={(e) => update("defaultLanguage", e.target.value)}>
+                <option value="en">English (default)</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option>
+              </select>
+            </label>
+            <label className={styles.fieldFull}><span className={styles.label}>Caption certification</span>
+              <select className={styles.input} value={form.captionCertification} onChange={(e) => update("captionCertification", e.target.value)}>
+                <option value="never_aired_us">This content has never aired on television in the U.S. (default)</option>
+                <option value="unspecified">Not specified</option>
+              </select>
+              <span className={styles.fieldHint}>Saved in the app. The YouTube Data API does not publish this Studio certification field.</span>
+            </label>
+            <label className={styles.fieldFull}><span className={styles.label}>Tags (comma-separated)</span>
+              <textarea rows={2} className={styles.textarea} value={form.tagsText} placeholder="SEO, video, tutorial"
+                onChange={(e) => update("tagsText", e.target.value)}/>
+            </label>
+            <label className={styles.fieldFull}><span className={styles.label}>Recording date (optional)</span>
+              <input className={styles.input} type="date" value={form.recordingDate}
+                onChange={(e) => update("recordingDate", e.target.value)}/>
+            </label>
+            <label className={styles.fieldFull}><span className={styles.label}>Recording location (optional)</span>
+              <input className={styles.input} type="text" maxLength={200} value={form.recordingLocation}
+                placeholder="e.g. Minneapolis, MN" onChange={(e) => update("recordingLocation", e.target.value)}/>
+              <span className={styles.fieldHint}>Retained in Content Social Hub; YouTube's free-text recording-location API field is deprecated.</span>
+            </label>
+            <div className={styles.fieldFull}>
+              <span className={styles.label}>Upload date</span>
+              <p className={styles.fieldHint}>{attempt?.startedAt ? new Date(attempt.startedAt).toLocaleString() : "Automatically recorded when upload begins."}</p>
+            </div>
+            <p className={styles.fieldHint}>Playlists are a separate step: selecting/creating playlists requires expanded YouTube authorization.</p>
+          </div>
+        </details>
         <div className={styles.notice} aria-live="polite">
           <strong>YouTube upload:</strong> {!statusLoaded ? "Checking saved status…" :
             !attempt && publishState !== "unknown" ? "Not started" :
@@ -391,7 +448,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             onClick={() => { if ((dirty || version.customized) && !window.confirm("Replace YouTube edits with current Master Content?")) return;
               requestSave({ action: "reset_from_master" }, true); }}>Update from Master</button>
           <button type="button" className={styles.button} disabled={busy || !dirty || validation.blocking.length > 0}
-            onClick={() => requestSave(form)}>{busy ? "Saving…" : dirty ? "Save YouTube Version" : "Saved"}</button>
+            onClick={() => requestSave(metadataDraft)}>{busy ? "Saving…" : dirty ? "Save YouTube Version" : "Saved"}</button>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
             {publishState === "succeeded" || version.lastPublishStatus === "succeeded" ? (
               version.providerPostUrl ? <a className={styles.button} href={version.providerPostUrl} target="_blank" rel="noreferrer">View YouTube Video</a> :
