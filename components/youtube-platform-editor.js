@@ -61,6 +61,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [publishing, setPublishing] = useState(false);
   const [publishState, setPublishState] = useState(initialVersion.lastPublishStatus || "");
   const [attempt, setAttempt] = useState(null);
+  const [diagnostics, setDiagnostics] = useState(null);
   const [statusLoaded, setStatusLoaded] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -87,6 +88,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       const response = await fetch(`/api/platform-versions/${version._id}/publish?statusOnly=1`, { cache: "no-store" });
       if (!response.ok) throw new Error("Upload status unavailable. Do not start another upload until it is checked.");
       const data = await response.json();
+      setDiagnostics(data.diagnostics || null);
       if (data.attempt) {
         setAttempt(data.attempt);
         setPublishState(data.attempt.status);
@@ -107,6 +109,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
         return response.json();
       }).then(data => {
         if (cancelled) return;
+        setDiagnostics(data.diagnostics || null);
         if (data.attempt) { setAttempt(data.attempt); setPublishState(data.attempt.status); }
         if (data.platformVersion) setVersion(data.platformVersion);
       }).catch(cause => {
@@ -177,6 +180,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
         setMessage("Upload needs review. No duplicate upload will be started.");
         break;
       }
+      await reconcileUpload();
       router.refresh();
     } catch (cause) {
       setError(cause.message);
@@ -240,6 +244,40 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
           {attempt?.providerError ? <p>{typeof attempt.providerError === "string" ? attempt.providerError : attempt.providerError.message}</p> : null}
           {attempt?.thumbnailStatus ? <p>Thumbnail: {attempt.thumbnailStatus}{attempt.thumbnailError ? ` · ${attempt.thumbnailError}` : ""}</p> : null}
         </div>
+        <details className={styles.notice} style={{ marginTop: 12 }}>
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>Upload Diagnostics (read-only)</summary>
+          <p className={styles.fieldHint}>
+            Saved database information only. Refreshing diagnostics never uploads, resumes, or contacts YouTube.
+          </p>
+          {diagnostics ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
+              {[
+                ["Attempt ID", diagnostics.attemptId || "Unknown"],
+                ["Upload status", diagnostics.status],
+                ["Saved session", diagnostics.sessionState],
+                ["Recorded bytes", `${(diagnostics.recordedBytes || 0).toLocaleString()} / ${diagnostics.expectedBytes?.toLocaleString() ?? "Unknown"}`],
+                ["Recorded progress", diagnostics.percentRecorded == null ? "Unknown" : `${diagnostics.percentRecorded}%`],
+                ["Upload step", diagnostics.stepState],
+                ["Step started", diagnostics.stepStartedAt ? new Date(diagnostics.stepStartedAt).toLocaleString() : "Not recorded"],
+                ["Last updated", diagnostics.lastUpdatedAt ? new Date(diagnostics.lastUpdatedAt).toLocaleString() : "Unknown"],
+                ["Video ID", diagnostics.videoId || "Not recorded"],
+                ["YouTube processing", diagnostics.providerProcessingStatus || "Not checked / not recorded"],
+                ["YouTube upload state", diagnostics.providerUploadStatus || "Not checked / not recorded"],
+                ["Thumbnail", diagnostics.thumbnailStatus || "Not confirmed"],
+              ].map(([label, value]) => <div key={label} style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                <strong style={{ display: "block" }}>{label}</strong>
+                <span>{value}</span>
+              </div>)}
+            </div>
+          ) : <p className={styles.fieldHint}>
+            {statusLoaded ? "No saved attempt found, or diagnostics are unavailable." : "Checking for saved upload attempts…"}
+          </p>}
+          {diagnostics?.videoUrl ? <p><a href={diagnostics.videoUrl} target="_blank" rel="noreferrer">View recorded YouTube video</a></p> : null}
+          {diagnostics?.lastError ? <p><strong>Last upload error:</strong> {diagnostics.lastError}</p> : null}
+          {diagnostics?.thumbnailError ? <p><strong>Thumbnail error:</strong> {diagnostics.thumbnailError}</p> : null}
+          <button type="button" className={styles.buttonSecondary} disabled={publishing}
+            onClick={() => reconcileUpload()}>Refresh diagnostics (read-only)</button>
+        </details>
         <div className={styles.formActions} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <button type="button" className={styles.buttonSecondary} disabled={busy}
             onClick={() => { if ((dirty || version.customized) && !window.confirm("Replace YouTube edits with current Master Content?")) return;
