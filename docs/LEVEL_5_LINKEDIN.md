@@ -4,8 +4,8 @@ Active phase for Content Social Hub as of October 12, 2026. Nicholas approved mo
 
 ## Phase state
 
-- Status: **OPEN — LinkedIn personal publishing owner-accepted; additional media implemented, awaiting live validation**
-- Active task: **L5-LI-06 (`MANUAL` — LinkedIn multi-image/video publishing awaiting deployment and live verification)**
+- Status: **OPEN — L5-LI-06 implemented with real-account media verification deferred by owner; L5-LI-07 ready for implementation**
+- Active task: **L5-LI-07 (`READY` — LinkedIn personal-profile background scheduling)**
 - Personal test destination: Nicholas Egner personal profile (`https://www.linkedin.com/in/nicholas-egner`) under Content Social Hub client `Nicholas_Egner`; initial organization Page: `https://www.linkedin.com/company/nicholas-egner-digital-marketing` (association verified in developer app, API publishing approval still unavailable)
 - Developer app created and associated with Nicholas Egner Company Page; Share on LinkedIn Default Tier provisioned; `w_member_social` verified; callback registered. Community Management API Development Tier access request button disabled; organization publishing unapproved, reason not confirmed.
 - LinkedIn integration: **personal OAuth deployed on main; initial authorization and same-member reconnect succeeded in production October 13, 2026**
@@ -25,10 +25,10 @@ Reuse client-scoped social connections, encrypted credentials, independent desti
 | L5-LI-04 | `DONE` | Destination version, validation, preview | Independent platform version and Master protections |
 | L5-LI-05 | `DONE` | Supported text/link/image publishing | Durable exact provider results, retry and duplicate safety |
 | L5-LI-06 | `MANUAL` | Additional supported media | Verify current media modes/permissions before implementation |
-| L5-LI-07 | `WAITING` | Background scheduling | Existing worker, safe cancellation, stale revision, browser-closed proof and re-entry |
+| L5-LI-07 | `READY` | Background scheduling | Existing worker, safe cancellation, stale revision, browser-closed proof and re-entry |
 | L5-LI-08 | `WAITING` | Final live integration review | Accepted real-account evidence, regression review and handoff |
 
-L5-LI-02 accepted by Nicholas on October 13 with explicitly deferred full repository checks and two-client isolation proof, retained as outstanding verification. L5-LI-05 was closed by Nicholas following production publishing checks; L5-LI-06 is MANUAL pending additional-media live proof. Company Page L5-LI-03 remains BLOCKED. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
+L5-LI-02 accepted by Nicholas on October 13 with explicitly deferred full repository checks and two-client isolation proof, retained as outstanding verification. L5-LI-05 was closed by Nicholas following production publishing checks; L5-LI-06 is MANUAL pending additional-media live proof. Company Page L5-LI-03 remains BLOCKED. Company Page connection is BLOCKED until appropriate API access is granted. L5-LI-06 remains MANUAL with accepted deferred live testing; Nicholas authorized starting L5-LI-07 without manufacturing public posts. L5-LI-07 must be independently verified before closure. Nicholas reviews any provider-level phase closure.
 
 ## L5-LI-01 — Developer Access Readiness
 
@@ -176,3 +176,16 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - **Required next checkpoint:** Verify Amplify `main` deployment and run the Node 24.19.0 checks in a checked-out repository. Under `Nicholas_Egner`, publish one two-image post and one short MP4. Confirm expected media ordering, provider post IDs, exact `View Post`, durable history after reload and lockout after success. Verify Facebook/Instagram unaffected and another client cannot select this member destination. If LinkedIn rejects videos while processing, record the specific provider response and implement a verified bounded readiness/resume flow before accepting closure.
 - **Boundaries:** L5-LI-03 Company Page still BLOCKED by Community Management API approval. `L5-LI-07` remains WAITING; no LinkedIn scheduling or Level 6 work started. Google approval remains MANUAL.
 - **Git:** Changes committed directly to remote default `main` following Nicholas's explicit go-ahead. No local checkout; working-tree status unknown. No separate push needed for direct GitHub commits.
+
+
+### October 13, 2026: Owner defers L5-LI-06 live posting and activates L5-LI-07
+
+- **Decision:** Nicholas will not create artificial LinkedIn posts on his live professional profile. First real multi-image and MP4 posts will serve as live L5-LI-06 acceptance evidence when genuine content is ready. Do not require test-only live posts for this feature or imply provider end-to-end behavior is verified.
+- **L5-LI-06 outcome:** implementation committed, status remains `MANUAL` for explicitly deferred real-account verification. No new real media posts were made. Retain deployment confirmation, full checkout-based Node 24.19.0 `npm test`, `npm run lint`, and `npm run build`, versioned REST permission behavior, media ordering, video readiness, exact View Post, durable history, duplicate prevention, isolation and regressions as unverified until supported by evidence.
+- **Task queue transition:** Nicholas explicitly authorized preparing `L5-LI-07 READY` while L5-LI-06 remains MANUAL as a documented owner-approved exception to the normal sequential live-test gate. `L5-LI-08 WAITING` and `L5-LI-03 BLOCKED` remain unchanged. No LinkedIn phase closure is claimed.
+- **L5-LI-07 objective:** Extend already-proven client-timezone / EventBridge Scheduler / background release worker path to saved LinkedIn personal-profile versions. Reuse client/member scope, encrypted credential health/expiry gate, immutable scheduled revision boundary, durable attempts, conservative provider uncertainty handling, pre-dispatch cancellation, missed-schedule behavior, controlled retries, exact remote post/history and duplicate-safe worker re-entry. Do not add Company Page publishing or new scheduling infrastructure.
+- **L5-LI-07 acceptance:** A LinkedIn personal version can be scheduled/rescheduled/cancelled from its editor with persisted client-local/UTC timing; EventBridge schedules the correct revision and worker dispatches through existing LinkedIn publisher without browser presence; owner/client/connection and token health verified at release; stale/blocked revisions marked missed (not silently published); definite technical failures use bounded safe retry and ambiguous outcomes never trigger duplicates; successful publish records provider ID/URL and exact View Post; re-entry no-ops; Facebook/Instagram behavior preserved. Automated tests, lint/build, and isolated worker/scheduler checks required. **Live posting proof may be deferred to first legitimate scheduled post**, with task remaining MANUAL until supported by real evidence.
+- **Implementation boundary:** Do not start this task in this documentation-only session. Before implementation, read active scheduling implementation and existing LinkedIn publisher, including long-running video processing constraints. Do not schedule unsupported assumptions; a successful asset upload does not itself prove LinkedIn has processed a video for publishing.
+- **Files changed:** `docs/LEVEL_5_LINKEDIN.md`, `README.md`, `AGENTS.md` (handoff records only).
+- **Checks:** documentation queue and handoff consistency reviewed; no application code edited; no automated checks or live tests run.
+- **Git:** documentation committed directly to `main` under Nicholas's explicit approval; no local checkout, so local working tree status unavailable.
