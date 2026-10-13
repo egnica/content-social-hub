@@ -1036,7 +1036,13 @@
 
 .connectionItemActions {
   display: flex;
+  align-items: center;
   gap: 5px;
+  white-space: nowrap;
+}
+
+.connectionItemActions > * {
+  flex-shrink: 0;
 }
 
 .requestItem {
