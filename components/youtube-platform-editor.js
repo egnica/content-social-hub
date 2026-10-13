@@ -63,6 +63,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [attempt, setAttempt] = useState(null);
   const [diagnostics, setDiagnostics] = useState(null);
   const [statusLoaded, setStatusLoaded] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const media = masterContent.media || [];
@@ -100,6 +101,28 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       setPublishState("unknown");
       return null;
     } finally { setStatusLoaded(true); }
+  }
+  async function checkYouTubeSession() {
+    if (checkingSession || publishing) return;
+    setCheckingSession(true);
+    setError(""); setMessage("");
+    try {
+      const response = await fetch(`/api/platform-versions/${version._id}/youtube-session`, {
+        method: "POST", cache: "no-store",
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error || "YouTube session check could not be completed.");
+      setDiagnostics(data?.diagnostics || null);
+      if (data?.attempt) {
+        setAttempt(data.attempt);
+        setPublishState(data.attempt.status);
+      }
+      setMessage("YouTube session check recorded. No video bytes were transferred. Review the result below.");
+    } catch (cause) {
+      setError(cause.message);
+    } finally {
+      setCheckingSession(false);
+    }
   }
   useEffect(() => {
     let cancelled = false;
@@ -247,7 +270,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
         <details className={styles.notice} style={{ marginTop: 12 }}>
           <summary style={{ cursor: "pointer", fontWeight: 600 }}>Upload Diagnostics (read-only)</summary>
           <p className={styles.fieldHint}>
-            Saved database information only. Refreshing diagnostics never uploads, resumes, or contacts YouTube.
+            Refresh diagnostics only reads the database. Check YouTube Session asks YouTube how many bytes it received, sends zero video bytes, and saves the result. Neither button starts or resumes an upload.
           </p>
           {diagnostics ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
@@ -272,11 +295,38 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
           ) : <p className={styles.fieldHint}>
             {statusLoaded ? "No saved attempt found, or diagnostics are unavailable." : "Checking for saved upload attempts…"}
           </p>}
+          {diagnostics?.youtubeSessionCheck ? (
+            <div style={{ marginTop: 12, padding: 12, border: "1px solid #b7c6bc", borderRadius: 8 }}>
+              <strong>YouTube session check: {diagnostics.youtubeSessionCheck.result}</strong>
+              <p className={styles.fieldHint}>
+                Checked {diagnostics.youtubeSessionCheck.checkedAt ?
+                  new Date(diagnostics.youtubeSessionCheck.checkedAt).toLocaleString() : "at an unknown time"}
+                {diagnostics.youtubeSessionCheck.httpStatus ?
+                  ` · HTTP ${diagnostics.youtubeSessionCheck.httpStatus}` : ""}
+              </p>
+              <p><strong>YouTube-confirmed bytes:</strong> {diagnostics.youtubeSessionCheck.confirmedBytes == null ?
+                "Unknown" : diagnostics.youtubeSessionCheck.confirmedBytes.toLocaleString()}</p>
+              {diagnostics.youtubeSessionCheck.videoId ?
+                <p><strong>Session video ID:</strong> {diagnostics.youtubeSessionCheck.videoId}
+                  {" · "}<a href={`https://www.youtube.com/watch?v=${diagnostics.youtubeSessionCheck.videoId}`}
+                    target="_blank" rel="noreferrer">View on YouTube</a></p> : null}
+              {diagnostics.youtubeSessionCheck.message ? <p>{diagnostics.youtubeSessionCheck.message}</p> : null}
+              <p className={styles.fieldHint}>The session check does not update published status or send media.</p>
+            </div>
+          ) : <p className={styles.fieldHint}>YouTube session has not been checked by this diagnostic.</p>}
           {diagnostics?.videoUrl ? <p><a href={diagnostics.videoUrl} target="_blank" rel="noreferrer">View recorded YouTube video</a></p> : null}
           {diagnostics?.lastError ? <p><strong>Last upload error:</strong> {diagnostics.lastError}</p> : null}
           {diagnostics?.thumbnailError ? <p><strong>Thumbnail error:</strong> {diagnostics.thumbnailError}</p> : null}
-          <button type="button" className={styles.buttonSecondary} disabled={publishing}
-            onClick={() => reconcileUpload()}>Refresh diagnostics (read-only)</button>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 12 }}>
+            <button type="button" className={styles.buttonSecondary} disabled={publishing || checkingSession}
+              onClick={() => reconcileUpload()}>Refresh diagnostics (database only)</button>
+            <button type="button" className={styles.buttonSecondary}
+              disabled={publishing || checkingSession || !statusLoaded || !diagnostics ||
+                diagnostics.sessionState === "not saved"}
+              onClick={checkYouTubeSession}>
+              {checkingSession ? "Checking YouTube…" : "Check YouTube Session (no upload)"}
+            </button>
+          </div>
         </details>
         <div className={styles.formActions} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <button type="button" className={styles.buttonSecondary} disabled={busy}
