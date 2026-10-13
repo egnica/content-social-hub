@@ -6,6 +6,7 @@ import PlatformDestinationSelector from "@/components/platform-destination-selec
 import PlatformIcon from "@/components/platform-icon";
 import { FacebookVersionEditor } from "@/components/facebook-platform-editor";
 import { InstagramVersionEditor } from "@/components/instagram-platform-editor";
+import { LinkedInVersionEditor } from "@/components/linkedin-platform-editor";
 import styles from "@/components/ui.module.css";
 import { composerStatus } from "@/lib/content-composer-logic";
 
@@ -20,7 +21,7 @@ export default function ContentComposer({
   const activeVersions = platformVersions.filter(
     (version) =>
       version.active !== false &&
-      ["facebook", "instagram"].includes(version.platform),
+      ["facebook", "instagram", "linkedin"].includes(version.platform),
   );
   const [selectedTab, setSelectedTab] = useState(activeVersions[0]?._id || "");
   const activeTab = activeVersions.some(
@@ -104,9 +105,7 @@ export default function ContentComposer({
                 <PlatformIcon platform={version.platform} />
                 <span>
                   <strong>
-                    {version.platform === "instagram"
-                      ? "Instagram"
-                      : "Facebook"}
+                    {version.platform === "instagram" ? "Instagram" : version.platform === "linkedin" ? "LinkedIn" : "Facebook"}
                   </strong>
                   <small>
                     {version.destinationName ||
@@ -135,7 +134,7 @@ export default function ContentComposer({
             const Editor =
               version.platform === "instagram"
                 ? InstagramVersionEditor
-                : FacebookVersionEditor;
+                : version.platform === "linkedin" ? LinkedInVersionEditor : FacebookVersionEditor;
             return (
               <div
                 key={version._id}
