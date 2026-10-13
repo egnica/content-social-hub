@@ -1877,13 +1877,13 @@ The Instagram closure did not open another phase by itself. Nicholas subsequentl
 | Complete | Facebook Pages | Verified; preserve existing implementation | Connection, publishing, and shared scheduling |
 | Complete | Instagram Professional | Verified; closed evidence record | Connection, image/carousel/Reel publishing, and shared scheduling |
 | 1 | Google Business Profile | Paused: API approval pending; adapter not implemented | Access approval, exact location selection, update posts, CTA links, images, scheduling |
-| 2 | YouTube | Required; phase not opened | Channel selection, video/thumbnail/metadata/visibility, resumable processing and scheduling; API-upload audit restrictions |
-| 3 | LinkedIn | Active: personal OAuth next | Personal profiles and company Pages must be tracked separately; verify the appropriate permissions and Community Management access |
+| Next | YouTube | **Active: L5-YT-01 READY**, API/channel access readiness only | Exact client/channel selection, video/thumbnail/metadata/visibility, resumable processing/scheduling, quota and upload audit restrictions |
+| Parked | LinkedIn | Personal profile implemented and deployed; owner-accepted transition review, **L5-LI-06/07 MANUAL** until genuine-post evidence; Company Pages BLOCKED | Profile OAuth and publishing evidenced, background schedule and extra media untested live; Community Management approval unresolved |
 | 4 | TikTok | Required; eligibility unresolved; phase not opened | Resolve Direct Post eligibility for the owner-only app before promising public publishing or scheduling |
 | Optional | Pinterest | Candidate; not a Level 6 dependency unless Nicholas selects it | Board/Pin publishing; Trial versus Standard access and public visibility |
 | Optional | X | Candidate; not a Level 6 dependency unless Nicholas selects it | Text/link/media publishing and scheduling; explicit API usage budget |
 
-Current phase: `docs/LEVEL_5_LINKEDIN.md`. Google `L5-GBP-01` is `MANUAL` pending API approval (case `1-5407000042073`, project `content-social-hub` number `503771980348`). Nicholas accepted moving past the UX-01 composer review and moving LinkedIn ahead of YouTube on October 12. LinkedIn `L5-LI-02` is `MANUAL` awaiting deployment and live testing. Google OAuth and later tasks remain `WAITING`.
+Current phase: `docs/LEVEL_5_YOUTUBE.md` with **`L5-YT-01 READY` for YouTube API/channel access research only**. Google `L5-GBP-01 MANUAL` remains paused pending API approval (case `1-5407000042073`, project number `503771980348`). Nicholas accepted LinkedIn personal-profile progress on October 13 but explicitly declined artificial live media/scheduled posts; `L5-LI-06` and `L5-LI-07` remain `MANUAL`, `L5-LI-03` Company Page remains BLOCKED, and `L5-LI-08` transition review is DONE with documented exceptions. Level 5 is NOT fully completed. See `docs/LEVEL_5_LINKEDIN.md`.
 
 Provider approvals may require lead time. Read-only feasibility research is allowed; configure credentials only when the relevant task reaches its external checkpoint. If a required provider is blocked, document the exact limitation and obtain Nicholas's explicit decision before skipping it or opening Level 6.
 
@@ -2381,13 +2381,18 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_linkedin_background_scheduling_manual
-  active_phase_document: docs/LEVEL_5_LINKEDIN.md
-  current_task: L5-LI-07
-  current_task_status: MANUAL
-  level_5_provider_selected: linkedin
+  current_stage: level_5_youtube_api_readiness
+  active_phase_document: docs/LEVEL_5_YOUTUBE.md
+  current_task: L5-YT-01
+  current_task_status: READY
+  level_5_provider_selected: youtube
+  previous_provider_phase_document: docs/LEVEL_5_LINKEDIN.md
+  linkedin_review_status: owner_accepted_transition_with_exceptions
+  linkedin_additional_media_status: MANUAL
+  linkedin_background_scheduling_status: MANUAL
+  linkedin_company_pages_status: BLOCKED
+  linkedIn_live_proof_policy: first_genuine_posts_only_no_test_only_public_content
   required_remaining_provider_order:
-    - linkedin
     - youtube
     - tiktok
     - google_business_profile_when_approved
@@ -2461,15 +2466,16 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Verify implemented L5-LI-07 LinkedIn personal-profile background scheduling through the existing Level 4 worker and EventBridge system; preserve deferred real-post checks and do not treat it as closed.
-  task_source: docs/LEVEL_5_LINKEDIN.md
+  goal: Research YouTube Data API and OAuth/upload eligibility, select the exact intended channel and Content Social Hub client, document provider quota/audit/privacy constraints and non-secret setup; stop at an external owner checkpoint before implementation.
+  task_source: docs/LEVEL_5_YOUTUBE.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-LI-07
+  active_task: L5-YT-01
   google_access_status: pending_manual_approval
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - L5-LI-08 final review before L5-LI-07 acceptance
+    - L5-YT-02 and subsequent YouTube implementation before readiness is accepted
     - L5-LI-03 Company Page connection until Community Management API access is approved
+    - extra LinkedIn live test-only posts or unverified multi-image/video scheduling
     - Google OAuth before API approval and exact test location confirmation
     - Level 6 before required platform coverage and operational readiness review
     - optional X/Pinterest and blog integration without a separate approved phase
@@ -2515,3 +2521,9 @@ Nicholas declined posting artificial LinkedIn multi-image or video content to a 
 ### October 13, 2026 LinkedIn L5-LI-07 implementation handoff
 
 `L5-LI-07` background scheduling has been implemented for LinkedIn personal-profile text, link and single-image revisions using the existing Level 4 EventBridge/Lambda system. Multi-image and video scheduling are deliberately blocked while `L5-LI-06` live evidence is deferred. The active phase record `docs/LEVEL_5_LINKEDIN.md` contains the exact files, safe retry/expiry and revision controls, isolated test results, and manual verification. **Current L5-LI-07 status is MANUAL, not DONE:** full checkout-based test/lint/build, production deployment and browser-closed real scheduled publication await proof from a legitimate post. `L5-LI-08` remains WAITING; organization publishing stays BLOCKED on Community Management API access. This paragraph supersedes older README next-task wording. Overall Level 5 remains OPEN pending product-owner review.
+
+### October 13, 2026 YouTube handoff after accepted LinkedIn verification deferral
+
+**This is the current authoritative next-task handoff; older next-task paragraphs above are historical.** Nicholas directed the project to continue without testing with artificial posts on his professional LinkedIn profile. `L5-LI-08 DONE` records the **transition review with expressly accepted verification exceptions**, not full live adapter certification. `L5-LI-06 MANUAL` (multi-image/video post evidence) and `L5-LI-07 MANUAL` (browser-closed scheduled LinkedIn release evidence) remain open for legitimate future content; `L5-LI-03 BLOCKED` on Community Management access. Implemented LinkedIn text/link/single-image scheduling was merged as PR #6 (`56d7ce3`) and passed AWS Amplify job `179` BUILD / DEPLOY / VERIFY, while 42 separate isolated checks passed. Full Node 24.19.0 `npm test` / `npm run lint` / `npm run build`, cross-client negatives and live background LinkedIn publication are NOT independently verified. Preserve restrictions on unverified LinkedIn multi-image/video scheduling.
+
+**New active phase:** `docs/LEVEL_5_YOUTUBE.md`. Sole next `READY` task: **`L5-YT-01 — YouTube API & Channel Access Readiness`**, a bounded research and external-eligibility checkpoint. The actual YouTube client/channel, Google API entitlement, OAuth scope/consent, upload privacy/audit policy, quota, and resumable processing behavior must be checked before code or credential configuration. `L5-YT-02+` are WAITING. Google Business Profile `L5-GBP-01 MANUAL` remains pending approval; TikTok follows YouTube. **The broader Level 5 is OPEN, and Level 6 is not authorized.** Read README fully, then the named YouTube phase plan and first READY task; update only that phase log during its implementation.
