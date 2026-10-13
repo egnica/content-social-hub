@@ -375,8 +375,11 @@ function ClientConnectionsManager({
                     {connection.healthMessage ? (
                       <p>{connection.healthMessage}</p>
                     ) : null}
-                    {["linkedin", "youtube"].includes(connection.platform) && connection.tokenExpiresAt ? (
+                    {connection.platform === "linkedin" && connection.tokenExpiresAt ? (
                       <p>Authorization expires {formatDate(connection.tokenExpiresAt)}</p>
+                    ) : null}
+                    {connection.platform === "youtube" && connection.tokenExpiresAt ? (
+                      <p>Access token expires {formatDate(connection.tokenExpiresAt)}. Check now renews it when needed.</p>
                     ) : null}
                   </div>
                   <div className={styles.connectionHealth}>
