@@ -282,6 +282,7 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-facebook-*
                   - !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-instagram-*
+                  - !Sub arn:${AWS::Partition}:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${ScheduleGroupName}/csh-youtube-*
               - Sid: PassSchedulerTargetRoleOnly
                 Effect: Allow
                 Action: iam:PassRole
@@ -319,9 +320,9 @@ Resources:
           target_role_arn = os.environ["SCHEDULER_TARGET_ROLE_ARN"]
           object_id_pattern = re.compile(r"^[0-9a-f]{24}$")
           schedule_name_pattern = re.compile(
-              r"^csh-(facebook|instagram)-[0-9a-f]{24}$"
+              r"^csh-(facebook|instagram|youtube)-[0-9a-f]{24}$"
           )
-          supported_platforms = {"facebook", "instagram"}
+          supported_platforms = {"facebook", "instagram", "youtube"}
 
           def required_string(value, label):
               normalized = str(value or "").strip()

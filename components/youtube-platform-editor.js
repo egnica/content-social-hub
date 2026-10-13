@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import PlatformIcon from "@/components/platform-icon";
+import DestinationScheduleControls from "@/components/facebook-schedule-controls";
 import styles from "@/components/ui.module.css";
 import youtubeStyles from "./youtube-editor.module.css";
 import { youtubeThumbnailStatusLabel } from "@/lib/youtube-thumbnail-logic";
@@ -608,6 +609,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
           </div>
         </div>
   </section>
+  <DestinationScheduleControls version={version} destination={destination}
+    masterContent={masterContent} dirty={dirty} busy={busy || publishing} />
 </div>
 </section>;
 }
