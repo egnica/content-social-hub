@@ -168,13 +168,13 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
           </label>
         </div>
-        <div className={styles.formActions}>
+        <div className={styles.formActions} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <button type="button" className={styles.buttonSecondary} disabled={busy}
             onClick={() => { if ((dirty || version.customized) && !window.confirm("Replace YouTube edits with current Master Content?")) return;
               requestSave({ action: "reset_from_master" }, true); }}>Update from Master</button>
           <button type="button" className={styles.button} disabled={busy || !dirty || validation.blocking.length > 0}
             onClick={() => requestSave(form)}>{busy ? "Saving…" : dirty ? "Save YouTube Version" : "Saved"}</button>
-          <div className={styles.formActions}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
             {publishState === "succeeded" || version.lastPublishStatus === "succeeded" ? (
               version.providerPostUrl ? <a className={styles.button} href={version.providerPostUrl} target="_blank" rel="noreferrer">View YouTube Video</a> :
               <span>Published on YouTube</span>
