@@ -2381,10 +2381,10 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_linkedin_additional_media_live_verification
+  current_stage: level_5_linkedin_background_scheduling_ready
   active_phase_document: docs/LEVEL_5_LINKEDIN.md
-  current_task: L5-LI-06
-  current_task_status: MANUAL
+  current_task: L5-LI-07
+  current_task_status: READY
   level_5_provider_selected: linkedin
   required_remaining_provider_order:
     - linkedin
@@ -2461,14 +2461,14 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Verify L5-LI-06 LinkedIn personal-profile multi-image and video publishing with real posts and persistent exact provider results.
+  goal: Implement L5-LI-07 LinkedIn personal-profile background scheduling through the existing Level 4 worker and EventBridge system, while preserving deferred L5-LI-06 real-post checks.
   task_source: docs/LEVEL_5_LINKEDIN.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-LI-06
+  active_task: L5-LI-07
   google_access_status: pending_manual_approval
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - L5-LI-07 scheduling before L5-LI-06 live acceptance
+    - L5-LI-08 final review before L5-LI-07 acceptance
     - L5-LI-03 Company Page connection until Community Management API access is approved
     - Google OAuth before API approval and exact test location confirmation
     - Level 6 before required platform coverage and operational readiness review
@@ -2506,3 +2506,8 @@ Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, 
 ### October 13, 2026 LinkedIn task handoff update
 
 The linked active phase document `docs/LEVEL_5_LINKEDIN.md` is authoritative for the LinkedIn queue. Nicholas accepted `L5-LI-05 DONE` following production publishing checks. `L5-LI-06` (personal profile video and organic multi-image) is implemented on `main` and remains `MANUAL` pending live verification and full test/lint/build. `L5-LI-07` remains WAITING. Older descriptions of L5-LI-02/L5-LI-04 as current or next tasks are historical and superseded by this handoff. Overall Level 5 remains open.
+
+
+### October 13, 2026 LinkedIn L5-LI-07 readiness decision
+
+Nicholas declined posting artificial LinkedIn multi-image or video content to a live professional profile. `L5-LI-06` is implemented but remains `MANUAL`, with live verification deferred until a legitimate post. Automated test/lint/build and relevant provider edge cases remain verification debt. Nicholas explicitly approved proceeding to `L5-LI-07 READY` as a documented exception to the normal sequential live-post gate. Next work: LinkedIn personal-profile background scheduling using the existing EventBridge/Lambda scheduling architecture. Do not assume its live publishing is verified; preserve safe duplicate, token health/expiry, stale revision, cancellation, and retry behavior. `L5-LI-03` remains BLOCKED on organization API approval and `L5-LI-08` WAITING. Older README next-task prose is superseded by this paragraph and `docs/LEVEL_5_LINKEDIN.md`. No LinkedIn scheduling code changed in this documentation-only handoff.
