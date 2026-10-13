@@ -4,8 +4,8 @@ Active phase for Content Social Hub as of October 12, 2026. Nicholas approved mo
 
 ## Phase state
 
-- Status: **OPEN — personal OAuth deployed and initial/reconnect live checks passed; remaining acceptance verification pending**
-- Active task: **L5-LI-02 (`MANUAL` — remaining automated and connection-request acceptance checks pending)**
+- Status: **OPEN — personal OAuth accepted with documented verification exceptions; content destination editor next**
+- Active task: **L5-LI-04 (`READY` — personal-profile content destination, validation and preview)**
 - Personal test destination: Nicholas Egner personal profile (`https://www.linkedin.com/in/nicholas-egner`) under Content Social Hub client `Nicholas_Egner`; initial organization Page: `https://www.linkedin.com/company/nicholas-egner-digital-marketing` (association verified in developer app, API publishing approval still unavailable)
 - Developer app created and associated with Nicholas Egner Company Page; Share on LinkedIn Default Tier provisioned; `w_member_social` verified; callback registered. Community Management API Development Tier access request button disabled; organization publishing unapproved, reason not confirmed.
 - LinkedIn integration: **personal OAuth deployed on main; initial authorization and same-member reconnect succeeded in production October 13, 2026**
@@ -20,15 +20,15 @@ Reuse client-scoped social connections, encrypted credentials, independent desti
 | ID | Status | Task | Acceptance checkpoint |
 | --- | --- | --- | --- |
 | L5-LI-01 | `DONE` | LinkedIn developer access readiness | Verify app requirements, personal sharing and organization API permission/review paths, intended scopes/callback, exact test identity, and non-secret prerequisites or named external blockers |
-| L5-LI-02 | `MANUAL` | Personal profile OAuth and Account Health | Readiness accepted; encrypted client-scoped credentials, renewal and health checked |
+| L5-LI-02 | `DONE` | Personal profile OAuth and Account Health | Readiness accepted; encrypted client-scoped credentials, renewal and health checked |
 | L5-LI-03 | `BLOCKED` | Company Page connection | Appropriate permissions approved, exact Page selected and health verified |
-| L5-LI-04 | `WAITING` | Destination version, validation, preview | Independent platform version and Master protections |
+| L5-LI-04 | `READY` | Destination version, validation, preview | Independent platform version and Master protections |
 | L5-LI-05 | `WAITING` | Supported text/link/image publishing | Durable exact provider results, retry and duplicate safety |
 | L5-LI-06 | `WAITING` | Additional supported media | Verify current media modes/permissions before implementation |
 | L5-LI-07 | `WAITING` | Background scheduling | Existing worker, safe cancellation, stale revision, browser-closed proof and re-entry |
 | L5-LI-08 | `WAITING` | Final live integration review | Accepted real-account evidence, regression review and handoff |
 
-L5-LI-02 awaits remaining test/lint/build, client isolation, and emailed Request Connection evidence; no later task is READY. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
+L5-LI-02 accepted by Nicholas on October 13 with explicitly deferred full repository checks and two-client isolation proof, retained as outstanding verification. L5-LI-04 is the sole READY task. Company Page L5-LI-03 remains BLOCKED. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
 
 ## L5-LI-01 — Developer Access Readiness
 
@@ -120,3 +120,13 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - **Live:** user screenshots confirmed OAuth consent, Healthy after reconnect and manual Check now, expiration renewal, delivered 48-hour invitation, invitee-only setup, successful emailed authorization and completed-link invalidation. Account-level connected-record ID continuity was not directly measured.
 - **Not executed:** full repository `npm test`, `npm run lint`, `npm run build` (no checked-out repository/dependencies accessible); no claim of CI success or regression-free build. Existing external production deployment verifies the app served these paths, not that all test commands passed.
 - **Outcome:** retain **L5-LI-02 MANUAL**, not DONE; full checkout-based Node 24.19.0 test/lint/build, and cross-client negative test still outstanding. No downstream task activated. No app code changed in this verification entry.
+
+### October 13, 2026: Nicholas accepts L5-LI-02; activate L5-LI-04
+
+- **Task outcome:** Nicholas explicitly accepted the LinkedIn personal-profile connection work and directed us to move on after successful real-account OAuth, reconnect, healthy Check now, refreshed expiration, emailed Request Connection, client-only setup, confirmed connection, and completed-link invalidation. Mark **L5-LI-02 DONE by product-owner acceptance with deferred verification exceptions**, not as fully automated-test-proven.
+- **Remaining verification debt:** full checkout-based `npm test`, `npm run lint`, `npm run build` on Node 24.19.0; negative two-client isolation test; saved connection ID/history continuity at the database level; expiry/permission failure edge-case proof. Track these explicitly for later operational verification, not as passed. A prior isolated LinkedIn unit test run passed 5/5 but is not a complete repo run.
+- **Observed UI gap:** editing an existing Master under client `Nicholas_Egner` shows only Facebook and Instagram in **Posting to** despite healthy connected LinkedIn personal account. Product owner requested LinkedIn content authoring as the next work.
+- **Task selected:** **L5-LI-04 READY — personal-profile destination version, validation, and preview.** Objective: add eligible client-scoped LinkedIn personal connection(s) to Posting to and support independent LinkedIn destination drafts with per-platform text/link handling, validation and preview. Reuse the existing Master Content and destination-version lifecycle, preserving Facebook/Instagram versions, published results, approval/schedule state, and client isolation. Do not silently publish or schedule by merely adding an account.
+- **Acceptance for L5-LI-04:** connected healthy LinkedIn personal member appears only for its owning client; selection and save persist independent LinkedIn destination state; edited LinkedIn text/link preview reflects that destination only; unsupported media/content modes are accurately blocked or labeled; Master defaults do not override explicit platform edits; existing published Facebook/Instagram versions and results remain unchanged; relevant automated checks are recorded. No LinkedIn API publishing is part of L5-LI-04, and L5-LI-05 stays WAITING.
+- **Blockers / sequence:** L5-LI-03 Company Page remains BLOCKED pending Community Management API access; it does not block personal-profile L5-LI-04. Google GBP remains MANUAL pending approval. LinkedIn text/link/image publishing is separately scoped to L5-LI-05 after editor acceptance; background scheduling to L5-LI-07. Do not start either early.
+- **Files changed:** `docs/LEVEL_5_LINKEDIN.md`, `README.md`, `AGENTS.md` (handoff documentation only). **Checks:** documentation consistency review; no application code changes, automated test run, deployment, or publishing live-test in this status update.
