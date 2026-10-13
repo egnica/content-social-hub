@@ -176,11 +176,15 @@ export default function DestinationScheduleControls({
       releaseSource,
     ],
   );
-  const choiceError = releaseChoiceError(
-    resolvedChoice,
-    version,
-    platformLabel,
-  );
+  const tokenExpiresBeforeRelease =
+    platform === "linkedin" &&
+    Boolean(scheduleState?.tokenExpiresAt) &&
+    resolvedChoice.ok &&
+    new Date(scheduleState.tokenExpiresAt).getTime() <=
+      resolvedChoice.releaseAt.getTime();
+  const choiceError = tokenExpiresBeforeRelease
+    ? "LinkedIn authorization expires before this release. Reconnect closer to the release date before scheduling."
+    : releaseChoiceError(resolvedChoice, version, platformLabel);
   const activeSchedule = scheduleState?.schedule?.active === true;
   const currentSchedule = scheduleState?.schedule || null;
   const serverBlocking = scheduleState?.validation?.blocking || [];
