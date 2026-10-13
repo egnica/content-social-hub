@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   buildInheritedYouTubeFields, isYouTubeVersionOutOfSync,
   isPublishableSocialConnection, normalizeYouTubeVersionDraft,
-  validateYouTubeVersionDraft,
+  validateYouTubeVersionDraft, prepareYouTubeChapters, prepareYouTubeDescription,
 } from "../lib/platform-version-logic.js";
 
 const video = { _id: "video-1", contentType: "video/mp4" };
@@ -57,4 +57,28 @@ test("YouTube thumbnails require matching JPEG or PNG and preserve custom edits"
   assert.equal(isYouTubeVersionOutOfSync({ masterRevisionSynced: 2 }, 3), true);
   const result = validateYouTubeVersionDraft({ ...ready, customized: true, masterChanged: true });
   assert.match(result.warnings[0], /preserved/);
+});
+
+test("YouTube prepares chapters once with accurate duration and description byte accounting", () => {
+  const chapters = "00:00 Intro\n00:15 Topic\n01:00 Wrap-up";
+  assert.equal(prepareYouTubeChapters(chapters).errors.length, 0);
+  const prepared = prepareYouTubeDescription("About the video", chapters);
+  assert.equal(prepared.text, "About the video\n\n" + chapters);
+  assert.deepEqual(prepared.chapterSeconds, [0, 15, 60]);
+  assert.equal(validateYouTubeVersionDraft({ ...ready, chapters, videoDuration: 75 }).publishable, true);
+  assert.equal(validateYouTubeVersionDraft({ ...ready, chapters, videoDuration: 65 }).publishable, false);
+  assert.equal(prepareYouTubeDescription("😀".repeat(1240), chapters).errors.length > 0, true);
+  assert.equal(prepareYouTubeDescription("Text", "00:00 Intro\n00:05 Too soon\n00:10 End").errors.length > 0, true);
+});
+test("YouTube thumbnail preflight enforces API size limit and advises format-specific dimensions", () => {
+  const thumbnail = { ...image, size: 51 * 1024 * 1024, width: 1080, height: 1920 };
+  const selected = { ...ready, videoThumbnailMediaId: "image-1", thumbnail };
+  assert.equal(validateYouTubeVersionDraft({ ...selected, isShort: true }).publishable, false);
+  const allowed = validateYouTubeVersionDraft({ ...selected,
+    thumbnail: { ...thumbnail, size: 2 * 1024 * 1024 }, isShort: true });
+  assert.equal(allowed.publishable, true);
+  assert.equal(allowed.warnings.some((warning) => warning.includes("9:16")), false);
+  const standard = validateYouTubeVersionDraft({ ...selected,
+    thumbnail: { ...thumbnail, size: 2 * 1024 * 1024 }, isShort: false });
+  assert.equal(standard.warnings.some((warning) => warning.includes("16:9")), true);
 });
