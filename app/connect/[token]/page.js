@@ -19,7 +19,7 @@ function formatExpiration(value) {
 function platformLabel(platform) {
   return platform === "instagram"
     ? "Instagram Professional account"
-    : platform === "linkedin" ? "LinkedIn personal profile" : "Facebook Page";
+    : platform === "linkedin" ? "LinkedIn personal profile" : platform === "youtube" ? "YouTube channel" : "Facebook Page";
 }
 
 export default async function ConnectionRequestPage({ params }) {
@@ -72,7 +72,7 @@ export default async function ConnectionRequestPage({ params }) {
           the Content Social Hub workspace.
         </p>
         <div className={styles.notice}>
-          Facebook, Instagram, and LinkedIn handle their own sign-in. Content Social Hub
+          Facebook, Instagram, LinkedIn, and YouTube handle their own sign-in. Content Social Hub
           never receives your social account password.
         </div>
 
@@ -86,7 +86,7 @@ export default async function ConnectionRequestPage({ params }) {
               <form action={`/api/connections/${platform}/start`} method="get">
                 <input type="hidden" name="requestToken" value={token} />
                 <button className={styles.button} type="submit">
-                  Continue with {platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : "Facebook"}
+                  Continue with {platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : "Facebook"}
                 </button>
               </form>
             </div>
