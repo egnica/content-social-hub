@@ -24,7 +24,7 @@ function labelConnectionPlatform(connection) {
 }
 
 function labelRequestPlatform(platform) {
-  return platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : "Facebook Pages";
+  return platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : "Facebook Pages";
 }
 
 function formatRequestPlatforms(request) {
@@ -351,12 +351,18 @@ function ClientConnectionsManager({
             <div className={styles.providerMark}>YT</div>
             <div className={styles.connectionProviderBody}>
               <strong>YouTube channel</strong>
-              <p>Authorize Google, then confirm the exact YouTube channel before connecting. No videos will be uploaded.</p>
+              <p>Authorize Google, then confirm the exact YouTube channel. Connect directly or email a secure 48-hour setup link. No videos will be uploaded.</p>
             </div>
             <div className={styles.connectionActions}>
               {configuration.youtubeReady ? (
                 <a className={styles.button} href={`/api/connections/youtube/start?clientId=${selectedClient._id}`}>Connect</a>
               ) : <button type="button" className={styles.button} disabled>Connect</button>}
+              <button className={styles.buttonSecondary} type="button"
+                onClick={() => sendRequest("youtube")}
+                disabled={Boolean(sendingPlatform) || !configuration.youtubeReady ||
+                  !configuration.emailReady || !selectedClient.approvalReportEmail}>
+                {sendingPlatform === "youtube" ? "Sending" : "Request Connection"}
+              </button>
             </div>
           </article>
           {!selectedClient.approvalReportEmail ? (
