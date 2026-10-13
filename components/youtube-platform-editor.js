@@ -16,6 +16,42 @@ const toDraft = (version) => ({
   chapters: version.chapters || "",
 });
 
+function YouTubeVideoPreview({ video, thumbnail, isShort }) {
+  const [playing, setPlaying] = useState(false);
+  const source = video?._id ? `/api/media/${video._id}/url` : "";
+  const poster = thumbnail ? (thumbnail.previewUrl || `/api/media/${thumbnail._id}/url`) : "";
+  return (
+    <div style={{
+      position: "relative", aspectRatio: isShort ? "9 / 16" : "16 / 9",
+      width: isShort ? "min(100%, 260px)" : "100%", margin: "0 auto",
+      background: "#151515", color: "#fff", overflow: "hidden",
+      display: "grid", placeItems: "center",
+    }}>
+      {playing && source ? (
+        <video src={source} poster={poster || undefined} controls autoPlay playsInline
+          aria-label={video.originalName || "YouTube draft video"} preload="metadata"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      ) : video ? (
+        <button type="button" onClick={() => setPlaying(true)}
+          aria-label="Play video preview"
+          style={{
+            position: "absolute", inset: 0, width: "100%", height: "100%",
+            border: 0, padding: 0, cursor: "pointer", color: "#fff",
+            background: "#151515",
+          }}>
+          {poster ? <img src={poster} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> :
+            <span style={{ display: "block", padding: 16 }}>{video.originalName || "Selected video"}</span>}
+          <span aria-hidden="true" style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            background: "#e62117", borderRadius: 12, padding: "12px 21px",
+            boxShadow: "0 2px 12px #0008", fontSize: 22,
+          }}>▶</span>
+        </button>
+      ) : <span style={{ padding: 16, textAlign: "center" }}>Choose a Master video</span>}
+    </div>
+  );
+}
+
 export function YouTubeVersionEditor({ initialVersion, destination, masterContent }) {
   const router = useRouter();
   const [version, setVersion] = useState(initialVersion);
@@ -118,12 +154,10 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
         </div>
       </div>
       <div>
-        <div className={styles.sectionHeader}><h2>YouTube Preview</h2><p>Approximate draft, not a live upload</p></div>
+        <div className={styles.sectionHeader}><h2>YouTube Preview</h2><p>{masterContent.contentLength === "long" ? "16:9 video" : "9:16 Short"} · Play local draft preview, not a YouTube upload</p></div>
         <div style={{ border: "1px solid #d8dde3", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ minHeight: 185, background: "#151515", color: "#fff", padding: 18, display: "grid", placeItems: "center" }}>
-            {thumbnail ? <img src={thumbnail.previewUrl || `/api/media/${thumbnail._id}/url`} alt="Selected thumbnail" style={{ width: "100%", maxHeight: 260, objectFit: "contain" }} /> :
-              <span>{video ? video.originalName || "Selected video" : "Choose a Master video"}</span>}
-          </div>
+          <YouTubeVideoPreview key={`${video?._id || "none"}-${thumbnail?._id || "none"}-${masterContent.contentLength}`}
+            video={video} thumbnail={thumbnail} isShort={masterContent.contentLength !== "long"} />
           <div style={{ padding: 16 }}>
             <strong style={{ overflowWrap: "anywhere" }}>{form.title || "YouTube title"}</strong>
             <p className={styles.fieldHint}>{destination?.accountName || "YouTube Channel"} · {form.privacyStatus}</p>
