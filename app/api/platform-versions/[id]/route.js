@@ -25,6 +25,11 @@ export async function PATCH(request, { params }) {
 
     return Response.json({
       platformVersion: await savePlatformVersion(id, {
+        title: body?.title,
+        description: body?.description,
+        privacyStatus: body?.privacyStatus,
+        madeForKids: body?.madeForKids,
+        chapters: body?.chapters,
         message: body?.message,
         destinationUrl: body?.destinationUrl,
         caption: body?.caption,
