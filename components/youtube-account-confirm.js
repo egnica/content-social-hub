@@ -29,6 +29,6 @@ export default function YouTubeAccountConfirm({ flow, token }) {
     </div>}
     {error && <div className={styles.errorNotice}>{error}</div>}
     {!done && <button type="button" className={styles.button} disabled={busy} onClick={confirm}>{busy ? "Saving" : "Confirm channel"}</button>}
-    {done && <a className={styles.button} href={`/connections?clientId=${flow.clientId}`}>Back to Social Accounts</a>}
+    {done && flow.mode === "owner" && <a className={styles.button} href={`/connections?clientId=${flow.clientId}`}>Back to Social Accounts</a>}
   </div>;
 }
