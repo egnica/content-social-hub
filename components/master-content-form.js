@@ -568,11 +568,43 @@ export default function MasterContentForm({
 
   return (
     <form className={styles.formCard} onSubmit={submit}>
+      <section className={styles.formSection} aria-label="Choose client first">
+        <div className={styles.sectionHeader}>
+          <h2>1. Choose Client</h2>
+          <p>Select the client before starting content or uploading media.</p>
+        </div>
+        <div className={styles.fieldGrid}>
+          <label className={styles.field}>
+            <span className={styles.label}>Client</span>
+            <select
+              className={styles.select}
+              value={form.clientId}
+              onChange={(event) => changeClient(event.target.value)}
+              required
+            >
+              <option value="">Choose a client</option>
+              {clients.map((client) => (
+                <option key={client._id} value={client._id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+            {errors.clientId ? (
+              <span className={styles.fieldError}>{errors.clientId}</span>
+            ) : null}
+          </label>
+        </div>
+      </section>
+      <div className={styles.sectionHeader}>
+        <h2>2. Start Creating</h2>
+        {!form.clientId ? <p>Choose a client above to enable these shortcuts.</p> : null}
+      </div>
       <div className={styles.entryOptions} aria-label="Creation entry points">
         <button
           className={styles.entryOption}
           type="button"
           onClick={() => focusField(linkInputRef)}
+          disabled={!form.clientId}
         >
           Add Link
         </button>
@@ -580,7 +612,7 @@ export default function MasterContentForm({
           className={styles.entryOption}
           type="button"
           onClick={() => imageInputRef.current?.click()}
-          disabled={uploading || thumbnailUploading}
+          disabled={!form.clientId || uploading || thumbnailUploading}
         >
           Upload Image
         </button>
@@ -588,7 +620,7 @@ export default function MasterContentForm({
           className={styles.entryOption}
           type="button"
           onClick={() => videoInputRef.current?.click()}
-          disabled={uploading || thumbnailUploading}
+          disabled={!form.clientId || uploading || thumbnailUploading}
         >
           Upload Video
         </button>
@@ -596,6 +628,7 @@ export default function MasterContentForm({
           className={styles.entryOption}
           type="button"
           onClick={() => focusField(textInputRef)}
+          disabled={!form.clientId}
         >
           Start With Text
         </button>
@@ -660,26 +693,6 @@ export default function MasterContentForm({
         </div>
 
         <div className={styles.fieldGrid}>
-          <label className={styles.field}>
-            <span className={styles.label}>Client</span>
-            <select
-              className={styles.select}
-              value={form.clientId}
-              onChange={(event) => changeClient(event.target.value)}
-              required
-            >
-              <option value="">Choose a client</option>
-              {clients.map((client) => (
-                <option key={client._id} value={client._id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-            {errors.clientId ? (
-              <span className={styles.fieldError}>{errors.clientId}</span>
-            ) : null}
-          </label>
-
           <label className={styles.field}>
             <span className={styles.label}>Internal title</span>
             <input
