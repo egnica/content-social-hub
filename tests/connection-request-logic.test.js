@@ -22,7 +22,7 @@ test("accepts Instagram and deduplicates requested platforms", () => {
 
 test("rejects unsupported requested platforms", () => {
   assert.throws(
-    () => normalizeConnectionRequestPlatforms("linkedin"),
+    () => normalizeConnectionRequestPlatforms("tiktok"),
     /Unsupported connection request platform/,
   );
 });
@@ -93,4 +93,20 @@ test("completion stays pending until every requested platform is connected", () 
       completed: false,
     },
   );
+});
+
+
+test("YouTube request link is scoped to platform, expiry and replacement state", () => {
+  const now = new Date("2026-10-13T17:00:00Z");
+  assert.deepEqual(normalizeConnectionRequestPlatforms("youtube"), ["youtube"]);
+  assert.equal(requestsSharePlatform(["youtube"], ["linkedin"]), false);
+  assert.equal(requestsSharePlatform(["youtube"], ["youtube"]), true);
+  const request = { status: "pending", requestedPlatforms: ["youtube"],
+    platformStatus: { youtube: "requested" }, expiresAt: "2026-10-15T17:00:00Z" };
+  assert.equal(isConnectionRequestUsableForPlatform(request, "youtube", now), true);
+  assert.equal(isConnectionRequestUsableForPlatform(request, "linkedin", now), false);
+  assert.equal(isConnectionRequestUsableForPlatform({ ...request, status: "revoked" }, "youtube", now), false);
+  assert.equal(isConnectionRequestUsableForPlatform({ ...request, status: "completed" }, "youtube", now), false);
+  assert.equal(isConnectionRequestUsableForPlatform({ ...request, expiresAt: "2026-10-12T00:00:00Z" }, "youtube", now), false);
+  assert.equal(markConnectionRequestPlatformConnected(request, "youtube").status, "completed");
 });
