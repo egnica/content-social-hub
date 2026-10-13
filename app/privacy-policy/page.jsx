@@ -16,7 +16,7 @@ export default function PrivacyPolicy() {
         <header>
           <Link href="/" className={styles.home}>Content Social Hub</Link>
           <h1>Privacy Policy</h1>
-          <p className={styles.date}>Last updated: October 12, 2026</p>
+          <p className={styles.date}>Last updated: October 13, 2026</p>
         </header>
         <p>
           Content Social Hub is a multi-client tool operated by Nicholas Egner
@@ -48,17 +48,43 @@ export default function PrivacyPolicy() {
         <p>
           Where supported, the application connects to services such as
           Facebook, Instagram, and LinkedIn with provider authorization.
-          A LinkedIn connection will only be available after that integration
-          is implemented and approved for use. The permissions presented by
-          each provider determine which account information and publishing
-          actions are available. Credentials are stored server-side and are
-          not intentionally exposed in public web pages.
+          A YouTube connection is planned but is not enabled until implementation
+          and access checks are completed. When enabled, the YouTube API Services
+          will be used only after a user explicitly authorizes the selected
+          channel. YouTube read-only and upload permissions allow channel
+          identity checks and authorized video uploads. We may retain channel
+          identifiers, encrypted OAuth tokens, upload and processing status,
+          and video publication records. Connecting a channel does not
+          automatically upload content. Credentials are stored server-side
+          and are not intentionally exposed in public web pages.
         </p>
         <p>
           You can revoke access using the social provider’s account settings.
           To request deletion of connection records in Content Social Hub,
           contact the email below. Revoking access or removing a connection
           does not delete posts already published on external platforms.
+        </p>
+
+        <h2>YouTube and Google data</h2>
+        <p>
+          YouTube integration, when available, will use the{" "}
+          <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>
+          {" "}and is subject to the{" "}
+          <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.
+          Google user data obtained for a channel connection is used only
+          to provide the requested channel identification and publishing
+          features. We do not sell Google user data or use it for advertising
+          or unrelated profiling.
+        </p>
+        <p>
+          You can revoke Google authorization using{" "}
+          <a href="https://myaccount.google.com/connections">Google Account connections</a>.
+          You may request disconnection or deletion of locally stored
+          channel credentials and associated personal information using
+          the contact email below. Revocation does not delete videos
+          previously published on YouTube. Operational records are retained
+          only as needed for service, security, legal, and publishing purposes,
+          subject to applicable deletion requests.
         </p>
 
         <h2>Service providers</h2>
@@ -104,6 +130,7 @@ export default function PrivacyPolicy() {
           Privacy and data requests:{" "}
           <a href="mailto:nick@nicholasegner.com">nick@nicholasegner.com</a>.
         </p>
+        <p><Link href="/terms-of-service">Terms of Service</Link></p>
       </article>
     </main>
   );
