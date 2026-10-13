@@ -4,8 +4,8 @@ Active phase for Content Social Hub as of October 12, 2026. Nicholas approved mo
 
 ## Phase state
 
-- Status: **OPEN — LinkedIn destination editor accepted with documented verification exceptions; personal publishing implemented; live validation pending**
-- Active task: **L5-LI-05 (`MANUAL` — personal-profile text/link/image publishing awaiting live verification)**
+- Status: **OPEN — LinkedIn personal publishing owner-accepted; additional media implemented, awaiting live validation**
+- Active task: **L5-LI-06 (`MANUAL` — LinkedIn multi-image/video publishing awaiting deployment and live verification)**
 - Personal test destination: Nicholas Egner personal profile (`https://www.linkedin.com/in/nicholas-egner`) under Content Social Hub client `Nicholas_Egner`; initial organization Page: `https://www.linkedin.com/company/nicholas-egner-digital-marketing` (association verified in developer app, API publishing approval still unavailable)
 - Developer app created and associated with Nicholas Egner Company Page; Share on LinkedIn Default Tier provisioned; `w_member_social` verified; callback registered. Community Management API Development Tier access request button disabled; organization publishing unapproved, reason not confirmed.
 - LinkedIn integration: **personal OAuth deployed on main; initial authorization and same-member reconnect succeeded in production October 13, 2026**
@@ -23,12 +23,12 @@ Reuse client-scoped social connections, encrypted credentials, independent desti
 | L5-LI-02 | `DONE` | Personal profile OAuth and Account Health | Readiness accepted; encrypted client-scoped credentials, renewal and health checked |
 | L5-LI-03 | `BLOCKED` | Company Page connection | Appropriate permissions approved, exact Page selected and health verified |
 | L5-LI-04 | `DONE` | Destination version, validation, preview | Independent platform version and Master protections |
-| L5-LI-05 | `MANUAL` | Supported text/link/image publishing | Durable exact provider results, retry and duplicate safety |
-| L5-LI-06 | `WAITING` | Additional supported media | Verify current media modes/permissions before implementation |
+| L5-LI-05 | `DONE` | Supported text/link/image publishing | Durable exact provider results, retry and duplicate safety |
+| L5-LI-06 | `MANUAL` | Additional supported media | Verify current media modes/permissions before implementation |
 | L5-LI-07 | `WAITING` | Background scheduling | Existing worker, safe cancellation, stale revision, browser-closed proof and re-entry |
 | L5-LI-08 | `WAITING` | Final live integration review | Accepted real-account evidence, regression review and handoff |
 
-L5-LI-02 accepted by Nicholas on October 13 with explicitly deferred full repository checks and two-client isolation proof, retained as outstanding verification. L5-LI-05 is MANUAL pending deployment and real posts. Company Page L5-LI-03 remains BLOCKED. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
+L5-LI-02 accepted by Nicholas on October 13 with explicitly deferred full repository checks and two-client isolation proof, retained as outstanding verification. L5-LI-05 was closed by Nicholas following production publishing checks; L5-LI-06 is MANUAL pending additional-media live proof. Company Page L5-LI-03 remains BLOCKED. Company Page connection is BLOCKED until appropriate API access is granted. Later tasks must have provider-verified acceptance criteria expanded before they are activated. Nicholas reviews any provider-level phase closure.
 
 ## L5-LI-01 — Developer Access Readiness
 
@@ -162,3 +162,17 @@ Investigate LinkedIn's current API products and approval tiers for member and or
 - **Live test needed:** Confirm Amplify deployment; under `Nicholas_Egner` post one saved text-only revision to Nicholas's personal profile, one link post and one supported JPEG/PNG image from private S3. Confirm each exact `View Post`, remote post ID, persistent Publish History across reload, and duplicate resubmission block. Check an intentional definitive provider rejection and ambiguous result safeguards without creating duplicate public content; verify negative two-client isolation and that existing Facebook/Instagram publishing is unchanged. LinkedIn OIDC `sub` to member author URN compatibility and the existing Share on LinkedIn product tier must be proven by the real publish.
 - **Known limitations:** LinkedIn token expires and requires reconnect as previously documented. LinkedIn Company Page access is still blocked by Community Management approval. LinkedIn scheduling L5-LI-07 remains WAITING and was not modified. L5-LI-06 media expansion is WAITING. No subsequent task becomes READY until L5-LI-05 acceptance.
 - **Git:** Direct file writes committed to default `main`; no local checkout, so local working-tree status is unavailable. No additional remote publishing or OAuth actions performed.
+
+
+### October 13, 2026: L5-LI-05 owner closure; L5-LI-06 additional media implementation
+
+- **Previous task:** Nicholas confirmed `L5-LI-05` closed following live publication in the previous work session. Its earlier MANUAL record is retained as historical implementation evidence, not current task status. Any unverified failure-edge, regression, or two-client isolation checks remain verification debt rather than being falsely marked passed.
+- **Task/status:** `L5-LI-06 MANUAL`. Nicholas explicitly approved implementing additional LinkedIn personal-profile media. This task is not DONE without successful real-account tests.
+- **Provider research:** LinkedIn versioned REST Images, Videos, Posts, and MultiImage APIs document member `w_member_social` and non-sponsored multi-image posts (2–20 images). Organic carousels are distinct and are **not** being implemented. Video uses initialize/multipart PUT/finalize; uploads remain private-S3 sourced. API version header defaults to `202609` and can be overridden via `LINKEDIN_REST_VERSION`. Existing `/v2/ugcPosts` text/link/single-image behavior remains unchanged to avoid destabilizing the already-live publisher.
+- **Implemented:** LinkedIn platform draft now accepts 2–20 JPEG/PNG/GIF images or one MP4 video; media choices, inheritance, preview labels, format/size validation, and confirmation list updated. Ordered private-S3 image uploads use `/rest/images`; MP4 video uses `/rest/videos` initialize, multipart upload and finalize; posts use `/rest/posts`. The existing client/member ownership guard, health gate, revision-bound unique attempt key, history, definitive-failure retry, ambiguous-post lock, published revision lock, and exact URL persistence remain in place.
+- **Files changed:** `lib/platform-version-logic.js`, `lib/linkedin-publish-logic.js`, `lib/linkedin-publisher.js`, `lib/linkedin-publishing.js`, `components/linkedin-platform-editor.js`, `components/linkedin-publish-controls.js`, `tests/linkedin-platform-version-logic.test.js`, `tests/linkedin-publish-logic.test.js`, and this phase document.
+- **Automated verification:** Focused tests were updated/added, but **not executed**. Complete `npm test`, `npm run lint`, `npm run build` were **not run**. The execution container's GitHub checkout attempt failed DNS resolution (`Could not resolve host: github.com`); direct GitHub file reads and commits are not equivalent to a passing build.
+- **Live status:** No LinkedIn multi-image/video post was created here. Amplify deployment, provider API product/tier authorization, video processing readiness, eventual provider result, exact `View Post`, history persistence, retry/duplicate safety and cross-client regression tests remain unverified. Video processing may be asynchronous; do not assume upload finalization guarantees immediate publishability.
+- **Required next checkpoint:** Verify Amplify `main` deployment and run the Node 24.19.0 checks in a checked-out repository. Under `Nicholas_Egner`, publish one two-image post and one short MP4. Confirm expected media ordering, provider post IDs, exact `View Post`, durable history after reload and lockout after success. Verify Facebook/Instagram unaffected and another client cannot select this member destination. If LinkedIn rejects videos while processing, record the specific provider response and implement a verified bounded readiness/resume flow before accepting closure.
+- **Boundaries:** L5-LI-03 Company Page still BLOCKED by Community Management API approval. `L5-LI-07` remains WAITING; no LinkedIn scheduling or Level 6 work started. Google approval remains MANUAL.
+- **Git:** Changes committed directly to remote default `main` following Nicholas's explicit go-ahead. No local checkout; working-tree status unknown. No separate push needed for direct GitHub commits.
