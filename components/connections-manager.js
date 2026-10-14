@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import AccountAvatar from "@/components/account-avatar";
+import PlatformIcon from "@/components/platform-icon";
 import styles from "@/components/ui.module.css";
 
 function labelHealth(status) {
@@ -51,6 +53,31 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function AttachedAccounts({ connections, platform }) {
+  const accounts = connections.filter(connection => connection.platform === platform);
+  return (
+    <div className={styles.attachedAccounts}>
+      <p className={styles.attachedAccountCount}>
+        {accounts.length ? `${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} attached` : "No accounts connected yet"}
+      </p>
+      {accounts.length ? <div className={styles.accountChips}>
+        {accounts.map(connection => (
+          <a key={connection._id} className={styles.accountChip}
+            href={`#account-${connection._id}`} title={`${connection.accountName} · ${labelHealth(connection.healthStatus)}`}
+            aria-label={`${connection.accountName}, ${labelHealth(connection.healthStatus)}. View account details.`}
+            onClick={() => document.getElementById(`account-${connection._id}`)?.focus({ preventScroll: true })}>
+            <AccountAvatar connection={connection} small />
+            <span className={styles.accountChipName}>{connection.accountName}</span>
+            <span className={connection.healthStatus === "healthy" ? styles.accountChipHealthy : styles.accountChipStatus}>
+              {labelHealth(connection.healthStatus)}
+            </span>
+          </a>
+        ))}
+      </div> : null}
+    </div>
+  );
+}
+
 export default function ConnectionsManager(props) {
   // Remount local request/health state when the server snapshot or client changes.
   const key = JSON.stringify([
@@ -75,6 +102,7 @@ function ClientConnectionsManager({
   const [error, setError] = useState("");
   const [sendingPlatform, setSendingPlatform] = useState("");
   const [checkingId, setCheckingId] = useState("");
+  const connectLabel = platform => connections.some(connection => connection.platform === platform) ? "Add account" : "Connect";
 
   function changeClient(event) {
     const clientId = event.target.value;
@@ -240,13 +268,14 @@ function ClientConnectionsManager({
           ) : null}
 
           <article className={styles.connectionProviderCard}>
-            <div className={styles.providerMark}>f</div>
+            <PlatformIcon platform="facebook" />
             <div className={styles.connectionProviderBody}>
               <strong>Facebook Pages</strong>
               <p>
                 Connect directly when you already manage the Page, or email a
                 secure 48-hour connection link to the client.
               </p>
+              <AttachedAccounts connections={connections} platform="facebook" />
             </div>
             <div className={styles.connectionActions}>
               {configuration.facebookReady ? (
@@ -254,11 +283,11 @@ function ClientConnectionsManager({
                   className={styles.button}
                   href={`/api/connections/facebook/start?clientId=${selectedClient._id}`}
                 >
-                  Connect
+                  {connectLabel("facebook")}
                 </a>
               ) : (
                 <button className={styles.button} type="button" disabled>
-                  Connect
+                  {connectLabel("facebook")}
                 </button>
               )}
               <button
@@ -278,13 +307,14 @@ function ClientConnectionsManager({
           </article>
 
           <article className={styles.connectionProviderCard}>
-            <div className={styles.providerMark}>ig</div>
+            <PlatformIcon platform="instagram" />
             <div className={styles.connectionProviderBody}>
               <strong>Instagram Professional</strong>
               <p>
                 Connect a Business or Creator account directly, or email the
                 same secure limited-purpose setup flow to the client.
               </p>
+              <AttachedAccounts connections={connections} platform="instagram" />
             </div>
             <div className={styles.connectionActions}>
               {configuration.instagramReady ? (
@@ -292,11 +322,11 @@ function ClientConnectionsManager({
                   className={styles.button}
                   href={`/api/connections/instagram/start?clientId=${selectedClient._id}`}
                 >
-                  Connect
+                  {connectLabel("instagram")}
                 </a>
               ) : (
                 <button className={styles.button} type="button" disabled>
-                  Connect
+                  {connectLabel("instagram")}
                 </button>
               )}
               <button
@@ -323,17 +353,18 @@ function ClientConnectionsManager({
           ) : null}
 
           <article className={styles.connectionProviderCard}>
-            <div className={styles.providerMark}>in</div>
+            <PlatformIcon platform="linkedin" />
             <div className={styles.connectionProviderBody}>
               <strong>LinkedIn personal profile</strong>
               <p>Connect your own profile, or email a secure 48-hour setup link. Company Pages require separate API approval.</p>
+              <AttachedAccounts connections={connections} platform="linkedin" />
             </div>
             <div className={styles.connectionActions}>
               {configuration.linkedinReady ? (
                 <a className={styles.button}
-                  href={`/api/connections/linkedin/start?clientId=${selectedClient._id}`}>Connect</a>
+                  href={`/api/connections/linkedin/start?clientId=${selectedClient._id}`}>{connectLabel("linkedin")}</a>
               ) : (
-                <button className={styles.button} type="button" disabled>Connect</button>
+                <button className={styles.button} type="button" disabled>{connectLabel("linkedin")}</button>
               )}
               <button className={styles.buttonSecondary} type="button"
                 onClick={() => sendRequest("linkedin")}
@@ -348,15 +379,16 @@ function ClientConnectionsManager({
             <div className={styles.notice}>YouTube setup is waiting for: <strong>{configuration.missingYoutube.join(", ")}</strong></div>
           ) : null}
           <article className={styles.connectionProviderCard}>
-            <div className={styles.providerMark}>YT</div>
+            <PlatformIcon platform="youtube" />
             <div className={styles.connectionProviderBody}>
               <strong>YouTube channel</strong>
               <p>Authorize Google, then confirm the exact YouTube channel. Connect directly or email a secure 48-hour setup link. No videos will be uploaded.</p>
+              <AttachedAccounts connections={connections} platform="youtube" />
             </div>
             <div className={styles.connectionActions}>
               {configuration.youtubeReady ? (
-                <a className={styles.button} href={`/api/connections/youtube/start?clientId=${selectedClient._id}`}>Connect</a>
-              ) : <button type="button" className={styles.button} disabled>Connect</button>}
+                <a className={styles.button} href={`/api/connections/youtube/start?clientId=${selectedClient._id}`}>{connectLabel("youtube")}</a>
+              ) : <button type="button" className={styles.button} disabled>{connectLabel("youtube")}</button>}
               <button className={styles.buttonSecondary} type="button"
                 onClick={() => sendRequest("youtube")}
                 disabled={Boolean(sendingPlatform) || !configuration.youtubeReady ||
@@ -393,20 +425,8 @@ function ClientConnectionsManager({
           {connections.length ? (
             <div className={styles.connectionList}>
               {connections.map((connection) => (
-                <article className={styles.connectionItem} key={connection._id}>
-                  <div
-                    className={styles.connectionAvatar}
-                    style={
-                      connection.pictureUrl
-                        ? { backgroundImage: `url("${connection.pictureUrl}")` }
-                        : undefined
-                    }
-                    aria-hidden="true"
-                  >
-                    {!connection.pictureUrl
-                      ? connection.accountName.slice(0, 1).toUpperCase()
-                      : null}
-                  </div>
+                <article className={styles.connectionItem} key={connection._id} id={`account-${connection._id}`} tabIndex={-1}>
+                  <AccountAvatar connection={connection} />
                   <div className={styles.connectionIdentity}>
                     <strong>{connection.accountName}</strong>
                     <span>{labelConnectionPlatform(connection)}</span>

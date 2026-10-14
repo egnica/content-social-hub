@@ -964,6 +964,30 @@
   font-size: 15px;
 }
 
+.connectionProviderBody { min-width: 0; }
+.attachedAccounts { margin-top: 10px; }
+.connectionProviderBody .attachedAccountCount { font-size: 12px; font-weight: 650; margin-top: 0; }
+.accountChips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+.accountChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 5px 9px 5px 5px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  color: var(--ink);
+  background: white;
+  text-decoration: none;
+  font-size: 12px;
+}
+.accountChip:hover { border-color: var(--brand); background: var(--brand-soft); }
+.accountChipName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+.accountChipHealthy, .accountChipStatus { font-size: 10px; white-space: nowrap; }
+.accountChipHealthy { color: var(--brand); }
+.accountChipStatus { color: var(--muted); }
+
 .connectionProviderBody p {
   max-width: 660px;
   margin-top: 4px;
@@ -993,6 +1017,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   background: white;
+  scroll-margin-top: 24px;
 }
 
 .connectionAvatar {
@@ -1008,12 +1033,18 @@
   background-size: cover;
   font-size: 16px;
   font-weight: 800;
+  overflow: hidden;
 }
+
+.connectionAvatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.connectionAvatarSmall { width: 28px; height: 28px; flex-basis: 28px; font-size: 10px; }
 
 .connectionIdentity strong {
   display: block;
   font-size: 14px;
 }
+
+.connectionIdentity { min-width: 0; overflow-wrap: anywhere; }
 
 .connectionIdentity span,
 .connectionHealth > span:last-child {
@@ -1036,6 +1067,7 @@
 
 .connectionItemActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 5px;
   white-space: nowrap;
