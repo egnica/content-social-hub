@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import PlatformIcon from "@/components/platform-icon";
+import AccountAvatar from "@/components/account-avatar";
 import { composerStatus } from "@/lib/content-composer-logic";
 import { useUnsavedChanges } from "@/components/unsaved-changes";
 
@@ -137,7 +138,12 @@ export default function PlatformDestinationSelector({
                     toggleDestination(destination._id, event.target.checked)
                   }
                 />
-                <PlatformIcon platform={destination.platform} />
+                <span className={styles.destinationAvatar} aria-hidden="true">
+                  <AccountAvatar connection={destination} />
+                  <span className={styles.destinationPlatformBadge}>
+                    <PlatformIcon platform={destination.platform} />
+                  </span>
+                </span>
                 <span className={styles.destinationIdentity}>
                   <strong>{destination.accountName}</strong>
                   <span>

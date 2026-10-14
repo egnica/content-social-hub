@@ -1261,6 +1261,18 @@
   accent-color: var(--brand);
   flex-shrink: 0;
 }
+.destinationAvatar { position: relative; display: inline-flex; flex: 0 0 44px; }
+.destinationPlatformBadge {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--surface);
+}
+.destinationPlatformBadge .platformIcon { width: 18px; height: 18px; border-radius: 4px; }
+.destinationPlatformBadge .platformIcon svg { width: 12px; height: 12px; }
 .destinationIdentity {
   min-width: 0;
   flex: 1;
@@ -2098,7 +2110,12 @@
 .workflowSteps strong { display: block; font-size: 13px; }
 .workflowSteps small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
 .masterContentCard, .composerSurface { scroll-margin-top: 18px; }
-.masterContentCard > .destinationPicker { margin: 0; border: 0; box-shadow: none; }
+.masterContentCard > .destinationPicker { margin: 0; border: 0; box-shadow: none; padding: 24px 26px; }
+@media (max-width: 700px) {
+  .masterContentCard > .destinationPicker { padding: 18px; }
+  .destinationCard { display: grid; grid-template-columns: 17px 44px minmax(0, 1fr); gap: 10px; padding: 14px; }
+  .destinationCard > .composerStatus { grid-column: 3; justify-self: start; max-width: 100%; }
+}
 .errorNotice ul { margin: 10px 0 0; padding-left: 20px; }
 .errorNotice a { text-decoration: underline; }
 @media (max-width: 760px) {
