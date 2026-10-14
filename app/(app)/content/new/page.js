@@ -20,12 +20,13 @@ export default async function CreateContentPage({ searchParams }) {
   return (
     <>
       <PageHeader
+        backHref="/content" backLabel="Content"
         eyebrow="New package"
         title="Create Content"
-        description="Start with shared source material. Platform-specific versions will inherit these defaults when social connections are added."
+        description="Choose a client and add your text, link, or media. Save it, then choose the accounts to post to."
       />
       {clients.length ? (
-        <MasterContentForm clients={clients} sourceContent={sourceContent} />
+        <MasterContentForm clients={clients} sourceContent={sourceContent} initialClientId={query?.client} />
       ) : (
         <EmptyState
           title="Add a client first"

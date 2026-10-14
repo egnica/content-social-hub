@@ -2476,7 +2476,7 @@ next_expected_action:
   do_not_jump_ahead_to:
     - L5-YT-02 and subsequent YouTube implementation before readiness is accepted
     - L5-LI-03 Company Page connection until Community Management API access is approved
-    - extra LinkedIn live test-only posts or unverified multi-image/video scheduling
+    - extra LinkedIn live test-only posts
     - Google OAuth before API approval and exact test location confirmation
     - Level 6 before required platform coverage and operational readiness review
     - optional X/Pinterest and blog integration without a separate approved phase
@@ -2532,3 +2532,7 @@ Nicholas declined posting artificial LinkedIn multi-image or video content to a 
 ### October 13, 2026 YouTube L5-YT-01 accepted readiness handoff
 
 **Authoritative next task: `L5-YT-02 READY` in `docs/LEVEL_5_YOUTUBE.md`.** Nicholas completed non-secret Google Cloud setup: YouTube Data API v3 enabled; External OAuth Web client created with `youtube.readonly` / `youtube.upload`; OAuth app moved to Production; YouTube client ID and secret stored in Amplify and redeployment reported complete. This is **not evidence of a completed live OAuth connection or permission to publish**. Google branding verification is deferred due to an unverified Amplify home domain, login-only homepage, insufficient public product explanation and unmatched NE logo. Data Access UI reported no verification requirement at that time, but YouTube upload/audit eligibility remains a separate checkpoint. Exact client and channel are intentionally to be verified and confirmed at OAuth time rather than hardcoded. L5-YT-01 was accepted as DONE with these explicit manual exceptions; L5-YT-02 is sole READY; L5-YT-03+ WAITING. No YouTube provider code or live video was added. See YouTube phase log for source links and full blockers.
+
+### October 14, 2026 LinkedIn media scheduling policy correction
+
+Nicholas explicitly requested enabling LinkedIn video and multi-image scheduling without artificial live tests. The local follow-up removes the earlier unverified-media scheduling restriction, shares immediate publishing's format/size/count validation and adds bounded video readiness before public post creation. Older requirements above to preserve that restriction are superseded. Live evidence is deferred to genuine posts; L5-LI-06/07 remain MANUAL, and the changes are uncommitted, unpushed and not deployed. Full Node 24.19.0 checks pass: 255 tests, production build and lint (zero errors, two existing image warnings), plus two mocked scheduling UI cases. The active phase remains `docs/LEVEL_5_YOUTUBE.md`; its current log and `docs/LEVEL_5_LINKEDIN.md` contain the remaining work, pending UX-02 changes and delivery status. Overall Level 5 remains OPEN.

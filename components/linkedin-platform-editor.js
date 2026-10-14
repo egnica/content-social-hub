@@ -5,6 +5,7 @@ import PlatformIcon from "@/components/platform-icon";
 import LinkedInPublishControls from "@/components/linkedin-publish-controls";
 import DestinationScheduleControls from "@/components/facebook-schedule-controls";
 import DestinationPublishingPanel from "@/components/destination-publishing-panel";
+import { useUnsavedChanges } from "@/components/unsaved-changes";
 import styles from "@/components/ui.module.css";
 import { isLinkedInVersionOutOfSync, validateLinkedInVersionDraft } from "@/lib/platform-version-logic";
 
@@ -14,6 +15,7 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
   const [version, setVersion] = useState(initialVersion);
   const [form, setForm] = useState(() => draft(initialVersion));
   const [dirty, setDirty] = useState(false);
+  useUnsavedChanges(dirty);
   function handlePublished(saved) { setVersion(saved); setForm(draft(saved)); setDirty(false); router.refresh(); }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -107,8 +109,8 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
       schedule={
         <div>
           <p className={styles.fieldHint}>
-            Scheduled LinkedIn publishing supports text, links, or one image.
-            Multi-image and video scheduling awaits live verification.
+            Schedule text, links, up to 20 images, or one MP4 video.
+            Video processing can delay when the post appears.
           </p>
           <DestinationScheduleControls
             version={version}

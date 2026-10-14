@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import PlatformIcon from "@/components/platform-icon";
 import { composerStatus } from "@/lib/content-composer-logic";
+import { useUnsavedChanges } from "@/components/unsaved-changes";
 
 function activeConnectionIds(platformVersions) {
   return platformVersions
@@ -33,6 +34,8 @@ function destinationStatus(destination) {
 export default function PlatformDestinationSelector({
   contentId,
   clientName,
+  clientId,
+  onDirtyChange,
   destinations,
   initialPlatformVersions,
   scheduleStates = {},
@@ -49,6 +52,9 @@ export default function PlatformDestinationSelector({
   const [error, setError] = useState("");
 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const dirty = [...selectedIds].sort().join(",") !== activeConnectionIds(platformVersions).sort().join(",");
+  useUnsavedChanges(dirty);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   function toggleDestination(connectionId, checked) {
     setSelectedIds((current) =>
@@ -152,7 +158,7 @@ export default function PlatformDestinationSelector({
         <div className={styles.notice}>
           No supported social destination is connected to this
           client yet. Add one in{" "}
-          <Link href="/connections">Social Accounts</Link> before creating a
+          <Link href={clientId ? `/connections?clientId=${clientId}` : "/connections"}>Social Accounts</Link> before creating a
           platform version.
         </div>
       )}
@@ -162,9 +168,9 @@ export default function PlatformDestinationSelector({
           className={styles.button}
           type="button"
           onClick={saveDestinations}
-          disabled={saving}
+          disabled={saving || !dirty}
         >
-          {saving ? "Saving accounts…" : "Save accounts"}
+          {saving ? "Saving accounts…" : dirty ? "Save accounts" : selectedIds.length ? "Accounts saved" : "Choose accounts above"}
         </button>
       </div>
     </section>

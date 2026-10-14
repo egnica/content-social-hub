@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { validateLinkedInScheduledPublishDraft } from "../lib/linkedin-publish-logic.js";
 import { fakeCollection } from "./helpers/fake-mongo.js";
 import { loadWithStubs } from "./helpers/load-with-stubs.js";
 import {
@@ -29,6 +30,8 @@ class PublishConflictError extends Error {}
 class InstagramPublishConflictError extends Error {}
 class PublishProviderError extends Error {}
 class InstagramPublishProviderError extends Error {}
+class YouTubePublishConflictError extends Error {}
+class YouTubePublishProviderError extends Error {}
 
 const id = (letter) => letter.repeat(24);
 
@@ -106,6 +109,9 @@ async function fixture({ scheduleChange = {}, versionChange = {}, publish } = {}
       InstagramPublishConflictError,
       PublishProviderError,
       InstagramPublishProviderError,
+      YouTubePublishConflictError,
+      YouTubePublishProviderError,
+      validateLinkedInScheduledPublishDraft,
     },
   );
   return {
@@ -158,14 +164,15 @@ test("LinkedIn expiry or authorization blocker marks missed rather than posting 
   assert.equal(f.schedules.documents[0].missedReason, "publish_blocked");
 });
 
-test("unexpected scheduled LinkedIn video is not submitted", async () => {
+test("a supported scheduled LinkedIn video dispatches once", async () => {
   const f = await fixture({ versionChange: { mediaIds: [id("f")] } });
   f.media.documents.push({
     _id: id("f"), clientId: id("c"), status: "uploaded",
-    contentType: "video/mp4",
+    contentType: "video/mp4", size: 4096,
   });
-  assert.equal((await f.server.dispatchScheduledRelease(id("b"))).outcome, "missed");
-  assert.equal(f.calls(), 0);
+  assert.equal((await f.server.dispatchScheduledRelease(id("b"))).outcome, "succeeded");
+  assert.equal((await f.server.dispatchScheduledRelease(id("b"))).outcome, "noop");
+  assert.equal(f.calls(), 1);
 });
 
 test("an uncertain LinkedIn submission stops in review_required without repeat submission", async () => {
@@ -181,4 +188,32 @@ test("an uncertain LinkedIn submission stops in review_required without repeat s
   assert.equal(f.schedules.documents[0].state, "review_required");
   assert.equal((await f.server.dispatchScheduledRelease(id("b"))).outcome, "noop");
   assert.equal(f.calls(), 1);
+});
+
+
+test("scheduled LinkedIn multi-image dispatch uses one public post", async () => {
+  const f = await fixture({ versionChange: { mediaIds: [id("f"), id("g")] } });
+  for (const letter of ["f", "g"]) f.media.documents.push({
+    _id: id(letter), clientId: id("c"), status: "uploaded", contentType: "image/png", size: 1024,
+  });
+  assert.equal((await f.server.dispatchScheduledRelease(id("b"))).outcome, "succeeded");
+  assert.equal((await f.server.dispatchScheduledRelease(id("b"))).outcome, "noop");
+  assert.equal(f.calls(), 1);
+});
+
+test("scheduled LinkedIn media still rejects foreign, missing, mixed and oversized assets", async () => {
+  const cases = [
+    [{ _id: id("f"), clientId: id("h"), status: "uploaded", contentType: "video/mp4", size: 4096 }],
+    [],
+    [{ _id: id("f"), clientId: id("c"), status: "uploaded", contentType: "video/mp4", size: 501 * 1024 * 1024 }],
+    [{ _id: id("f"), clientId: id("c"), status: "uploaded", contentType: "video/quicktime", size: 4096 }],
+    [{ _id: id("f"), clientId: id("c"), status: "uploaded", contentType: "video/mp4", size: 4096 },
+     { _id: id("g"), clientId: id("c"), status: "uploaded", contentType: "image/png", size: 1024 }],
+  ];
+  for (const assets of cases) {
+    const f = await fixture({ versionChange: { mediaIds: assets.length > 1 ? [id("f"), id("g")] : [id("f")] } });
+    f.media.documents.push(...assets);
+    assert.equal((await f.server.dispatchScheduledRelease(id("b"))).outcome, "missed");
+    assert.equal(f.calls(), 0);
+  }
 });

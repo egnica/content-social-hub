@@ -19,6 +19,7 @@ export default function LogoutButton() {
     <button
       className={styles.buttonGhost}
       type="button"
+      data-leave-workspace
       onClick={logout}
       disabled={pending}
     >

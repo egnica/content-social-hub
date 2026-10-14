@@ -1,9 +1,11 @@
+import Link from "next/link";
 import styles from "@/components/ui.module.css";
 
-export default function PageHeader({ eyebrow, title, description, actions }) {
+export default function PageHeader({ eyebrow, title, description, actions, backHref, backLabel }) {
   return (
     <header className={styles.pageHeader}>
       <div>
+        {backHref ? <Link href={backHref} className={styles.backLink}>← {backLabel || "Back"}</Link> : null}
         {eyebrow ? <span className={styles.eyebrow}>{eyebrow}</span> : null}
         <h1>{title}</h1>
         {description ? <p>{description}</p> : null}

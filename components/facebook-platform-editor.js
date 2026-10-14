@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/components/unsaved-changes";
 import styles from "@/components/ui.module.css";
 import PlatformIcon from "@/components/platform-icon";
 import MediaChoice, { MediaThumbnail } from "@/components/media-choice";
@@ -345,6 +346,7 @@ export function FacebookVersionEditor({
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  useUnsavedChanges(dirty);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [previewState, setPreviewState] = useState(null);

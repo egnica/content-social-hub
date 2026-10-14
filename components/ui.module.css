@@ -2028,3 +2028,89 @@
 .masterMediaPortraitPreview .mediaChoicePreview video {
   object-fit: contain;
 }
+
+/* Existing-workflow usability: navigation, next actions and compact composer. */
+.skipLink {
+  position: fixed;
+  top: -80px;
+  left: 16px;
+  z-index: 100;
+  padding: 12px 18px;
+  background: var(--brand-dark);
+  color: white;
+  border-radius: 8px;
+}
+.skipLink:focus { top: 12px; }
+.backLink { display: block; width: fit-content; color: var(--brand-dark); font-size: 13px; margin-bottom: 16px; }
+.workspaceBreadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.workspaceBreadcrumb a:hover, .backLink:hover { text-decoration: underline; }
+.navIcon { height: 21px; flex: 0 0 21px; }
+.plannedNavigation { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 16px; }
+.plannedNavigation > summary { cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 650; padding: 8px 12px; }
+.plannedLinks { display: grid; gap: 5px; margin-top: 8px; }
+.plannedBadge { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 10px; }
+.nextAction { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px; border: 1px solid #b8d7c2; border-radius: 16px; background: var(--brand-soft); margin-bottom: 24px; }
+.nextAction h2 { font-size: 22px; margin: 8px 0; letter-spacing: -.025em; }
+.nextAction p { font-size: 14px; color: var(--muted); max-width: 680px; line-height: 1.55; }
+.nextAction > a { flex-shrink: 0; }
+.resumeAction { margin-left: auto; font-size: 12px; color: var(--brand-dark); white-space: nowrap; }
+.composerOverview { margin-bottom: 18px; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; overflow: hidden; }
+.workflowContext { padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface-soft); border-bottom: 1px solid var(--line); font-size: 14px; }
+.workflowContext > span { color: var(--muted); font-size: 12px; }
+.workflowSteps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.workflowSteps button { display: flex; align-items: center; text-align: left; gap: 12px; padding: 18px 20px; background: var(--surface); color: var(--ink); cursor: pointer; min-width: 0; }
+.workflowSteps button + button { border-left: 1px solid var(--line); }
+.workflowSteps button:hover:enabled { background: var(--brand-soft); }
+.workflowSteps button:disabled { color: var(--muted); cursor: default; }
+.workflowSteps button > span { display: grid; place-items: center; flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--brand-soft); color: var(--brand-dark); font-size: 12px; font-weight: 700; }
+.workflowSteps strong { display: block; font-size: 13px; }
+.workflowSteps small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.masterContentCard, .composerSurface { scroll-margin-top: 18px; }
+.masterContentCard > .destinationPicker { margin: 0; border: 0; box-shadow: none; }
+.errorNotice ul { margin: 10px 0 0; padding-left: 20px; }
+.errorNotice a { text-decoration: underline; }
+@media (max-width: 760px) {
+  .plannedNavigation { margin-top: 8px; padding-top: 3px; border: 0; }
+  .plannedLinks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sidebarFooter { grid-template-columns: auto; justify-content: end; margin-top: 8px; }
+  .topbar { display: flex; padding: 12px 16px; min-height: 58px; gap: 12px; }
+  .topbar > a { padding: 9px 12px; font-size: 12px; }
+  .nextAction { align-items: stretch; flex-direction: column; padding: 20px; gap: 18px; }
+  .nextAction > a { align-self: flex-start; }
+  .workflowContext { padding: 14px 16px; }
+  .workflowSteps { grid-template-columns: minmax(0, 1fr); }
+  .workflowSteps button { padding: 12px 16px; }
+  .workflowSteps button + button { border-left: 0; border-top: 1px solid var(--line); }
+  .resumeAction { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navLink { transition: none; }
+}
+.contentCreateForm > .formActions {
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 24px rgba(29, 52, 38, .08);
+}
+.nextAction + .statsGrid { margin-bottom: 24px; }
+.activityList .attentionItem { grid-template-columns: 12px minmax(0, 1fr) auto; }
+.workflowSteps button:focus-visible,
+.composerTab:focus-visible { outline-offset: -4px; }
+.nextAction + .panel { margin-bottom: 24px; }
+@media (max-width: 760px) {
+  .sidebar { position: relative; }
+  .brand { padding-right: 78px; }
+  .nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .navLink { min-width: 0; padding: 9px 10px; font-size: 13px; }
+  .sidebarFooter { position: absolute; top: 16px; right: 16px; bottom: auto; left: auto; margin: 0; }
+  .workflowSteps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .workflowSteps button { display: block; padding: 12px; }
+  .workflowSteps button + button { border-top: 0; border-left: 1px solid var(--line); }
+  .workflowSteps button > span { width: 22px; height: 22px; margin-bottom: 6px; }
+  .workflowSteps strong { font-size: 12px; }
+  .workflowSteps small { display: none; }
+}

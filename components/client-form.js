@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/components/unsaved-changes";
 import styles from "@/components/ui.module.css";
 
 const blankState = {
@@ -25,12 +26,17 @@ export default function ClientForm({ client = null }) {
         }
       : blankState,
   );
+  const fingerprint = JSON.stringify(form);
+  const [savedFingerprint, setSavedFingerprint] = useState(fingerprint);
+  useUnsavedChanges(fingerprint !== savedFingerprint);
+  const [messageError, setMessageError] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   function update(field, value) {
+    setMessage("");
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
@@ -39,6 +45,7 @@ export default function ClientForm({ client = null }) {
     event.preventDefault();
     setPending(true);
     setMessage("");
+    setMessageError(false);
     setErrors({});
 
     try {
@@ -55,9 +62,11 @@ export default function ClientForm({ client = null }) {
       }
 
       if (!client) setForm(blankState);
+      setSavedFingerprint(client ? fingerprint : JSON.stringify(blankState));
       setMessage(`${result.client.name} was ${client ? "updated" : "added"}.`);
       router.refresh();
     } catch (requestError) {
+      setMessageError(true);
       setMessage(requestError.message);
     } finally {
       setPending(false);
@@ -75,6 +84,7 @@ export default function ClientForm({ client = null }) {
 
     setDeleting(true);
     setMessage("");
+    setMessageError(false);
     setErrors({});
 
     try {
@@ -88,6 +98,7 @@ export default function ClientForm({ client = null }) {
       router.push("/clients");
       router.refresh();
     } catch (requestError) {
+      setMessageError(true);
       setErrors({ delete: requestError.message });
       setMessage(requestError.message);
     } finally {
@@ -103,7 +114,7 @@ export default function ClientForm({ client = null }) {
       </div>
 
       {message ? (
-        <div className={Object.keys(errors).length ? styles.errorNotice : styles.successNotice}>
+        <div className={messageError ? styles.errorNotice : styles.successNotice} role={messageError ? "alert" : "status"}>
           {message}
         </div>
       ) : null}
@@ -178,7 +189,7 @@ export default function ClientForm({ client = null }) {
         </button>
       </div>
       {client ? (
-        <section className={styles.dangerZone}>
+        <details className={styles.contentMaintenance}><summary>Client management</summary><section className={styles.dangerZone}>
           <div>
             <strong>Delete client</strong>
             <p>
@@ -195,7 +206,7 @@ export default function ClientForm({ client = null }) {
           >
             {deleting ? "Deleting Client" : "Delete Client"}
           </button>
-        </section>
+        </section></details>
       ) : null}
     </form>
   );

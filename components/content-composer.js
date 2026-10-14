@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import MasterContentForm from "@/components/master-content-form";
 import PlatformDestinationSelector from "@/components/platform-destination-selector";
 import PlatformIcon from "@/components/platform-icon";
@@ -31,6 +31,23 @@ export default function ContentComposer({
     ? selectedTab
     : activeVersions[0]?._id || "";
 
+  const [accountsDirty, setAccountsDirty] = useState(false);
+  const [sharedDirty, setSharedDirty] = useState(false);
+  const [masterOpen, setMasterOpen] = useState(!activeVersions.length);
+  const [accountsOpen, setAccountsOpen] = useState(!activeVersions.length);
+  const masterRef = useRef(null);
+  const accountsRef = useRef(null);
+  const postsRef = useRef(null);
+  function showSection(section) {
+    if (section === "source") setMasterOpen(true);
+    if (section === "accounts") setAccountsOpen(true);
+    const target = section === "source" ? masterRef : section === "accounts" ? accountsRef : postsRef;
+    requestAnimationFrame(() => {
+      target.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      (target.current?.querySelector("summary, [role=tab]") || target.current)?.focus();
+    });
+  }
+  const needsAttention = activeVersions.some(version => ["Needs attention", "Review required"].includes(composerStatus(version, scheduleStates[version._id])));
   function handleTabKeys(event) {
     const tabs = Array.from(
       event.currentTarget.querySelectorAll('[role="tab"]'),
@@ -55,10 +72,19 @@ export default function ContentComposer({
 
   return (
     <div className={styles.composer}>
-      <details className={styles.masterContentCard} open>
+      <section className={styles.composerOverview} aria-label="Content workflow">
+        <div className={styles.workflowContext}><strong>{content.clientName}</strong><span>Each account has its own post and publishing time.</span></div>
+        <nav className={styles.workflowSteps} aria-label="Content steps">
+          <button type="button" onClick={() => showSection("source")}><span>1</span><div><strong>Shared content</strong><small>{sharedDirty ? "Unsaved changes" : `${content.media?.length || 0} media · Saved`}</small></div></button>
+          <button type="button" onClick={() => showSection("accounts")}><span>2</span><div><strong>Posting accounts</strong><small>{accountsDirty ? "Unsaved selection" : activeVersions.length ? `${activeVersions.length} saved` : "Choose accounts"}</small></div></button>
+          <button type="button" disabled={!activeVersions.length} onClick={() => showSection("posts")}><span>3</span><div><strong>Review & publish</strong><small>{needsAttention ? "Needs attention" : activeVersions.length ? "Open account posts" : "Save accounts first"}</small></div></button>
+        </nav>
+      </section>
+      {sharedDirty ? <div className={styles.notice} role="status">Your shared content has unsaved changes. Save it to make those changes available to account posts.</div> : null}
+      <details ref={masterRef} className={styles.masterContentCard} open={masterOpen} onToggle={event => setMasterOpen(event.currentTarget.open)}>
         <summary>
-          <strong>Master Content</strong>
-          <span className={styles.fieldHint}>Shared text, link and media</span>
+          <strong>Shared content</strong>
+          <span className={styles.fieldHint}>{sharedDirty ? "Unsaved changes" : "Saved text, link and media"}</span>
           <span className={styles.masterExpanded}>Collapse</span>
           <span className={styles.masterCollapsed}>Expand</span>
         </summary>
@@ -66,8 +92,11 @@ export default function ContentComposer({
           clients={clients}
           content={content}
           showHeading={false}
+          onDirtyChange={setSharedDirty}
         />
       </details>
+      <details ref={accountsRef} className={styles.masterContentCard} open={accountsOpen} onToggle={event => setAccountsOpen(event.currentTarget.open)}>
+        <summary><strong>Posting accounts</strong><span className={styles.fieldHint}>{accountsDirty ? "Unsaved selection" : activeVersions.length ? `${activeVersions.length} account${activeVersions.length === 1 ? "" : "s"} selected` : "Choose where this content will go"}</span><span className={styles.masterExpanded}>Collapse</span><span className={styles.masterCollapsed}>Choose / change</span></summary>
       <PlatformDestinationSelector
         key={JSON.stringify(
           platformVersions.map((version) => [
@@ -78,12 +107,15 @@ export default function ContentComposer({
         )}
         contentId={content._id}
         clientName={content.clientName}
+        clientId={content.clientId}
+        onDirtyChange={setAccountsDirty}
         destinations={destinations}
         initialPlatformVersions={platformVersions}
         scheduleStates={scheduleStates}
       />
+      </details>
       {activeVersions.length ? (
-        <div className={styles.composerSurface}>
+        <div ref={postsRef} tabIndex={-1} className={styles.composerSurface}>
           <div
             className={styles.composerTabs}
             role="tablist"
@@ -148,7 +180,7 @@ export default function ContentComposer({
                 data-platform={version.platform}
               >
                 <Editor
-                  key={`${version._id}-${version.revision}-${masterContent.revision}`}
+                  key={`${version._id}-${version.revision}`}
                   initialVersion={version}
                   destination={destination}
                   masterContent={masterContent}

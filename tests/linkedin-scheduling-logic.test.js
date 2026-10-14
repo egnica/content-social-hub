@@ -16,7 +16,7 @@ const base = {
   mediaAssets: [],
 };
 
-test("LinkedIn schedules only proven text and link modes", () => {
+test("LinkedIn scheduling accepts text and link modes", () => {
   assert.equal(validateLinkedInScheduledPublishDraft(base).publishable, true);
   const link = validateLinkedInScheduledPublishDraft({
     ...base,
@@ -40,7 +40,7 @@ test("LinkedIn one-image schedules retain media validation", () => {
   }).publishable, false);
 });
 
-test("unverified LinkedIn multi-image and video modes cannot be scheduled", () => {
+test("LinkedIn scheduling accepts supported multi-image and MP4 modes", () => {
   const multi = validateLinkedInScheduledPublishDraft({
     ...base,
     mediaIds: ["a", "b"],
@@ -50,15 +50,14 @@ test("unverified LinkedIn multi-image and video modes cannot be scheduled", () =
     ],
   });
   assert.equal(multi.publishMode, "multi_image");
-  assert.equal(multi.publishable, false);
-  assert.match(multi.blocking.join(" "), /video|multi-image/i);
+  assert.equal(multi.publishable, true);
   const video = validateLinkedInScheduledPublishDraft({
     ...base,
     mediaIds: ["clip"],
     mediaAssets: [{ _id: "clip", contentType: "video/mp4", size: 4096 }],
   });
   assert.equal(video.publishMode, "video");
-  assert.equal(video.publishable, false);
+  assert.equal(video.publishable, true);
 });
 
 test("unhealthy LinkedIn connection cannot schedule a post", () => {

@@ -27,7 +27,7 @@ export default async function ConnectionsPage({ searchParams }) {
   return (
     <>
       <PageHeader
-        eyebrow="Level 5"
+        eyebrow={selectedClient?.name || "Clients"}
         title="Social Accounts"
         description="Connect the exact Facebook, Instagram, LinkedIn, or YouTube destination to the correct client. Passwords stay with the social provider and are never collected by this application."
       />

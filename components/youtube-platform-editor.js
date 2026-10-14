@@ -8,6 +8,7 @@ import DestinationScheduleControls from "@/components/facebook-schedule-controls
 import DestinationPublishingPanel from "@/components/destination-publishing-panel";
 import PublishedPostSummary from "@/components/published-post-summary";
 import YouTubeFramePicker from "@/components/youtube-frame-picker";
+import { useUnsavedChanges } from "@/components/unsaved-changes";
 import styles from "@/components/ui.module.css";
 import youtubeStyles from "./youtube-editor.module.css";
 import { youtubeThumbnailStatusLabel } from "@/lib/youtube-thumbnail-logic";
@@ -73,6 +74,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [version, setVersion] = useState(initialVersion);
   const [form, setForm] = useState(() => toDraft(initialVersion));
   const [dirty, setDirty] = useState(false);
+  useUnsavedChanges(dirty);
   const [busy, setBusy] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishState, setPublishState] = useState(initialVersion.lastPublishStatus || "");

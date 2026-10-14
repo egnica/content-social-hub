@@ -3,7 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useUnsavedChanges } from "@/components/unsaved-changes";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import { MediaThumbnail } from "@/components/media-choice";
@@ -158,16 +159,21 @@ export default function MasterContentForm({
   content = null,
   sourceContent = null,
   showHeading = true,
+  initialClientId = "",
+  onDirtyChange,
 }) {
   const source = content || freshContentSource(sourceContent);
   const router = useRouter();
+  const messageRef = useRef(null);
   const linkInputRef = useRef(null);
   const textInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const mediaInputRef = useRef(null);
   const thumbnailInputRef = useRef(null);
-  const [form, setForm] = useState(() => initialForm(source, clients));
+  const [form, setForm] = useState(() => initialForm(source || {
+    clientId: clients.some(client => client._id === initialClientId) ? initialClientId : "",
+  }, clients));
   const [media, setMedia] = useState(() =>
     (source?.media || []).map((asset) => ({
       ...asset,
@@ -190,6 +196,11 @@ export default function MasterContentForm({
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const isEditing = Boolean(content?._id);
+  const draftFingerprint = JSON.stringify({ form, media: media.map(asset => asset._id || asset.localId) });
+  const [savedFingerprint, setSavedFingerprint] = useState(draftFingerprint);
+  const dirty = draftFingerprint !== savedFingerprint;
+  useUnsavedChanges(dirty || uploading || thumbnailUploading);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   const selectedClient = useMemo(
     () => clients.find((client) => client._id === form.clientId) || null,
@@ -240,7 +251,13 @@ export default function MasterContentForm({
     [form.defaultVideoThumbnailMediaId, thumbnailOptions],
   );
 
+  const fieldErrors = Object.entries(errors).filter(([key, value]) => value && ["clientId", "internalTitle", "primaryUrl", "defaultReleaseAt"].includes(key));
+  useEffect(() => {
+    if (message && message !== "Master Content saved.") messageRef.current?.focus();
+  }, [message]);
+
   function update(field, value) {
+    setMessage("");
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
@@ -533,6 +550,7 @@ export default function MasterContentForm({
       }
 
       setMessage("Master Content saved.");
+      setSavedFingerprint(draftFingerprint);
       if (!isEditing) {
         router.push(`/content/${result.content._id}`);
       } else {
@@ -592,7 +610,7 @@ export default function MasterContentForm({
             <span className={styles.label}>Client</span>
             <select
               className={styles.select}
-              value={form.clientId}
+              id="master-clientId" aria-invalid={Boolean(errors.clientId)} value={form.clientId}
               onChange={(event) => changeClient(event.target.value)}
               required
             >
@@ -687,13 +705,16 @@ export default function MasterContentForm({
 
       {message ? (
         <div
-          className={
-            Object.keys(errors).length
-              ? styles.errorNotice
-              : styles.successNotice
-          }
+          className={message === "Master Content saved." ? styles.successNotice : styles.errorNotice}
+          role={message === "Master Content saved." ? "status" : "alert"}
+          ref={messageRef} tabIndex={-1}
         >
           {message}
+          {message !== "Master Content saved." && fieldErrors.length > 0 ? <ul>
+            {fieldErrors.map(([key, value]) =>
+              <li key={key}><a href={`#master-${key}`} onClick={() => document.getElementById(`master-${key}`)?.focus()}>{value}</a></li>
+            )}
+          </ul> : null}
         </div>
       ) : null}
 
@@ -711,7 +732,7 @@ export default function MasterContentForm({
             <span className={styles.label}>Internal title</span>
             <input
               className={styles.input}
-              value={form.internalTitle}
+              id="master-internalTitle" aria-invalid={Boolean(errors.internalTitle)} value={form.internalTitle}
               onChange={(event) => update("internalTitle", event.target.value)}
               placeholder="A clear title used inside the app"
               required
@@ -727,7 +748,7 @@ export default function MasterContentForm({
               ref={linkInputRef}
               className={styles.input}
               type="url"
-              value={form.primaryUrl}
+              id="master-primaryUrl" aria-invalid={Boolean(errors.primaryUrl)} value={form.primaryUrl}
               onChange={(event) => update("primaryUrl", event.target.value)}
               placeholder="https://example.com/article"
               aria-describedby="link-to-share-help"
@@ -777,7 +798,7 @@ export default function MasterContentForm({
             <input
               className={styles.input}
               type="datetime-local"
-              value={form.defaultReleaseAt}
+              id="master-defaultReleaseAt" aria-invalid={Boolean(errors.defaultReleaseAt)} value={form.defaultReleaseAt}
               onChange={(event) =>
                 update("defaultReleaseAt", event.target.value)
               }
@@ -938,7 +959,7 @@ export default function MasterContentForm({
             className={styles.masterMediaAdd}
             type="button"
             onClick={() => mediaInputRef.current?.click()}
-            disabled={uploading || thumbnailUploading || pending}
+            disabled={!form.clientId || uploading || thumbnailUploading || pending}
           >
             <span className={styles.masterMediaAddIcon} aria-hidden="true">
               +
@@ -960,6 +981,7 @@ export default function MasterContentForm({
               <p>
                 Optional default for video platforms. Each platform version can
                 override this without changing Master Content.
+                {form.contentLength !== "long" ? " YouTube Shorts use a frame chosen in the YouTube mobile app after upload." : ""}
               </p>
             </div>
 
@@ -1049,19 +1071,19 @@ export default function MasterContentForm({
       </section>
 
       <div className={styles.formActions}>
-        <Link className={styles.buttonSecondary} href="/content">
+        <Link className={styles.buttonSecondary} href={form.clientId ? `/content?client=${form.clientId}` : "/content"}>
           Back to Content
         </Link>
         <button
           className={styles.button}
           type="submit"
-          disabled={pending || uploading || thumbnailUploading}
+          disabled={pending || uploading || thumbnailUploading || (isEditing && !dirty)}
         >
           {pending
             ? "Saving"
             : isEditing
-              ? "Save Master Content"
-              : "Save draft"}
+              ? dirty ? "Save shared content" : "Saved"
+              : "Save and choose accounts →"}
         </button>
       </div>
       {isEditing ? (

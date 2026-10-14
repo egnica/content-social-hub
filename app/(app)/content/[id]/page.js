@@ -49,6 +49,7 @@ export default async function EditContentPage({ params }) {
   return (
     <>
       <PageHeader
+        backHref={`/content?client=${content.clientId}`} backLabel="Content"
         eyebrow={content.clientName}
         title={content.internalTitle}
         description="Choose your accounts, customize each post, and preview it before publishing."

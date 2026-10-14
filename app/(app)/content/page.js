@@ -22,9 +22,9 @@ export default async function ContentPage({ searchParams }) {
       <PageHeader
         eyebrow="Library"
         title="Content"
-        description="The operational home for existing Master Content packages. Create Content remains a separate action."
+        description="Find saved content, continue editing, or create a new post."
         actions={
-          <Link className={styles.button} href="/content/new">
+          <Link className={styles.button} href={clientId ? `/content/new?client=${clientId}` : "/content/new"}>
             + Create Content
           </Link>
         }
@@ -91,7 +91,7 @@ export default async function ContentPage({ searchParams }) {
           title="No Master Content found"
           description="Create a content package from a URL, image, video, or source text."
         >
-          <Link className={styles.button} href="/content/new">
+          <Link className={styles.button} href={clientId ? `/content/new?client=${clientId}` : "/content/new"}>
             Create Content
           </Link>
         </EmptyState>

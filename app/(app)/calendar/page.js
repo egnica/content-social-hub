@@ -7,7 +7,7 @@ export default function CalendarPage() {
     <PlaceholderPage
       eyebrow="Level 6"
       title="Calendar"
-      description="The native publishing calendar becomes active after the first social adapter and scheduling engine are proven."
+      description="Schedule posts from their account tabs in Content. A shared publishing calendar will be available here later."
       cards={[
         { phase: "Planned", title: "Month View", description: "See destination-specific releases across every client." },
         { phase: "Planned", title: "Week View", description: "Inspect timing and platform distribution in detail." },

@@ -69,3 +69,8 @@ video {
   color: #fff;
   background: var(--brand);
 }
+
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 3px;
+}

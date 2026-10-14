@@ -17,16 +17,17 @@ export default async function ClientDetailsPage({ params }) {
   return (
     <>
       <PageHeader
+        backHref="/clients" backLabel="Clients"
         eyebrow="Client"
         title={client.name}
         description="Manage the lightweight client record used by content, approvals, and reporting."
         actions={
-          <Link
+          <><Link className={styles.button} href={`/content/new?client=${client._id}`}>Create Content</Link><Link
             className={styles.buttonSecondary}
             href={`/connections?clientId=${client._id}`}
           >
             Social Accounts
-          </Link>
+          </Link></>
         }
       />
       <ClientForm client={client} />

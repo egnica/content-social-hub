@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import InstagramPublishControls from "@/components/instagram-publish-controls";
 import DestinationScheduleControls from "@/components/facebook-schedule-controls";
+import { useUnsavedChanges } from "@/components/unsaved-changes";
 import styles from "@/components/ui.module.css";
 import PlatformIcon from "@/components/platform-icon";
 import MediaChoice, { MediaThumbnail } from "@/components/media-choice";
@@ -258,6 +259,7 @@ export function InstagramVersionEditor({
   const published = isCurrentRevisionPublished(version);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  useUnsavedChanges(dirty);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const media = useMemo(() => masterContent.media || [], [masterContent.media]);
