@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import PlatformIcon from "@/components/platform-icon";
 import DestinationScheduleControls from "@/components/facebook-schedule-controls";
+import YouTubeFramePicker from "@/components/youtube-frame-picker";
 import styles from "@/components/ui.module.css";
 import youtubeStyles from "./youtube-editor.module.css";
 import { youtubeThumbnailStatusLabel } from "@/lib/youtube-thumbnail-logic";
@@ -78,6 +79,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [statusLoaded, setStatusLoaded] = useState(false);
   const [checkingSession, setCheckingSession] = useState(false);
   const [checkingThumbnail, setCheckingThumbnail] = useState(false);
+  const [capturedThumbnail, setCapturedThumbnail] = useState(null);
+  const [showFramePicker, setShowFramePicker] = useState(false);
   const [playlists, setPlaylists] = useState([]);
   const [playlistsLoading, setPlaylistsLoading] = useState(true);
   const [playlistError, setPlaylistError] = useState("");
@@ -96,6 +99,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
     ...(masterContent.defaultVideoThumbnail ? [masterContent.defaultVideoThumbnail] : []),
     ...media,
     ...(version.videoThumbnail ? [version.videoThumbnail] : []),
+    ...(capturedThumbnail ? [capturedThumbnail] : []),
   ].filter((a, i, arr) => a && ["image/jpeg", "image/png"].includes(a.contentType) &&
     arr.findIndex((candidate) => String(candidate?._id) === String(a._id)) === i);
   const thumbnail = thumbnailOptions.find((a) => String(a._id) === form.videoThumbnailMediaId);
@@ -342,6 +346,21 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               <option value="">No custom thumbnail</option>
               {thumbnailOptions.map((asset) => <option key={asset._id} value={String(asset._id)}>{asset.originalName || "Thumbnail"}</option>)}
             </select></label>
+      <div style={{ display: "grid", gap: 9 }}>
+        <button type="button" className={styles.buttonSecondary} disabled={!video || busy || publishing}
+          onClick={() => setShowFramePicker(open => !open)}>
+          {showFramePicker ? "Close frame picker" : "Choose frame from video"}
+        </button>
+        {showFramePicker && video ? <YouTubeFramePicker key={String(video._id)} video={video}
+          clientId={String(masterContent.clientId)} isShort={masterContent.contentLength !== "long"}
+          disabled={busy || publishing}
+          onSelected={asset => {
+            setCapturedThumbnail(asset);
+            update("videoThumbnailMediaId", String(asset._id));
+            setShowFramePicker(false);
+            setMessage("Thumbnail frame stored privately. Click Save YouTube Version to apply it to this draft.");
+          }} /> : null}
+      </div>
     </div>
   </section>
   <aside className={youtubeStyles.previewCard}>
