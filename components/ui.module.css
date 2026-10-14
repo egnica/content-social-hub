@@ -1782,16 +1782,14 @@
   margin: 14px 0;
 }
 .technicalDetails,
-.publishHistory,
-.contentMaintenance {
+.publishHistory {
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
   font-size: 12px;
 }
 .technicalDetails summary,
-.publishHistory summary,
-.contentMaintenance summary {
+.publishHistory summary {
   cursor: pointer;
   color: var(--muted);
   padding: 5px 0;
@@ -1944,6 +1942,12 @@
   background: var(--surface);
   box-shadow: var(--shadow);
 }
+.contentDeleteFooter { margin-top: 24px; padding: 20px 26px; border-top: 1px solid var(--line); }
+.contentDeleteRow { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.contentDeleteRow strong { font-size: 14px; }
+.contentDeleteRow p { margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.contentDeleteRow button { flex-shrink: 0; }
+.contentDeleteFooter > .errorNotice { margin: 14px 0 0; }
 .masterContentCard > summary {
   padding: 20px 26px;
   cursor: pointer;
@@ -1971,6 +1975,8 @@
   display: none;
 }
 @media (max-width: 700px) {
+  .contentDeleteFooter { padding: 18px; }
+  .contentDeleteRow { align-items: stretch; flex-direction: column; gap: 12px; }
   .masterContentCard > summary {
     padding: 16px 18px;
   }

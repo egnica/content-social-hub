@@ -161,6 +161,7 @@ export default function MasterContentForm({
   showHeading = true,
   initialClientId = "",
   onDirtyChange,
+  onBusyChange,
 }) {
   const source = content || freshContentSource(sourceContent);
   const router = useRouter();
@@ -194,13 +195,13 @@ export default function MasterContentForm({
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const isEditing = Boolean(content?._id);
   const draftFingerprint = JSON.stringify({ form, media: media.map(asset => asset._id || asset.localId) });
   const [savedFingerprint, setSavedFingerprint] = useState(draftFingerprint);
   const dirty = draftFingerprint !== savedFingerprint;
   useUnsavedChanges(dirty || uploading || thumbnailUploading);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { onBusyChange?.(pending || uploading || thumbnailUploading); }, [pending, uploading, thumbnailUploading, onBusyChange]);
 
   const selectedClient = useMemo(
     () => clients.find((client) => client._id === form.clientId) || null,
@@ -560,41 +561,6 @@ export default function MasterContentForm({
       setMessage(requestError.message);
     } finally {
       setPending(false);
-    }
-  }
-
-  async function deleteMasterContent() {
-    if (!isEditing) return;
-
-    const confirmed = window.confirm(
-      `Delete "${content.internalTitle}"?\n\nThis permanently deletes the Master Content package. Uploaded media remains stored privately and is not deleted.`,
-    );
-
-    if (!confirmed) return;
-
-    setDeleting(true);
-    setMessage("");
-    setErrors({});
-
-    try {
-      const response = await fetch(`/api/content/${content._id}`, {
-        method: "DELETE",
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.error || "Unable to delete the content package.",
-        );
-      }
-
-      router.push("/content");
-      router.refresh();
-    } catch (requestError) {
-      setErrors({ delete: requestError.message });
-      setMessage(requestError.message);
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -1086,28 +1052,6 @@ export default function MasterContentForm({
               : "Save and choose accounts →"}
         </button>
       </div>
-      {isEditing ? (
-        <details className={styles.contentMaintenance}>
-          <summary>Content management</summary>
-          <section className={styles.dangerZone}>
-            <div>
-              <strong>Delete Master Content</strong>
-              <p>
-                Permanently deletes this Content package. Uploaded media remains
-                in private storage so files are never silently removed.
-              </p>
-            </div>
-            <button
-              className={styles.buttonDangerStrong}
-              type="button"
-              onClick={deleteMasterContent}
-              disabled={pending || uploading || thumbnailUploading || deleting}
-            >
-              {deleting ? "Deleting Content" : "Delete Content"}
-            </button>
-          </section>
-        </details>
-      ) : null}
     </form>
   );
 }

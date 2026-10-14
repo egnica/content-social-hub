@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import MasterContentForm from "@/components/master-content-form";
+import ContentDeleteFooter from "@/components/content-delete-footer";
 import PlatformDestinationSelector from "@/components/platform-destination-selector";
 import PlatformIcon from "@/components/platform-icon";
 import { FacebookVersionEditor } from "@/components/facebook-platform-editor";
@@ -33,6 +34,7 @@ export default function ContentComposer({
 
   const [accountsDirty, setAccountsDirty] = useState(false);
   const [sharedDirty, setSharedDirty] = useState(false);
+  const [sharedBusy, setSharedBusy] = useState(false);
   const [masterOpen, setMasterOpen] = useState(!activeVersions.length);
   const [accountsOpen, setAccountsOpen] = useState(!activeVersions.length);
   const masterRef = useRef(null);
@@ -93,6 +95,7 @@ export default function ContentComposer({
           content={content}
           showHeading={false}
           onDirtyChange={setSharedDirty}
+          onBusyChange={setSharedBusy}
         />
       </details>
       <details ref={accountsRef} className={styles.masterContentCard} open={accountsOpen} onToggle={event => setAccountsOpen(event.currentTarget.open)}>
@@ -194,6 +197,7 @@ export default function ContentComposer({
           Choose and save an account above to prepare its post.
         </div>
       )}
+      <ContentDeleteFooter content={content} disabled={sharedBusy} />
     </div>
   );
 }
