@@ -35,7 +35,7 @@ function YouTubeVideoPreview({ video, thumbnail, isShort }) {
   const source = video?._id ? `/api/media/${video._id}/url` : "";
   const poster = thumbnail ? (thumbnail.previewUrl || `/api/media/${thumbnail._id}/url`) : "";
   return (
-    <div style={{
+    <div className={isShort ? youtubeStyles.shortPreview : undefined} style={{
       position: "relative", aspectRatio: isShort ? "9 / 16" : "16 / 9",
       width: isShort ? "min(100%, 260px)" : "100%", margin: "0 auto",
       background: "#151515", color: "#fff", overflow: "hidden",
@@ -53,7 +53,7 @@ function YouTubeVideoPreview({ video, thumbnail, isShort }) {
             border: 0, padding: 0, cursor: "pointer", color: "#fff",
             background: "#151515",
           }}>
-          {poster ? <img src={poster} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> :
+          {poster ? <Image src={poster} alt="" width={isShort ? 260 : 640} height={isShort ? 462 : 360} unoptimized style={{ width: "100%", height: "100%", objectFit: "contain" }} /> :
             <span style={{ display: "block", padding: 16 }}>{video.originalName || "Selected video"}</span>}
           <span aria-hidden="true" style={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
@@ -93,6 +93,15 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
   const [playlistMessage, setPlaylistMessage] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const isShort = masterContent.contentLength !== "long";
+  const uploaded = publishState === "succeeded" || version.lastPublishStatus === "succeeded" || version.status === "published";
+  const uploadActive = ["uploading", "processing", "submitting"].includes(publishState);
+  const needsReview = ["needs_review", "unknown", "failed"].includes(publishState);
+  const editingLocked = !statusLoaded || busy || publishing || uploaded || uploadActive || needsReview;
+  const videoId = attempt?.providerVideoId || version.providerPostId;
+  const studioUrl = /^[A-Za-z0-9_-]{11}$/.test(String(videoId || ""))
+    ? `https://studio.youtube.com/video/${videoId}/edit` : "https://studio.youtube.com/";
+  const videoUrl = attempt?.providerPostUrl || version.providerPostUrl;
   const media = masterContent.media || [];
   const videos = media.filter((a) => String(a.contentType || "").startsWith("video/"));
   const thumbnailOptions = [
@@ -104,11 +113,12 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
     arr.findIndex((candidate) => String(candidate?._id) === String(a._id)) === i);
   const thumbnail = thumbnailOptions.find((a) => String(a._id) === form.videoThumbnailMediaId);
   const video = videos.find((a) => form.mediaIds.includes(String(a._id)));
+  const progress = video?.size ? Math.min(100, Math.max(0, Math.round(100 * Number(attempt?.bytesUploaded || 0) / video.size))) : 0;
   const masterChanged = isYouTubeVersionOutOfSync(version, masterContent.revision);
-  const metadataDraft = { ...form, tags: parseYouTubeTags(form.tagsText) };
+  const metadataDraft = { ...form, videoThumbnailMediaId: isShort ? "" : form.videoThumbnailMediaId, tags: parseYouTubeTags(form.tagsText) };
   const validation = validateYouTubeVersionDraft({
     ...metadataDraft, media, thumbnail, masterChanged, customized: version.customized,
-    isShort: masterContent.contentLength !== "long", videoDuration: video?.duration,
+    isShort, videoDuration: video?.duration,
     healthStatus: destination?.healthStatus || "unavailable",
     canPublish: destination?.canPublish === true,
   });
@@ -202,7 +212,10 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
     } catch (cause) { setPlaylistError(cause.message); }
     finally { setPlaylistsLoading(false); }
   }, [version._id]);
-  useEffect(() => { loadPlaylists(); }, [loadPlaylists]);
+  useEffect(() => {
+    const timer = setTimeout(() => { void loadPlaylists(); }, 0);
+    return () => clearTimeout(timer);
+  }, [loadPlaylists]);
   async function createPlaylist() {
     if (!playlistCanManage || !newPlaylistTitle.trim()) return;
     if (!window.confirm(`Create a ${newPlaylistPrivacy} YouTube playlist named "${newPlaylistTitle.trim()}" on this channel?`)) return;
@@ -318,29 +331,35 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
           <p className={styles.fieldHint}>{masterContent.contentLength === "long" ? "Standard video" : "Short"} · {form.privacyStatus} · {version.customized ? "Channel-specific draft" : "Shared content"}</p>
         </div>
       </div>
-      <span className={youtubeStyles.draftBadge}>{dirty ? "Unsaved changes" :
-        publishState === "succeeded" || version.lastPublishStatus === "succeeded" ? "Uploaded" :
-        "Draft"}</span>
+      <span className={youtubeStyles.draftBadge}>{!statusLoaded ? "Checking status" : uploaded ? "Uploaded" :
+        uploadActive ? "Upload in progress" : needsReview ? "Needs attention" : dirty ? "Unsaved changes" : "Draft"}</span>
     </div>
+    {uploaded ? <div className={youtubeStyles.uploadedNotice}>
+      <div><strong>This video is already on YouTube.</strong>
+        <p>Video details are read-only here. Edit the title and description in YouTube Studio. {isShort ? "Choose the thumbnail frame in the YouTube mobile app." : "You can change the thumbnail in Studio, too."} Playlist selections remain available below.</p></div>
+      <a className={styles.buttonSecondary} href={studioUrl} target="_blank" rel="noreferrer">Open YouTube Studio</a>
+    </div> : null}
     {error ? <div className={styles.errorNotice} role="alert">{error}</div> : null}
     {message ? <div className={styles.successNotice} role="status">{message}</div> : null}
-    {masterChanged ? <div className={styles.notice}>Master Content changed. Use Update from Master to replace the YouTube-specific edits.</div> : null}
-    {validation.warnings.filter((item) => !item.startsWith("YouTube upload")).map((item) => <div key={item} className={styles.notice}>{item}</div>)}
-    {validation.blocking.length ? <div className={styles.errorNotice}><strong>Before you can upload</strong>
+    {masterChanged && !uploaded ? <div className={styles.notice}>Master Content changed. Your YouTube draft is preserved. Review it or replace it from Master under Additional settings.</div> : null}
+    {!uploaded ? validation.warnings.filter((item) => !item.startsWith("YouTube upload") && !item.startsWith("Master changed")).map((item) => <div key={item} className={styles.notice}>{item}</div>) : null}
+    {validation.blocking.length && !uploaded && !uploadActive ? <div className={styles.errorNotice}><strong>Complete these details before uploading</strong>
       <ul>{validation.blocking.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
     <div className={youtubeStyles.layout}>
 <section className={youtubeStyles.contentCard} aria-label="Video content">
-    <h3 className={youtubeStyles.sectionTitle}>Content</h3>
-    <div className={youtubeStyles.coreFields}>
-      <label className={styles.fieldFull}><span className={styles.label}>Video from Master Content</span>
+    <h3 className={youtubeStyles.sectionTitle}>{uploaded ? "Saved video details" : "Video details"}</h3>
+    <fieldset className={youtubeStyles.coreFields} disabled={editingLocked}>
+      <legend className={youtubeStyles.srOnly}>Video details</legend>
+      <label className={styles.fieldFull}><span className={styles.label}>Video</span>
             <select className={styles.input} value={form.mediaIds[0] || ""} onChange={(e) => update("mediaIds", e.target.value ? [e.target.value] : [])}>
               <option value="">Choose one video</option>
               {videos.map((asset) => <option key={asset._id} value={String(asset._id)}>{asset.originalName || "Video"}</option>)}
             </select></label>
-      <label className={styles.fieldFull}><span className={styles.label}>YouTube title ({form.title.length}/100)</span>
-            <input className={styles.input} value={form.title} onChange={(e) => update("title", e.target.value)} maxLength={120}/></label>
-      <label className={styles.fieldFull}><span className={styles.label}>Description (5,000 UTF-8 bytes max)</span>
-            <textarea className={styles.textarea} value={form.description} rows={7} onChange={(e) => update("description", e.target.value)}/></label>
+      <label className={styles.fieldFull}><span className={styles.label}>Title <small>{form.title.length}/100</small></span>
+            <input className={styles.input} value={form.title} onChange={(e) => update("title", e.target.value)} maxLength={100}/></label>
+      <label className={styles.fieldFull}><span className={styles.label}>Description</span>
+            <textarea className={styles.textarea} value={form.description} rows={5} onChange={(e) => update("description", e.target.value)}/></label>
+      {!isShort ? <>
       <label className={styles.fieldFull}><span className={styles.label}>Custom thumbnail (optional)</span>
             <select className={styles.input} value={form.videoThumbnailMediaId} onChange={(e) => update("videoThumbnailMediaId", e.target.value)}>
               <option value="">No custom thumbnail</option>
@@ -349,36 +368,41 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
       <div style={{ display: "grid", gap: 9 }}>
         <button type="button" className={styles.buttonSecondary} disabled={!video || busy || publishing}
           onClick={() => setShowFramePicker(open => !open)}>
-          {showFramePicker ? "Close frame picker" : "Choose frame from video"}
+          {showFramePicker ? "Close image capture" : "Create thumbnail image from video"}
         </button>
         {showFramePicker && video ? <YouTubeFramePicker key={String(video._id)} video={video}
-          clientId={String(masterContent.clientId)} isShort={masterContent.contentLength !== "long"}
-          disabled={busy || publishing}
+          clientId={String(masterContent.clientId)} isShort={false}
+          disabled={editingLocked}
           onSelected={asset => {
             setCapturedThumbnail(asset);
             update("videoThumbnailMediaId", String(asset._id));
             setShowFramePicker(false);
-            setMessage("Thumbnail frame stored privately. Click Save YouTube Version to apply it to this draft.");
+            setMessage("Thumbnail image created. Save the draft to use it for your next upload.");
           }} /> : null}
       </div>
-    </div>
+      </> : <div className={youtubeStyles.thumbnailNote}>
+        <strong>Shorts thumbnail</strong>
+        <p>After uploading, choose a frame in the YouTube mobile app. Custom thumbnail images are not sent for Shorts from this hub.</p>
+      </div>}
+    </fieldset>
   </section>
   <aside className={youtubeStyles.previewCard}>
-        <div className={styles.sectionHeader}><h2>Live preview</h2><p>{masterContent.contentLength === "long" ? "16:9 video" : "9:16 Short"} · Draft preview</p></div>
+        <div className={styles.sectionHeader}><h2>Video preview</h2><p>{isShort ? "9:16 Short" : "16:9 video"}</p></div>
         <div style={{ border: "1px solid #d8dde3", borderRadius: 12, overflow: "hidden" }}>
           <YouTubeVideoPreview key={`${video?._id || "none"}-${thumbnail?._id || "none"}-${masterContent.contentLength}`}
-            video={video} thumbnail={thumbnail} isShort={masterContent.contentLength !== "long"} />
+            video={video} thumbnail={isShort ? null : thumbnail} isShort={isShort} />
           <div style={{ padding: 16 }}>
             <strong style={{ overflowWrap: "anywhere" }}>{form.title || "YouTube title"}</strong>
             <p className={styles.fieldHint}>{destination?.accountName || "YouTube Channel"} · {form.privacyStatus}</p>
-            <p className={styles.fieldHint}>Prepared description ({new TextEncoder().encode(preparedDescription.text).length}/5,000 UTF-8 bytes, including chapters)</p>
+            <p className={styles.fieldHint}>Description · {new TextEncoder().encode(preparedDescription.text).length.toLocaleString()}/5,000 bytes</p>
             <p className={youtubeStyles.previewExcerpt} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{preparedDescription.text}</p>
           </div>
         </div>
 </aside>
   <section className={youtubeStyles.publishingCard} aria-label="Publishing options">
-    <h3 className={youtubeStyles.sectionTitle}>Publishing</h3>
-    <div className={youtubeStyles.publishFields}>
+    <h3 className={youtubeStyles.sectionTitle}>Visibility &amp; audience</h3>
+    <fieldset className={youtubeStyles.publishFields} disabled={editingLocked}>
+      <legend className={youtubeStyles.srOnly}>Visibility and audience</legend>
       <label className={styles.fieldFull}><span className={styles.label}>Visibility</span>
             <select className={styles.input} value={form.privacyStatus} onChange={(e) => update("privacyStatus", e.target.value)}>
               <option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option>
@@ -388,7 +412,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               onChange={(e) => update("madeForKids", e.target.value === "" ? null : e.target.value === "true")}>
               <option value="">Choose an audience</option><option value="false">No, not made for kids</option><option value="true">Yes, made for kids</option>
             </select></label>
-    </div>
+    </fieldset>
     <details className={youtubeStyles.playlistDisclosure}>
       <summary className={youtubeStyles.sectionSummary}>
         <span>Playlists</span>
@@ -402,7 +426,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {playlists.map((playlist) => (
                   <label key={playlist.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="checkbox" checked={form.playlistIds.includes(playlist.id)}
+                    <input type="checkbox" disabled={busy || publishing || uploadActive || needsReview || !statusLoaded} checked={form.playlistIds.includes(playlist.id)}
                       onChange={(e) => update("playlistIds", e.target.checked ?
                         [...new Set([...form.playlistIds, playlist.id])] :
                         form.playlistIds.filter((id) => id !== playlist.id))} />
@@ -431,7 +455,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
                 onClick={createPlaylist}>{creatingPlaylist ? "Creating…" : "+ Create Playlist"}</button>
               </div>
             </details>
-          ) : <p className={styles.fieldHint}>Playlist write access isn't granted yet.
+          ) : <p className={styles.fieldHint}>Reconnect this channel to enable playlist management.
             {playlistReconnectUrl ? <> <a href={playlistReconnectUrl}>Reconnect YouTube for playlist access</a>.</> : null}
             Existing video uploading remains available without this extra permission.
           </p>}
@@ -440,14 +464,15 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
           {(publishState === "succeeded" || version.lastPublishStatus === "succeeded") ?
             <button type="button" className={styles.buttonSecondary}
               disabled={assigningPlaylist || dirty || !playlistCanManage}
-              onClick={applyPlaylistsToVideo}>{assigningPlaylist ? "Checking assignment…" : "Check / apply saved playlist assignment"}</button> : null}
+              onClick={applyPlaylistsToVideo}>{assigningPlaylist ? "Applying playlists…" : "Apply playlists to uploaded video"}</button> : null}
       </div>
     </details>
   </section>
           <details className={youtubeStyles.advancedCard}>
           <summary className={youtubeStyles.sectionSummary}><span>Additional settings</span><small>Tags, language, disclosures, chapters &amp; recording details</small></summary>
           <p className={styles.fieldHint}>These fields use your defaults. Change them only when needed.</p>
-          <div className={youtubeStyles.advancedFields}>
+          <fieldset className={youtubeStyles.advancedFields} disabled={editingLocked}>
+            <legend className={youtubeStyles.srOnly}>Additional video settings</legend>
             <label className={styles.fieldFull}><span className={styles.label}>Paid promotion</span>
               <select className={styles.input} value={String(form.paidPromotion)} onChange={(e) => update("paidPromotion", e.target.value === "true")}>
                 <option value="false">No (default)</option><option value="true">Yes</option>
@@ -483,7 +508,7 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
             <label className={styles.fieldFull}><span className={styles.label}>Recording location (optional)</span>
               <input className={styles.input} type="text" maxLength={200} value={form.recordingLocation}
                 placeholder="e.g. Minneapolis, MN" onChange={(e) => update("recordingLocation", e.target.value)}/>
-              <span className={styles.fieldHint}>Retained in Content Social Hub; YouTube's free-text recording-location API field is deprecated.</span>
+              <span className={styles.fieldHint}>Saved in the hub only; update the location in YouTube Studio if needed.</span>
             </label>
             <div className={styles.fieldFull}>
               <span className={styles.label}>Upload date</span>
@@ -495,28 +520,61 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               onChange={(e) => update("chapters", e.target.value)} />
             <span className={styles.fieldHint}>At least three ascending timestamps starting at 00:00, with each chapter at least 10 seconds long. Chapters will be appended to the description during publishing.</span>
           </label></div>
-          </div>
+          </fieldset>
+          {!uploaded ? <div className={youtubeStyles.resetActions}>
+            <button type="button" className={styles.buttonSecondary} disabled={editingLocked}
+              onClick={() => { if ((dirty || version.customized) && !window.confirm("Replace YouTube edits with current Master Content?")) return;
+                requestSave({ action: "reset_from_master" }, true); }}>Replace draft from Master</button>
+            <p className={styles.fieldHint}>Replaces channel-specific edits with your shared content.</p>
+          </div> : null}
         </details>
 
   <section className={youtubeStyles.workflowCard} aria-label="YouTube upload and save">
-            <div className={youtubeStyles.uploadStatus} aria-live="polite">
-          <strong>Upload status:</strong> {!statusLoaded ? "Checking saved status…" :
-            !attempt && publishState !== "unknown" ? "Not started" :
-            publishState === "unknown" ? "Status unavailable. New uploads disabled." :
-            `${attempt?.status || publishState}${attempt?.bytesUploaded ? ` · ${(attempt.bytesUploaded / (video?.size || 1) * 100).toFixed(1)}% transferred` : ""}`}
-          {attempt?.providerPostUrl ? <span> · <a href={attempt.providerPostUrl} target="_blank" rel="noreferrer">View on YouTube</a></span> : null}
-          {attempt?.providerError ? <p>{typeof attempt.providerError === "string" ? attempt.providerError : attempt.providerError.message}</p> : null}
-          {attempt?.playlistAssignmentStatus ? <p>Playlist assignment: {attempt.playlistAssignmentStatus}</p> : null}
-          {attempt?.videoThumbnailMediaAssetId || attempt?.thumbnailStatus ? (
+    <h3 className={youtubeStyles.sectionTitle}>{uploaded ? "Upload complete" : "Save & upload"}</h3>
+    <div className={youtubeStyles.uploadStatus} aria-live="polite">
+          <strong>{!statusLoaded ? "Checking your saved upload…" : uploaded ? "Video uploaded successfully" :
+            publishState === "unknown" ? "We could not check this upload" : publishState === "uploading" ? `Uploading video · ${progress}%` :
+            publishState === "processing" ? "YouTube is processing your video" : publishState === "submitting" ? "Starting your upload" :
+            needsReview ? "This upload needs attention" : dirty ? "Save your changes to continue" : "Draft saved"}</strong>
+          <p>{uploaded ? `Check the video in YouTube Studio. ${isShort ? "Choose its thumbnail frame in the YouTube mobile app." : "Confirm the custom thumbnail there."}` :
+            uploadActive ? "Your existing upload is saved. Continue it here without creating another video." :
+            needsReview ? "Refresh the saved status, then use troubleshooting below. A new upload is blocked until this attempt is reviewed." :
+            "Save your video details, then upload now or choose a scheduled time below."}</p>
+          {publishState === "uploading" ? <progress className={youtubeStyles.progress} value={progress} max={100} aria-label="Video upload progress" /> : null}
+          {!isShort && (attempt?.videoThumbnailMediaAssetId || attempt?.thumbnailStatus) ? (
             <p><strong>Custom thumbnail:</strong> {youtubeThumbnailStatusLabel(attempt)}.
-              {" "}For Shorts, verify the actual image in YouTube Studio on a computer.
               {attempt.thumbnailError ? ` ${attempt.thumbnailError}` : ""}
             </p>
           ) : null}
         </div>
 
-            <details className={youtubeStyles.diagnostics}>
-          <summary className={youtubeStyles.diagnosticSummary}>Technical details &amp; upload diagnostics</summary>
+    <div className={youtubeStyles.actions}>
+      <button type="button" className={uploaded || !dirty ? styles.buttonSecondary : styles.button}
+        disabled={busy || publishing || !statusLoaded || !dirty || uploadActive || needsReview || validation.blocking.length > 0}
+        onClick={() => requestSave(metadataDraft)}>{busy ? "Saving…" : uploaded ? "Save playlist selection" : "Save draft"}</button>
+      {uploaded ? <>
+        {videoUrl ? <a className={styles.button} href={videoUrl} target="_blank" rel="noreferrer">View on YouTube</a> : null}
+        <a className={styles.buttonSecondary} href={studioUrl} target="_blank" rel="noreferrer">Open Studio</a>
+      </> : uploadActive && publishState !== "submitting" ? (
+        <button type="button" className={styles.button} disabled={publishing || busy}
+          onClick={() => publishAction(true)}>{publishing ? "Working…" : publishState === "uploading" ? "Continue upload" : "Check processing"}</button>
+      ) : needsReview || publishState === "submitting" ? (
+        <button type="button" className={styles.buttonSecondary} disabled={publishing || busy}
+          onClick={reconcileUpload}>Refresh saved status</button>
+      ) : (
+        <button type="button" className={styles.button} disabled={!statusLoaded || publishing || busy || dirty || validation.blocking.length > 0}
+          onClick={() => publishAction(false)}>{publishing ? "Starting upload…" : "Upload now"}</button>
+      )}
+    </div>
+    {!uploaded && dirty ? <p className={styles.fieldHint}>Save the draft before uploading or scheduling.</p> : null}
+    <details className={youtubeStyles.scheduleDisclosure}>
+      <summary className={youtubeStyles.sectionSummary}><span>{uploaded ? "Schedule history" : "Schedule upload"}</span><small>{uploaded ? "View the saved release" : "Choose a time or manage an existing schedule"}</small></summary>
+      {!uploaded ? <p className={styles.fieldHint}>Uploading begins at the scheduled time. YouTube processing may delay when the video becomes available.</p> : null}
+      <DestinationScheduleControls version={version} destination={destination}
+        masterContent={masterContent} dirty={dirty} busy={busy || publishing || uploadActive || needsReview || !statusLoaded} />
+    </details>
+    {attempt || needsReview ? <details className={youtubeStyles.diagnostics}>
+          <summary className={youtubeStyles.diagnosticSummary}>Troubleshooting &amp; upload details</summary>
           <p className={styles.fieldHint}>
             Refresh diagnostics only reads the database. Check YouTube Session asks YouTube how many bytes it received, sends zero video bytes, and saves the result. Neither button starts or resumes an upload.
           </p>
@@ -604,32 +662,8 @@ export function YouTubeVersionEditor({ initialVersion, destination, masterConten
               {checkingThumbnail ? "Checking thumbnail…" : "Check YouTube thumbnail (read-only)"}
             </button>
           </div>
-        </details>
-
-            <div className={youtubeStyles.actions}>
-          <button type="button" className={styles.buttonSecondary} disabled={busy}
-            onClick={() => { if ((dirty || version.customized) && !window.confirm("Replace YouTube edits with current Master Content?")) return;
-              requestSave({ action: "reset_from_master" }, true); }}>Update from Master</button>
-          <button type="button" className={styles.button} disabled={busy || !dirty || validation.blocking.length > 0}
-            onClick={() => requestSave(metadataDraft)}>{busy ? "Saving…" : dirty ? "Save YouTube Version" : "Saved"}</button>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
-            {publishState === "succeeded" || version.lastPublishStatus === "succeeded" ? (
-              version.providerPostUrl ? <a className={styles.button} href={version.providerPostUrl} target="_blank" rel="noreferrer">View YouTube Video</a> :
-              <span>Published on YouTube</span>
-            ) : publishState && publishState !== "failed" && publishState !== "unknown" && publishState !== "needs_review" && publishState !== "submitting" ? (
-              <button type="button" className={styles.buttonSecondary} disabled={publishing || busy}
-                onClick={() => publishAction(true)}>{publishing ? "Uploading / checking…" : "Continue upload / Check processing"}</button>
-            ) : publishState === "unknown" || publishState === "needs_review" || publishState === "submitting" || publishState === "failed" ? (
-              <button type="button" className={styles.buttonSecondary} disabled={publishing} onClick={reconcileUpload}>Refresh saved status</button>
-            ) : (
-              <button type="button" className={styles.button} disabled={!statusLoaded || publishing || busy || dirty || validation.blocking.length > 0}
-                onClick={() => publishAction(false)}>{publishing ? "Starting upload…" : "Upload to YouTube"}</button>
-            )}
-          </div>
-        </div>
+        </details> : null}
   </section>
-  <DestinationScheduleControls version={version} destination={destination}
-    masterContent={masterContent} dirty={dirty} busy={busy || publishing} />
 </div>
 </section>;
 }

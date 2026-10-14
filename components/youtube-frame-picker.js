@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import styles from "@/components/ui.module.css";
 
 function timestamp(value) {
@@ -14,7 +14,6 @@ export default function YouTubeFramePicker({ video, clientId, isShort, disabled,
   const [time, setTime] = useState(0);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { setDuration(0); setTime(0); setError(""); }, [video?._id]);
 
   async function useFrame() {
     const player = playerRef.current;
@@ -56,8 +55,8 @@ export default function YouTubeFramePicker({ video, clientId, isShort, disabled,
 
   if (!video?._id) return null;
   return <div style={{ display: "grid", gap: 9, padding: 12, border: "1px solid var(--line)", borderRadius: 10, background: "var(--surface-soft)" }}>
-    <strong>Choose thumbnail frame</strong>
-    <p className={styles.fieldHint}>Pause the video or move the slider to choose a frame. The image is saved privately, not posted to YouTube.</p>
+    <strong>Create thumbnail image</strong>
+    <p className={styles.fieldHint}>Pause or scrub the video to capture a still image. Save the draft to select it for the next upload.</p>
     <video key={String(video._id)} ref={playerRef} src={`/api/media/${video._id}/url`}
       crossOrigin="anonymous" preload="metadata" controls playsInline
       aria-label="Select a YouTube thumbnail frame"
@@ -72,8 +71,7 @@ export default function YouTubeFramePicker({ video, clientId, isShort, disabled,
         onChange={event => { const next = Number(event.target.value); if (playerRef.current) playerRef.current.currentTime = next; setTime(next); }} />
     </label>
     <button type="button" className={styles.buttonSecondary} disabled={!duration || disabled || working}
-      onClick={useFrame}>{working ? "Saving frame…" : "Use this frame as thumbnail"}</button>
+      onClick={useFrame}>{working ? "Saving image…" : "Use this image"}</button>
     {error ? <p className={styles.errorNotice} role="alert">{error}</p> : null}
-    <p className={styles.fieldHint}>YouTube Shorts may show a different thumbnail on some surfaces. Verify the actual result in YouTube Studio.</p>
   </div>;
 }

@@ -33,7 +33,7 @@ test("YouTube inherits one Master video and private default but no audience decl
 test("YouTube version normalization preserves independent metadata", () => {
   assert.deepEqual(normalizeYouTubeVersionDraft({ ...ready, chapters: "00:00 Intro", videoThumbnailMediaId: "image-1" }),
     { title: "A video", description: "Description", privacyStatus: "private", madeForKids: false,
-      mediaIds: ["video-1"], primaryMediaId: "video-1", videoThumbnailMediaId: "image-1", chapters: "00:00 Intro",
+      mediaIds: ["video-1"], primaryMediaId: "video-1", videoThumbnailMediaId: "image-1", chapters: "00:00 Intro", playlistIds: [],
       paidPromotion: false, containsSyntheticMedia: false, defaultLanguage: "en",
       captionCertification: "never_aired_us", tags: [], recordingDate: "", recordingLocation: "" });
 });
@@ -69,7 +69,7 @@ test("YouTube prepares chapters once with accurate duration and description byte
   assert.deepEqual(prepared.chapterSeconds, [0, 15, 60]);
   assert.equal(validateYouTubeVersionDraft({ ...ready, chapters, videoDuration: 75 }).publishable, true);
   assert.equal(validateYouTubeVersionDraft({ ...ready, chapters, videoDuration: 65 }).publishable, false);
-  assert.equal(prepareYouTubeDescription("😀".repeat(1240), chapters).errors.length > 0, true);
+  assert.equal(prepareYouTubeDescription("😀".repeat(1248), chapters).errors.length > 0, true);
   assert.equal(prepareYouTubeDescription("Text", "00:00 Intro\n00:05 Too soon\n00:10 End").errors.length > 0, true);
 });
 test("YouTube thumbnail preflight enforces API size limit and advises format-specific dimensions", () => {
