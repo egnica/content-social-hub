@@ -9,6 +9,7 @@ export default function DestinationPublishingPanel({
   destinationName,
   schedule,
   publish,
+  nowLabel = "Publish now",
 }) {
   const [mode, setMode] = useState("schedule");
   const activeMode = attention ? "now" : mode;
@@ -31,7 +32,7 @@ export default function DestinationPublishingPanel({
               aria-pressed={activeMode === "now"}
               onClick={() => setMode("now")}
             >
-              Publish now
+              {nowLabel}
             </button>
             <button
               type="button"

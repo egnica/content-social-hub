@@ -8,6 +8,9 @@ export default function PublishedPostSummary({
   attempt,
   postUrl,
   timezone,
+  resultLabel = "Published",
+  postLabel,
+  extraActions,
 }) {
   const publishedAt = attempt?.completedAt || version.publishedAt;
   let dateLabel = "Publication time unavailable";
@@ -27,7 +30,7 @@ export default function PublishedPostSummary({
     <div className={styles.publishedSummary}>
       <div>
         <strong>
-          Published to {destinationName} on {platformLabel}
+          {resultLabel} to {destinationName} on {platformLabel}
         </strong>
         <p>{dateLabel}</p>
       </div>
@@ -39,7 +42,7 @@ export default function PublishedPostSummary({
             target="_blank"
             rel="noreferrer"
           >
-            View {platformLabel} post ↗
+            {postLabel || `View ${platformLabel} post ↗`}
           </a>
         ) : (
           <span className={styles.fieldHint}>
@@ -52,6 +55,7 @@ export default function PublishedPostSummary({
         >
           Create a new draft
         </Link>
+        {extraActions}
       </div>
     </div>
   );

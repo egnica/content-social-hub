@@ -1,66 +1,13 @@
-/* YouTube editor layout only. Does not change publishing behavior or other platforms. */
-.root {
-  padding: clamp(14px, 2.2vw, 22px);
-  min-width: 0;
-}
-.topline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-}
-.topline h2 {
-  font-size: clamp(16px, 1.5vw, 19px);
-  margin: 0;
-}
-.topline p { margin: 3px 0 0; }
-.draftBadge {
-  padding: 6px 11px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface-soft);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  grid-template-areas:
-    "content preview"
-    "publishing preview"
-    "advanced preview"
-    "workflow preview";
-  gap: 16px 22px;
-  align-items: start;
-  min-width: 0;
-}
+/* YouTube-specific fields; editor layout and publishing UI use shared styles. */
 .contentCard,
 .publishingCard,
 .advancedCard,
-.workflowCard,
 .previewCard {
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
 }
-.contentCard { grid-area: content; padding: 18px; }
-.publishingCard { grid-area: publishing; padding: 18px; }
-.advancedCard { grid-area: advanced; padding: 0 18px; }
-.workflowCard { grid-area: workflow; padding: 14px 18px 18px; }
-.previewCard {
-  grid-area: preview;
-  position: sticky;
-  top: 18px;
-  align-self: start;
-  padding: 16px;
-}
+.publishingCard { margin: 20px 0; }
+.previewCard { width: 100%; }
+.resultHint { margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .sectionTitle {
   margin: 0 0 14px;
   font-size: 15px;
@@ -83,15 +30,9 @@
 .advancedFields:disabled textarea,
 .advancedFields:disabled select { opacity: 1; color: var(--muted); background: var(--surface-soft); cursor: default; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.uploadedNotice { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; background: var(--brand-soft); }
-.uploadedNotice p { max-width: 650px; margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.55; }
-.uploadedNotice a { flex-shrink: 0; }
 .thumbnailNote { padding: 13px 14px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 9px; font-size: 13px; line-height: 1.55; }
 .thumbnailNote p { margin-top: 5px; color: var(--muted); }
 .progress { display: block; width: 100%; height: 8px; margin-top: 12px; accent-color: var(--brand); }
-.scheduleDisclosure { margin-top: 16px; border-top: 1px solid var(--line); }
-.scheduleDisclosure > div { margin: 12px 0 0; }
-.resetActions { display: grid; gap: 8px; padding: 0 0 16px; }
 .coreFields > label { grid-column: auto; }
 .coreFields textarea { min-height: 132px; }
 .coreFields input,
@@ -103,29 +44,13 @@
   gap: 12px;
 }
 .publishFields > label { grid-column: auto; }
-.sectionSummary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px 12px;
-  cursor: pointer;
-  list-style-position: inside;
-  padding: 13px 0;
-  font-size: 14px;
-  font-weight: 750;
-}
 .sectionSummary small {
   color: var(--muted);
   font-size: 12px;
   font-weight: 450;
+  margin-left: 8px;
 }
-.sectionSummary::after { content: "+"; color: var(--muted); margin-left: auto; font-size: 18px; }
-.playlistDisclosure[open] > .sectionSummary::after,
-.advancedCard[open] > .sectionSummary::after,
-.scheduleDisclosure[open] > .sectionSummary::after { content: "−"; }
 .playlistDisclosure {
-  border-top: 1px solid var(--line);
   margin-top: 16px;
 }
 .playlistInner {
@@ -162,14 +87,13 @@
   margin-top: 10px;
 }
 .createPlaylistControls button { grid-column: 1 / -1; }
-.advancedCard > summary { border: 0; }
-.advancedCard[open] > summary { border-bottom: 1px solid var(--line); }
 .advancedCard > p { margin-top: 12px; }
 .advancedFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  padding: 14px 0 18px;
+  align-items: start;
+  padding: 0 0 8px;
 }
 .advancedFields > label { grid-column: auto; }
 .advancedFields > label:has(textarea) { grid-column: 1 / -1; }
@@ -193,28 +117,16 @@
 .diagnostics {
   margin-top: 12px;
   border-top: 1px solid var(--line);
-  padding: 12px 0;
+  padding: 0;
 }
 .diagnosticSummary {
   cursor: pointer;
   color: var(--muted);
   font-size: 13px;
   font-weight: 650;
+  padding: 14px 0;
 }
 .diagnostics > p { margin-top: 10px; }
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 9px;
-  margin-top: 12px;
-  padding-top: 13px;
-  border-top: 1px solid var(--line);
-}
-.previewCard > div:first-child { margin: 0 0 12px; }
-.previewCard > div:first-child h2 { font-size: 15px; }
-.previewCard > div:first-child p { font-size: 12px; }
-.previewCard > div:nth-child(2) { border-color: var(--line); }
 .previewExcerpt {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -225,38 +137,9 @@
   line-height: 1.5;
 }
 .shortPreview { max-width: 260px; }
-@media (max-width: 1050px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "content"
-      "publishing"
-      "advanced"
-      "workflow"
-      "preview";
-    gap: 14px;
-  }
-  .previewCard {
-    position: static;
-    width: 100%;
-    max-width: none;
-  }
-}
-@media (max-width: 580px) {
+@media (max-width: 700px) {
   .shortPreview { max-width: 180px; }
-  .uploadedNotice { align-items: stretch; flex-direction: column; padding: 14px; }
-  .contentCard,
-  .publishingCard,
-  .workflowCard,
-  .previewCard { padding: 14px; }
-  .advancedCard { padding: 0 14px; }
   .publishFields,
   .advancedFields,
   .createPlaylistControls { grid-template-columns: minmax(0, 1fr); }
-  .actions { align-items: stretch; }
-  .actions > button,
-  .actions > div:last-child,
-  .actions > div:last-child > button,
-  .actions > div:last-child > a { width: 100%; margin-left: 0 !important; }
-  .actions > div:last-child { display: flex; }
 }
