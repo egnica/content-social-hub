@@ -2169,3 +2169,13 @@
   .workflowSteps strong { font-size: 12px; }
   .workflowSteps small { display: none; }
 }
+
+.googleBusinessPicker { width: min(680px, 100%); }
+.googleBusinessLocations { margin: 20px 0; padding: 0; border: 0; display: grid; gap: 12px; }
+.googleBusinessLocations legend { font-weight: 600; margin-bottom: 10px; }
+.googleBusinessLocation { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.googleBusinessLocation:has(input:checked) { background: var(--brand-soft); border-color: var(--brand); }
+.googleBusinessLocation > span { display: grid; gap: 6px; overflow-wrap: anywhere; }
+.googleBusinessLocation small { color: var(--muted); }
+.googleBusinessPicker > a { margin-top: 16px; }
+.connectionIdentity .connectionMetadata { color: var(--muted); }

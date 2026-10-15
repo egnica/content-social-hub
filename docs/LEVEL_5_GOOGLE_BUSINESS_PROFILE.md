@@ -6,17 +6,17 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **PAUSED — Google API access approval pending; YouTube is the active phase as of October 13, 2026**
+- Status: **Direct connection prepared locally by owner request; live Google access remains blocked pending project approval. YouTube remains the broader active phase.**
 - Opened: **October 2, 2026**
 - Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
 - Provider: **Google Business Profile**
 - Application provider identity: `google_business_profile`
 - Dependency: completed Facebook publishing/scheduling and the closed Instagram adapter
-- API access: **unverified**
+- API access: **October 14 screenshot: Account Management API enabled, Requests per minute value 0; approval not yet granted at that check.**
 - Live-test client and exact business location: **unconfirmed**
-- Current Google task: **L5-GBP-01 — Access Readiness (`MANUAL`: Google approval pending)**
+- Current Google task: **L5-GBP-02 — Direct OAuth / Location / Renewal / Health (`MANUAL`: local implementation; publication, configuration and live verification outstanding). Owner authorized preparing it ahead of L5-GBP-01 approval on October 14.**
 - Active phase: `docs/LEVEL_5_YOUTUBE.md`
-- No Google adapter, OAuth credentials, API access approval, or live publication is proven by opening this document
+- Direct OAuth code is prepared locally. No Google credentials were created, Cloud configuration changed, live location connected, or Google post published by this implementation.
 
 ## Scope and phase pass condition
 
@@ -73,7 +73,7 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | L5-GBP-00 | `DONE` | Baseline maintenance checkpoint | Accepted October 2, 2026 with deployed smoke evidence; unavailable live edge cases explicitly deferred |
 | UX-01 | `DONE` | Approved post composer experience | Accepted for roadmap progression October 12 after editor changes and user review |
 | L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | API application submitted October 12; await approval, then verify exact test client/location and remaining readiness |
-| L5-GBP-02 | `WAITING` | Direct OAuth, location selection, credential renewal, Account Health | Access checkpoint accepted; real location saved Healthy under correct client |
+| L5-GBP-02 | `MANUAL` | Direct OAuth, location selection, credential renewal, Account Health | Owner authorized local preparation ahead of access approval October 14; deploy/configure and prove a real same-client location connection after approval |
 | L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
 | L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
 | L5-GBP-05 | `WAITING` | Standard text/CTA update publisher | Editor accepted; real visible post, durable exact result/history, duplicate protection |
@@ -398,3 +398,48 @@ Append dated entries for each task with outcome, changed files, checks/results, 
 - Nicholas approved moving beyond the implemented LinkedIn personal-profile functionality **without artificial live-profile tests**. Deferred LinkedIn `L5-LI-06/07` real-post validation remains recorded in `docs/LEVEL_5_LINKEDIN.md`; the LinkedIn final transition review is owner-accepted with exceptions, not a claim of full provider verification.
 - The next active phase is `docs/LEVEL_5_YOUTUBE.md` with sole `L5-YT-01 READY` for API and target-channel access readiness. YouTube credentials/approval must be validated independently of this Google Business Profile access request. Google Business Profile OAuth and later implementation tasks remain WAITING.
 - This entry is a **documentation-only handoff**. No new Google API calls, tests, builds, or live posts were performed. Keep the current Google access case and any legitimate future approval evidence here.
+
+
+### October 15, 2026: L5-GBP-02 direct connection prepared locally before API approval
+
+- **Owner direction and scope:** On October 14 Nicholas asked to build the actual application callback rather than use OAuth Playground. This explicitly authorizes local L5-GBP-02 preparation ahead of the normal L5-GBP-01 approval gate. L5-GBP-01 and L5-GBP-02 remain MANUAL; no later Google task is READY, and no provider or Level 5 closure is claimed. The broader active phase remains YouTube; its progress log points here.
+- **Observed external state:** October 14 owner screenshots show the intended `content-social-hub` project, Account Management API enabled, and its Requests per minute **Value 0**. This documents unapproved access at that time, not a fresh October 15 console check. The existing application was submitted October 12, case `1-5407000042073`, project number `503771980348`. No second application or quota-increase request was submitted. Approval email, Business Information API enablement and target test location remain unverified.
+- **Implementation:** Added owner-only Google Business Connect, `/api/connections/google-business/callback`, a multi-account/multi-location picker, explicit location confirmation, same-location/account reconnect, encrypted access/refresh credentials and client-scoped social connection persistence. OAuth state and location-selection tokens are random, hashed in MongoDB and expire after 10 and 20 minutes. Secure production HTTP-only SameSite=Lax cookies bind each flow to its initiating browser; callback, selection page and confirmation require the owner session. Confirmations are atomically consumed, recheck current provider access through the selected account and reject deleted clients, unoffered locations, wrong-location reconnects and changed credentials. Missing refresh tokens are retained only for the same saved location and OAuth client. Credentials never appear in public flow/connection responses.
+- **Provider reads and renewal:** Uses dedicated `GOOGLE_BUSINESS_CLIENT_ID` / `GOOGLE_BUSINESS_CLIENT_SECRET` and offline `business.manage` consent. Account Management `accounts.list` and Business Information `accounts.locations.list` supply exact account/location resource identities, business name and address with pagination. Discovery is bounded to 25 seconds / 30 requests / 1,000 location-account choices; incomplete or cyclic scans fail explicitly rather than returning a silently partial picker. Each provider request has at most a ten-second timeout and refuses redirects. Account Health verifies the exact account/location and renews access tokens within five minutes of expiration, retaining omitted refresh/scope values and using credential compare-and-set protection against concurrent reconnect. Expired/revoked authorization, disabled APIs, denied access and quota errors have separate sanitized explanations. Healthy means location access was verified, not post eligibility: `canPublish` remains false and Google is not added to content destination editors, publishing or scheduling.
+- **UI:** Added Google Business to Social Accounts using the shared cards, storefront icon, account chips/counts, photos/initials fallback, configuration-disabled Connect, explicit location identity and same-location Reconnect. The picker requires an explicit choice, shows address/account/resource identity to distinguish businesses, disables submission while saving, focuses errors, and returns to the originating client after confirmation. Informational location/expiry copy uses neutral styling. No email Request Connection or Google posting UI is enabled in this task.
+- **Files:** `.env.example`; `lib/google-business.js`, `lib/google-business-connection-logic.js`, `lib/google-business-oauth-browser.js`, `lib/connections.js`; three `app/api/connections/google-business/{start,callback,confirm}/route.js` handlers; two `app/connect/google-business/{select,error}/page.js` pages; `components/google-business-location-select.js`, `components/connections-manager.js`, `components/platform-icon.js`, `components/ui.module.css`; `app/(app)/connections/page.js`; `tests/google-business-connection.test.js`, the existing Instagram maintenance integration harness's new imported-provider stub; this phase record, YouTube progress log and README exception note.
+- **Verification:** Targeted Google tests cover OAuth callback/scope, paginated read-only discovery, bounded/cyclic/malformed responses, safe provider errors, revoked/omitted token fields, client isolation, location selection/revalidation, replay/expiry, refresh-token retention, concurrent reconnect, browser-bound state and unauthenticated start/confirmation. Full test/lint/build and the final responsive browser results are recorded below after the last verification pass. Browser HTTP actions use mocks; no live Google API calls, credentials, database/account writes, business edits, email, publication, schedule or AWS changes were made. Temporary preview code is removed before the final production build and is not delivered.
+- **Git and next:** Local `main` based on delivered `33dbd58`; uncommitted and unpushed, with no GitHub write authorized or performed for this task. Next is separately authorized delivery, then the credential and live-connection checkpoint below. L5-GBP-03 remains WAITING for direct connection acceptance; YouTube/LinkedIn live evidence and Level 6 gates are unchanged.
+
+#### Google Cloud and Amplify setup for this implementation
+
+1. Use Google Cloud project **Content Social Hub** / `content-social-hub` / `503771980348`, the project used for the existing GBP application.
+2. Create a **Web application** OAuth client named `Social Hub - Google Business` (or repurpose the unintegrated access-check client). Register this exact authorized redirect URI:
+
+   ```text
+   https://main.d1yfjibipwjpld.amplifyapp.com/api/connections/google-business/callback
+   ```
+
+   It is an application route, not a local filesystem path. JavaScript origins are not needed for this server-side authorization flow. The Playground redirect is not used by this application. This is a standard user-operated client; do not classify it as an AI-agent client for Workspace MCP.
+3. Configure `https://www.googleapis.com/auth/business.manage` in Google Auth Platform data access. Resolve any consent/verification restrictions Google actually presents; existing YouTube branding deferrals are not GBP approval. The app requests only this Business scope through its dedicated client.
+4. Store the client ID and secret in Amplify as **`GOOGLE_BUSINESS_CLIENT_ID`** and **`GOOGLE_BUSINESS_CLIENT_SECRET`**. Reuse the existing `APP_BASE_URL` and `OAUTH_TOKEN_ENCRYPTION_KEY`; preserve YouTube's variables and client. Keep secrets out of screenshots, chat and Git.
+5. Deploy the reviewed code after explicit GitHub authorization. Confirm **My Business Account Management API** and **My Business Business Information API** are enabled in this same project when Google grants access. Account Management quota 0 still prevents discovery; creating OAuth credentials does not grant API approval. Google My Business/local-post API enablement is a later publishing checkpoint.
+6. In Social Accounts choose the intended client, click Google Business **Connect**, authorize an owner/manager Google identity, explicitly select the intended location/account, and confirm. Verify Account Health, saved identity after reload and client switching; repeat same-location Reconnect. No business post or profile edit is needed. Do not declare live success based on the consent screen alone.
+
+Official references rechecked October 14: [basic setup](https://developers.google.com/my-business/content/basic-setup), [OAuth](https://developers.google.com/my-business/content/oauth-setup), [accounts.list](https://developers.google.com/my-business/reference/accountmanagement/rest/v1/accounts/list), [locations.list](https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations/list), [access approval/quota](https://developers.google.com/my-business/content/prereqs).
+
+
+#### October 15 final local verification and handoff
+
+- **Node 24.19.0:** `npm test` passes **282/282**, including **20 new Google Business tests**. `npm run lint` passes with zero errors and the same two existing LinkedIn image warnings. `npm run build` passes and includes all three Google Business API routes and both connection pages. `git diff --check` passes.
+- **Browser:** Five mocked Chromium check groups pass using the actual components: disabled configuration/two-location account summaries; configured Connect and exact-client/location reconnect links; 320px responsive account layout; explicit location selection and exact parent submission with focused failure; disabled in-flight controls and successful return to the originating client, with no repeat submit control. No runtime errors. Both confirmation requests were intercepted; no provider or real database calls were made. Desktop/mobile screenshots were inspected; informational connection metadata was changed to neutral styling and the checks rerun. Temporary `app/ux-preview` fixture is absent from the final build.
+- **Final status:** `L5-GBP-02 MANUAL`, local implementation complete, live connection not verified. `L5-GBP-01 MANUAL` pending approval evidence; `L5-GBP-03 WAITING`. No Google posting, emailed connection or scheduler feature was started. Deployment, OAuth credentials/consent and an approved real location remain manual checkpoints.
+- **Git:** `main` based on `33dbd589974972ee344b348383aa19f1f1f34292`, local changes only. No commit, push, GitHub write, deployment, Google Cloud mutation or live authorization occurred. Deliver only after Nicholas explicitly authorizes GitHub publication.
+
+
+### October 15, 2026: L5-GBP-02 delivery authorized
+
+- Nicholas explicitly requested **commit and push**, authorizing publication of all 20 prepared Google Business direct-connection source, UI, configuration-template, test and documentation files to `main`.
+- Verification remains the recorded 282 passing Node tests, successful production build, zero lint errors with two existing LinkedIn image warnings, five mocked browser check groups and clean diff check. Only documentation was changed after that verification.
+- Remote `main` was checked against local base `33dbd589974972ee344b348383aa19f1f1f34292` before delivery. No temporary preview route is included. Git delivery does not change Google Cloud, OAuth credentials, account data or posts. Nicholas reports adding the Amplify variables and starting a redeployment; no secret values were supplied or inspected.
+- Google API approval and a real direct connection remain unverified. L5-GBP-01/02 stay MANUAL and GBP-03 WAITING. Amplify must deploy the new delivered commit before the real callback is available. The handoff reports the verified commit and branch state.

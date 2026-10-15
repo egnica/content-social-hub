@@ -5,6 +5,7 @@ import { loadWithStubs } from "./helpers/load-with-stubs.js";
 import { renewInstagramConnection, INSTAGRAM_RENEWAL_WINDOW_MS, INSTAGRAM_RENEWAL_RETRY_MS } from "../lib/instagram-token-maintenance.js";
 import { getInstagramHealth } from "../lib/instagram-connection-logic.js";
 import { INSTAGRAM_RECOVERY_IDLE_MS } from "../lib/instagram-recovery-logic.js";
+import { GOOGLE_BUSINESS_PLATFORM } from "../lib/google-business-connection-logic.js";
 
 const scopes = ["instagram_business_basic", "instagram_business_content_publish"];
 
@@ -16,6 +17,7 @@ test("Account Health renews before computing health and returns no encrypted cre
   }]);
   const fallback = fakeCollection();
   const server = await loadWithStubs(new URL("../lib/connections.js", import.meta.url), {
+    GOOGLE_BUSINESS_PLATFORM,
     getDb: async () => ({ collection: (name) => name === "social_connections" ? connections : fallback }),
     toObjectId: (id) => id, serializeDocument: (doc) => structuredClone(doc),
     renewInstagramConnection, getInstagramHealth,

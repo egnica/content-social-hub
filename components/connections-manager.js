@@ -22,6 +22,7 @@ function labelHealth(status) {
 function labelConnectionPlatform(connection) {
   return connection.platform === "instagram"
     ? "Instagram Professional"
+    : connection.platform === "google_business_profile" ? "Google Business Profile location"
     : connection.platform === "linkedin" ? "LinkedIn personal profile" : connection.platform === "youtube" ? "YouTube channel" : "Facebook Page";
 }
 
@@ -397,6 +398,22 @@ function ClientConnectionsManager({
               </button>
             </div>
           </article>
+          <article className={styles.connectionProviderCard}>
+            <PlatformIcon platform="google_business_profile" />
+            <div className={styles.connectionProviderBody}>
+              <strong>Google Business Profile</strong>
+              <p>Authorize Google, then choose the exact business location. Google must approve API access for location lookup. Posting support is an upcoming step.</p>
+              <AttachedAccounts connections={connections} platform="google_business_profile" />
+              {!configuration.googleBusinessReady && <p className={styles.fieldHint}>
+                Setup is waiting for: {(configuration.missingGoogleBusiness || ["Google Business OAuth credentials"]).join(", ")}.
+              </p>}
+            </div>
+            <div className={styles.connectionActions}>
+              {configuration.googleBusinessReady
+                ? <a className={styles.button} href={`/api/connections/google-business/start?clientId=${selectedClient._id}`}>{connectLabel("google_business_profile")}</a>
+                : <button className={styles.button} type="button" disabled>{connectLabel("google_business_profile")}</button>}
+            </div>
+          </article>
           {!selectedClient.approvalReportEmail ? (
             <p className={styles.fieldHint}>
               Add an Approval / Report Email to this client before requesting
@@ -436,9 +453,14 @@ function ClientConnectionsManager({
                     {connection.platform === "linkedin" && connection.tokenExpiresAt ? (
                       <p>Authorization expires {formatDate(connection.tokenExpiresAt)}</p>
                     ) : null}
-                    {connection.platform === "youtube" && connection.tokenExpiresAt ? (
-                      <p>Access token expires {formatDate(connection.tokenExpiresAt)}. Check now renews it when needed.</p>
+                    {(connection.platform === "youtube" || connection.platform === "google_business_profile") && connection.tokenExpiresAt ? (
+                      <p className={connection.platform === "google_business_profile" ? styles.connectionMetadata : undefined}>Access token expires {formatDate(connection.tokenExpiresAt)}. Check now renews it when needed.</p>
                     ) : null}
+                    {connection.platform === "google_business_profile" && <>
+                      <p className={styles.connectionMetadata}>{connection.address || "Service-area business or address not provided"}</p>
+                      <p className={styles.connectionMetadata}>{connection.providerParent}</p>
+                      <p className={styles.connectionMetadata}>Account access connected. Posting support is an upcoming step.</p>
+                    </>}
                   </div>
                   <div className={styles.connectionHealth}>
                     <span
@@ -455,6 +477,8 @@ function ClientConnectionsManager({
                     </span>
                   </div>
                   <div className={styles.connectionItemActions}>
+                    {connection.platform === "google_business_profile" && <a className={styles.buttonSecondary}
+                      href={`/api/connections/google-business/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>Reconnect</a>}
                     {connection.platform === "youtube" && (
                       <button
                         className={styles.buttonSecondary}

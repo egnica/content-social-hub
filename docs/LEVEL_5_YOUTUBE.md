@@ -402,3 +402,19 @@ Only **one READY task** at any time. Implement exactly the selected task; do not
 - Nicholas explicitly requested **push**, authorizing commit and push of all five UX-05 files to `main`: the visible bottom-page Delete Content footer, shared-form busy-state wiring, removal of the nested delete control, styles and this phase record.
 - Verification remains valid: all 262 tests pass, production build passes, lint has zero errors and two existing LinkedIn image warnings, eight mocked browser check groups pass, and pre-delivery `git diff --check` passes. The temporary preview route is absent; remote `main` matches the local base `45ffa2b`.
 - Git delivery does not delete any content, provider post or stored media and performs no live upload, publication, schedule or OAuth action. UX-05 remains MANUAL pending deployed review. Existing provider statuses, L5-YT-08 WAITING and Level 5 OPEN remain unchanged; no new task becomes READY. The handoff supplies the exact delivered commit and verified remote state.
+
+
+### October 15, 2026: Owner-requested Google Business direct connection prepared locally
+
+- Nicholas explicitly requested implementing the real Google Business callback/direct-connection flow on October 14 ahead of pending project approval. This is a bounded `L5-GBP-02` exception to the previous paused-provider sequence, not a YouTube change or provider closure. Detailed implementation, configuration, checks, files and live blockers are recorded in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
+- Prepared owner-only OAuth, browser-bound one-time state, explicit business account/location selection, client-scoped encrypted persistence, same-location reconnect and automatic near-expiry renewal through Account Health. Google posting, emailed Request Connection, content editors, publishing and scheduling remain later work; connected locations explicitly have `canPublish: false`.
+- October 14 owner console evidence shows Account Management enabled with quota Value 0; creating an OAuth client does not approve API access. No live Google connection or provider mutation was performed. Google L5-GBP-01/02 remain MANUAL, GBP-03+ WAITING. YouTube L5-YT-02/05/07 and LinkedIn L5-LI-06/07 retain their existing evidence status, L5-YT-08 remains WAITING and Level 5 OPEN.
+- Local changes are based on delivered `33dbd58`, uncommitted and unpushed. No GitHub write or deployment was performed. Next checkpoint is authorized delivery, Google/Amplify OAuth configuration, access approval and a real same-client location connection; no new READY task is opened.
+
+- **Final GBP preparation checks:** 282 tests pass, including 20 new Google tests; lint has zero errors and two existing LinkedIn image warnings; production build and diff check pass. Five mocked browser check groups pass, temporary preview code removed. Full setup/manual blockers and file inventory are in the Google phase record. Work remains local, uncommitted and unpushed.
+
+
+### October 15, 2026: Google Business connection delivery authorized
+
+- Nicholas explicitly instructed **commit and push**, authorizing the 20 prepared Google Business connection files and related documentation to `main`. Tests/build/lint and five mocked browser check groups remain valid as recorded in the Google phase document; only documentation changed afterward.
+- This delivery does not complete the Google provider or change the recorded YouTube/LinkedIn acceptance status. No Google API mutation, account connection, post, schedule or deployment is performed by the Git update. Live OAuth and Google project approval remain manual checkpoints; the handoff reports the exact delivered commit.
