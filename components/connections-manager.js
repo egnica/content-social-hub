@@ -4,15 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AccountAvatar from "@/components/account-avatar";
 import PlatformIcon from "@/components/platform-icon";
+import SocialConnectionCard from "@/components/social-connection-card";
 import { getConnectionHealthDisplay } from "@/lib/connection-health-display";
 import styles from "@/components/ui.module.css";
-
-function labelConnectionPlatform(connection) {
-  return connection.platform === "instagram"
-    ? "Instagram Professional"
-    : connection.platform === "google_business_profile" ? "Google Business Profile location"
-    : connection.platform === "linkedin" ? "LinkedIn personal profile" : connection.platform === "youtube" ? "YouTube channel" : "Facebook Page";
-}
 
 function labelRequestPlatform(platform) {
   return platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : "Facebook Pages";
@@ -83,6 +77,7 @@ function ClientConnectionsManager({
   initialConnections,
   initialRequests,
   configuration,
+  checkedAsOf,
 }) {
   const router = useRouter();
   const [connections, setConnections] = useState(initialConnections);
@@ -391,7 +386,7 @@ function ClientConnectionsManager({
           <div>
             <h2>Connected accounts</h2>
             <p className={styles.statNote}>
-              Account Health stays quiet until a connection needs attention.
+              Check health verifies saved access. Status reflects the last check; older checks are marked for review.
             </p>
           </div>
         </div>
@@ -399,81 +394,9 @@ function ClientConnectionsManager({
           {connections.length ? (
             <div className={styles.connectionList}>
               {connections.map((connection) => (
-                <article className={styles.connectionItem} key={connection._id} id={`account-${connection._id}`} tabIndex={-1}>
-                  <AccountAvatar connection={connection} />
-                  <div className={styles.connectionIdentity}>
-                    <strong>{connection.accountName}</strong>
-                    <span>{labelConnectionPlatform(connection)}</span>
-                    {connection.healthMessage &&
-                      !(["google_business_profile", "youtube"].includes(connection.platform) && connection.healthStatus === "expiring_soon") ? (
-                      <p>{connection.healthMessage}</p>
-                    ) : null}
-                    {connection.platform === "linkedin" && connection.tokenExpiresAt ? (
-                      <p>Authorization expires {formatDate(connection.tokenExpiresAt)}</p>
-                    ) : null}
-                    {connection.platform === "youtube" && (
-                      <p className={styles.connectionMetadata}>Check access verifies this channel and renews its token when needed. Reconnect opens Google sign-in.</p>
-                    )}
-                    {connection.platform === "google_business_profile" && <>
-                      <p className={styles.connectionMetadata}>{connection.address || "Service-area business or address not provided"}</p>
-                      <p className={styles.connectionMetadata}>{connection.providerParent}</p>
-                      <p className={styles.connectionMetadata}>Check access verifies the location and renews its token when needed. Reconnect opens Google sign-in.</p>
-                      <p className={styles.connectionMetadata}>Google Business posting support is an upcoming step.</p>
-                    </>}
-                  </div>
-                  <div className={styles.connectionHealth}>
-                    <span
-                      className={
-                        getConnectionHealthDisplay(connection).healthy
-                          ? styles.successBadge
-                          : styles.statusBadge
-                      }
-                    >
-                      {getConnectionHealthDisplay(connection).label}
-                    </span>
-                    <span>
-                      Checked {formatDate(connection.lastHealthCheckAt)}
-                    </span>
-                  </div>
-                  <div className={styles.connectionItemActions}>
-                    {connection.platform === "google_business_profile" && <>
-                      <button className={styles.buttonSecondary} type="button"
-                        onClick={() => checkHealth(connection._id)}
-                        disabled={checkingId === connection._id}>
-                        {checkingId === connection._id ? "Checking" : "Check access"}
-                      </button>
-                      <a className={styles.buttonGhost}
-                        href={`/api/connections/google-business/start?clientId=${connection.clientId}&connectionId=${connection._id}`}
-                        title="Open Google sign-in to reauthorize this business location">Reconnect</a>
-                    </>}
-                    {connection.platform === "youtube" && <>
-                      <button className={styles.buttonSecondary} type="button"
-                        onClick={() => checkHealth(connection._id)}
-                        disabled={checkingId === connection._id}>
-                        {checkingId === connection._id ? "Checking" : "Check access"}
-                      </button>
-                      <a className={styles.buttonGhost}
-                        href={`/api/connections/youtube/start?clientId=${connection.clientId}&connectionId=${connection._id}`}
-                        title="Open Google sign-in to reauthorize this YouTube channel">Reconnect</a>
-                    </>}
-                    {connection.platform === "linkedin" && (
-                      <a className={styles.buttonSecondary}
-                        href={`/api/connections/linkedin/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>
-                        Reconnect
-                      </a>
-                    )}
-                    {!["google_business_profile", "youtube"].includes(connection.platform) && (
-                      <button
-                        className={styles.buttonGhost}
-                        type="button"
-                        onClick={() => checkHealth(connection._id)}
-                        disabled={checkingId === connection._id}
-                      >
-                        {checkingId === connection._id ? "Checking" : "Check now"}
-                      </button>
-                    )}
-                  </div>
-                </article>
+                <SocialConnectionCard key={connection._id} connection={connection}
+                  checking={checkingId === connection._id} onCheckHealth={checkHealth}
+                  checkedAsOf={checkedAsOf} />
               ))}
             </div>
           ) : (

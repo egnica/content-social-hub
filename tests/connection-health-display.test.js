@@ -1,33 +1,53 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getConnectionHealthDisplay } from "../lib/connection-health-display.js";
+import { getConnectionHealthDisplay, getConnectionReconnectUrl } from "../lib/connection-health-display.js";
 
-test("renewable Google Business and YouTube access remains visually healthy near routine access-token expiry", () => {
-  for (const platform of ["google_business_profile", "youtube"]) {
-    assert.deepEqual(getConnectionHealthDisplay({ platform, healthStatus: "healthy" }),
-      { label: "Healthy", healthy: true });
-    assert.deepEqual(getConnectionHealthDisplay({ platform, healthStatus: "expiring_soon" }),
-      { label: "Healthy", healthy: true });
+const now = "2026-10-19T19:00:00.000Z";
+const recent = "2026-10-19T18:00:00.000Z";
+
+test("all five platforms share Healthy display and fresh check state", () => {
+  for (const platform of ["facebook", "instagram", "linkedin", "youtube", "google_business_profile"]) {
+    assert.deepEqual(getConnectionHealthDisplay({ platform, healthStatus: "healthy", lastHealthCheckAt: recent }, { now }),
+      { label: "Healthy", healthy: true, needsAttention: false, stale: false });
   }
 });
 
-test("revoked authorization, permission problems and API errors remain visible for Google Business and YouTube", () => {
-  for (const platform of ["google_business_profile", "youtube"]) {
-    for (const [status, label] of [
-      ["expired", "Expired"], ["disconnected", "Disconnected"],
-      ["permission_problem", "Permission Problem"], ["api_error", "API Error"],
+test("renewable Google access remains Healthy near routine token expiry", () => {
+  for (const platform of ["youtube", "google_business_profile"]) {
+    assert.equal(getConnectionHealthDisplay({ platform, healthStatus: "expiring_soon" }, { now }).label, "Healthy");
+  }
+  assert.equal(getConnectionHealthDisplay({ platform: "linkedin", healthStatus: "expiring_soon" }, { now }).label, "Needs attention");
+});
+
+test("genuine health failures remain distinct", () => {
+  for (const platform of ["facebook", "instagram", "linkedin", "youtube", "google_business_profile"]) {
+    for (const [healthStatus, label] of [
+      ["expired", "Expired"], ["permission_problem", "Needs attention"],
+      ["disconnected", "Needs attention"], ["api_error", "Error"],
     ]) {
-      assert.deepEqual(getConnectionHealthDisplay({ platform, healthStatus: status }),
-        { label, healthy: false });
+      const state = getConnectionHealthDisplay({ platform, healthStatus }, { now });
+      assert.equal(state.label, label);
+      assert.equal(state.needsAttention, true);
+      assert.equal(state.healthy, false);
     }
   }
 });
 
-test("other platforms retain their existing health labels", () => {
-  assert.deepEqual(getConnectionHealthDisplay({ platform: "linkedin", healthStatus: "expiring_soon" }),
-    { label: "Expiring Soon", healthy: false });
-  assert.deepEqual(getConnectionHealthDisplay({ platform: "facebook", healthStatus: "healthy" }),
-    { label: "Healthy", healthy: true });
-  assert.deepEqual(getConnectionHealthDisplay({ platform: "instagram", healthStatus: "unknown" }),
-    { label: "Not checked", healthy: false });
+test("old checks are explicitly stale without fabricating a revoked connection", () => {
+  const old = getConnectionHealthDisplay({ platform: "facebook", healthStatus: "healthy", lastHealthCheckAt: "2026-10-09T15:00:00Z" }, { now });
+  assert.equal(old.healthy, true);
+  assert.equal(old.stale, true);
+  assert.equal(getConnectionHealthDisplay({ platform: "facebook", healthStatus: "healthy", lastHealthCheckAt: recent }, { now }).stale, false);
+  assert.equal(getConnectionHealthDisplay({ healthStatus: "healthy", lastHealthCheckAt: "bad" }, { now }).stale, true);
+});
+
+test("reconnect is only offered for identity-safe per-account flows", () => {
+  for (const platform of ["facebook", "instagram", "unknown"]) {
+    assert.equal(getConnectionReconnectUrl({ _id: "a", clientId: "b", platform }), null);
+  }
+  for (const [platform, part] of [["linkedin", "linkedin"], ["youtube", "youtube"], ["google_business_profile", "google-business"]]) {
+    assert.equal(getConnectionReconnectUrl({ _id: "abc", clientId: "owner", platform }),
+      `/api/connections/${part}/start?clientId=owner&connectionId=abc`);
+  }
+  assert.equal(getConnectionReconnectUrl({ platform: "youtube", _id: "abc" }), null);
 });

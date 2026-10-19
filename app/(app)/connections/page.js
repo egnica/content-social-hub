@@ -37,6 +37,7 @@ export default async function ConnectionsPage({ searchParams }) {
         initialConnections={connections}
         initialRequests={requests}
         configuration={getPhase2ConfigurationStatus()}
+        checkedAsOf={new Date().toISOString()}
       />
     </>
   );
