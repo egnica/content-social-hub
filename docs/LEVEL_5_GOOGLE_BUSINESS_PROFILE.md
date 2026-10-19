@@ -6,16 +6,16 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **OPEN. Google Business connected by owner report October 19; connection reliability unresolved; posting not implemented.**
+- Status: **OPEN. Google direct connection L5-GBP-02 DONE by owner acceptance October 19; L5-GBP-03 READY for emailed Request Connection. Posting not implemented.**
 - Opened: **October 2, 2026**; current checkpoint **October 19, 2026**.
 - Active phase document and current progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
 - Provider: **Google Business Profile**; application identity: `google_business_profile`.
-- Current task: **L5-GBP-02 READY**, reopened to investigate Nicholas's report that the connection needs reconnecting every few hours and finish direct-connection reliability verification. This session updates documentation only.
+- Current task: **L5-GBP-03 READY** for secure emailed Request Connection and exact client/location scoping. L5-GBP-02 is DONE by Nicholas's October 19 explicit acceptance.
 - Delivery: direct OAuth/location picker, encrypted persistence, reconnect and Account Health are on `main` in `0c4c8fb5540a694c2fc8207741d7da1691710f63` (October 15).
-- Live status: Nicholas explicitly reports Google Business connected October 19. Exact saved Content Social Hub client, business account and location resource IDs are not captured in the available evidence; record the actual saved values without guessing a business from earlier application screenshots.
+- Live status: October 19 screenshots show Nicholas Egner - Web Development, resource `accounts/117585782904582812392/locations/13178639929087207302`, Healthy after expiry advanced from 11:56 AM to 1:00 PM. Owner accepted connection/reliability. MongoDB client-ID mapping and the absence of an intervening consent redirect were not independently inspected.
 - API access: October 14 enabled/quota-zero evidence is historical. The new connection is owner-confirmed; today's approval email/current quotas/enabled API inventory were not independently inspected. `L5-GBP-01 MANUAL` retains readiness documentation and Local Posts eligibility checks.
-- Known issue: recurring reconnect is **reported, not diagnosed or fixed**. Existing code renews near-expiry access during Account Health. Verify that path and distinguish stored health/expiry display from actual refresh failure before changing it.
-- Not implemented: Google Request Connection, destination editor/preview, post publishing, image posts or scheduling. Connections retain **`canPublish: false`**, even when location access is Healthy.
+- Reliability outcome: screenshots support successful renewal with the same saved location. No server-side refresh defect was demonstrated; credential renewal logic was preserved. Owner accepted the task with recorded verification exceptions.
+- Not implemented: Google Request Connection (next READY task), destination editor/preview, post publishing, image posts or scheduling. Connections retain **`canPublish: false`**, even when location access is Healthy.
 - Other providers: YouTube `L5-YT-02/05/07 MANUAL`, final review WAITING; LinkedIn genuine-post evidence remains deferred. TikTok unopened. Broader Level 5 OPEN; Level 6 unopened.
 
 ## Scope and phase pass condition
@@ -72,16 +72,16 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | --- | --- | --- | --- |
 | L5-GBP-00 | `DONE` | Baseline maintenance checkpoint | Accepted October 2, 2026 with deployed smoke evidence; unavailable live edge cases explicitly deferred |
 | UX-01 | `DONE` | Approved post composer experience | Accepted for roadmap progression October 12 after editor changes and user review |
-| L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | Owner reports a connection October 19; capture exact saved client/account/location, current access evidence and remaining Local Posts entitlement |
-| L5-GBP-02 | `READY` | Direct OAuth, location selection, credential renewal, Account Health | Delivered in 0c4c8fb; owner confirms connection; investigate recurring reconnect and finish same-client/location renewal and persistence evidence |
-| L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
+| L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | Location identity recorded; independently inspect selected Content Social Hub client ID, current Google quota/approval and Local Posts publishing entitlement |
+| L5-GBP-02 | `DONE` | Direct OAuth, location selection, credential renewal, Account Health | Owner accepted October 19 after Healthy connection, same-location renewal evidence, deployed UI review; manual/full-check exceptions retained |
+| L5-GBP-03 | `READY` | Secure Request Connection and client scoping | Build real Resend setup, client-bound Google location selection, expiration/replay/replacement guards, and client-isolation proof |
 | L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
 | L5-GBP-05 | `WAITING` | Standard text/CTA update publisher | Editor accepted; real visible post, durable exact result/history, duplicate protection |
 | L5-GBP-06 | `WAITING` | Private-S3 image update publishing | Text publisher proven; real image result without public bucket access |
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-**Queue authority:** the table above and October 19 entry are current; dated handoffs below preserve historical states. L5-GBP-02 is the sole READY task. L5-GBP-03+ stay WAITING.
+**Queue authority:** the table above and the latest October 19 closure entry are current; dated handoffs below preserve historical states. L5-GBP-02 is DONE; **L5-GBP-03 is the sole READY task**. L5-GBP-04+ remain WAITING.
 
 Historical October 12 handoff: Nicholas accepted moving past the published composer review and approved LinkedIn as the active provider while Google awaits API approval. UX-01 is DONE for roadmap progression; no new live post was submitted. L5-GBP-01 is MANUAL. L5-LI-01 is the sole READY task in the new LinkedIn phase. Google OAuth remains WAITING.
 
@@ -509,3 +509,13 @@ Official references rechecked October 14: [basic setup](https://developers.googl
 - **Checks/results:** Exact original GitHub blob hashes and branch head verified before editing. CSS parser and selector assertions passed. Representative Chromium desktop 1280px and mobile 390px checks passed for both fresh and stale health rows, including vertical separation, alignment, date text color and warning color. Full Node 24.19.0 app tests, lint, build and live deployed review were not run for this CSS-only change; they remain verification debt, and passing mock browser checks are not proof of the deployed application.
 - **Live and blockers:** Amplify deployment, screenshot confirmation, client-switching behavior and owner acceptance are still required before marking L5-GBP-02 DONE. L5-GBP-01 retains its Google Local Posts API evidence checkpoint, and L5-GBP-03 remains WAITING.
 - **Authorization/Git:** Nicholas explicitly requested commit and push for this two-file spacing fix on October 19. Commit and push confirmation will be supplied in the handoff; this progress entry does not claim deployment.
+
+### October 19, 2026: L5-GBP-02 closed by owner acceptance; L5-GBP-03 READY
+
+- **Outcome/status:** Nicholas explicitly requested closing `L5-GBP-02` after reviewing the live unified Connected accounts UI and final CSS improvement. `L5-GBP-02 DONE` by owner acceptance with recorded exceptions; only `L5-GBP-03 READY`. Broader Level 5 and Google provider expansion remain OPEN.
+- **Live evidence:** Owner screenshots show `Nicholas Egner - Web Development` on `accounts/117585782904582812392/locations/13178639929087207302`, still Healthy after the displayed access-token expiry advanced from 11:56 AM to 1:00 PM with a later health check. A further screenshot showed Healthy at 2:41 PM. The same business resource remained visible; exact selected Content Social Hub client ID, whether a consent screen was involved, and a database-level mapping check were not independently captured. Nicholas accepted these limitations for direct-connection closure.
+- **Implemented and delivered:** Direct OAuth, explicit location selection, encrypted refresh credentials and identity-safe health/reconnect were committed in `0c4c8fb`; follow-up UI/diagnostic clarity changes landed in `2fca147`, `35f1ed4`, `9e0d100`, and CSS alignment `7532d8c`. Google `canPublish` remains false. No publishing, emailed setup or scheduling was implemented in this closure.
+- **Checks:** Historical October 15 Node 24.19.0 baseline: 282 tests passed, production build passed, zero lint errors/two pre-existing warnings, five mocked browser groups. October 19 targeted presentation tests (three and five cases) and Chromium desktop/mobile CSS smoke passed as logged earlier. Full Node 24.19.0 tests/lint/build were NOT rerun after the UI changes, and no artificial revoked-token or client-isolation live negative was performed.
+- **Remaining manual evidence:** `L5-GBP-01 MANUAL` continues for live Google project approval/quota, independent Content Social Hub client/location record, and Local Posts entitlement. Extended natural renewal and OAuth consent details were not independently observed, but the owner accepted this checkpoint. Do not misrepresent this as Google posting approval.
+- **Files:** Documentation-only closure in `README.md`, `AGENTS.md` and this phase log; no application-code changes or external account operations.
+- **Next READY task:** `L5-GBP-03` secure Resend Request Connection and limited-purpose setup page; explicit selected-client/location binding, expiry, completion and replacement-link protection, no owner workspace access. `L5-GBP-04+ WAITING`. Level 6 unopened.

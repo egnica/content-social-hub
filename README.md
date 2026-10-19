@@ -30,7 +30,7 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 
 ### Current checkpoint: October 19, 2026
 
-**Level 5 platform expansion remains OPEN. Google Business is now connected, as Nicholas reported October 19. Google posting is not implemented.** The current focus returns to `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`: `L5-GBP-02 READY` for investigation of the reported reconnect-every-few-hours symptom and completion of connection reliability evidence. This documentation session does not implement that follow-up.
+**Level 5 platform expansion remains OPEN. Google direct connection and renewal were accepted October 19 (`L5-GBP-02 DONE`), but Google posting is not implemented.** The next READY task in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` is **`L5-GBP-03`**, secure emailed Request Connection with exact client/location scoping. The current Google publishing-API approval checkpoint remains separate.
 
 | Provider | Current evidence | Remaining work |
 | --- | --- | --- |
@@ -38,10 +38,10 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 | Instagram Professional | Connection, image/carousel/Reel publishing and browser-closed scheduling verified; closed | Retain the documented maintenance edge-case deferrals |
 | LinkedIn personal profile | Connection and initial publishing accepted; media scheduling enabled on `main` in `7dfb620` | `L5-LI-06/07 MANUAL`: media and browser-closed schedule proof deferred to genuine posts; Company Pages `L5-LI-03 BLOCKED` |
 | YouTube | Connected channel, editor, emailed setup and a processed Private Short evidenced; scheduling implemented | `L5-YT-02/05/07 MANUAL`: renewal/reconnect debt, standard thumbnail/playlist proof, AWS deployment and browser-closed scheduling proof; `L5-YT-08 WAITING` |
-| Google Business Profile | Direct connection code delivered in `0c4c8fb`; Nicholas confirms a live connection October 19 | Investigate repeated reconnect report; capture exact saved client/account/location and non-secret access evidence; Request Connection/editor/publishing/scheduling not implemented |
+| Google Business Profile | Direct Connect `L5-GBP-02 DONE` by owner acceptance; renewal and same-location Healthy screenshots reviewed October 19 | `L5-GBP-03 READY` emailed Request Connection; approval/quota/Local Posts evidence, editor, posting and scheduling still outstanding |
 | TikTok | Required provider; no implemented adapter or opened phase found on `main` | Eligibility/access research remains future work |
 
-Google's earlier quota-zero/API-approval blocker is historical evidence from October 14. Today's reported connection advances the live checkpoint, but the approval email, current quota, exact saved location and Local Posts entitlement were not independently inspected in this session. `L5-GBP-01 MANUAL` retains those readiness records; do not claim either current quota zero or a fully verified publishing approval. Google connections explicitly retain `canPublish: false`.
+Google's earlier quota-zero/API-approval blocker is historical evidence from October 14. October 19 screenshots show the Healthy business `Nicholas Egner - Web Development` at `accounts/117585782904582812392/locations/13178639929087207302` and renewed token expiry, accepted by Nicholas for direct-connection closure. Independent client-ID mapping, current quota, approval email and Local Posts entitlement remain unverified under `L5-GBP-01 MANUAL`. Google connections still have `canPublish: false`.
 
 The latest recorded application verification is the October 15 baseline: **282 passing tests**, production build passed, lint had **zero errors and two existing LinkedIn image warnings**, and five mocked Google connection browser groups passed. These are retained historical results, not checks rerun today or proof of live token renewal. Level 6 remains unopened.
 
@@ -1893,14 +1893,14 @@ The Instagram closure did not open another phase by itself. Nicholas subsequentl
 | --- | --- | --- | --- |
 | Complete | Facebook Pages | Verified; preserve existing implementation | Connection, publishing, and shared scheduling |
 | Complete | Instagram Professional | Verified; closed evidence record | Connection, image/carousel/Reel publishing, and shared scheduling |
-| Current | Google Business Profile | Live connection owner-confirmed October 19; `L5-GBP-02 READY` for connection reliability | Reconnect diagnosis and exact identity/access evidence first; emailed setup, editor, posts, images and scheduling remain later tasks |
+| Current | Google Business Profile | `L5-GBP-02 DONE` by owner acceptance; `L5-GBP-03 READY` for emailed setup | Secure Request Connection next; Local Posts approval, editor, posts, images and scheduling remain later tasks |
 | Follow-up | YouTube | Implemented with live Private Short evidence; `L5-YT-02/05/07 MANUAL`, final review WAITING | Preserve renewal/reconnect, standard thumbnail/playlist and browser-closed scheduling checkpoints |
 | Parked | LinkedIn | Personal profile implemented and deployed; owner-accepted transition review, **L5-LI-06/07 MANUAL** until genuine-post evidence; Company Pages BLOCKED | Profile OAuth and publishing evidenced, background schedule and extra media untested live; Community Management approval unresolved |
 | 4 | TikTok | Required; eligibility unresolved; phase not opened | Resolve Direct Post eligibility for the owner-only app before promising public publishing or scheduling |
 | Optional | Pinterest | Candidate; not a Level 6 dependency unless Nicholas selects it | Board/Pin publishing; Trial versus Standard access and public visibility |
 | Optional | X | Candidate; not a Level 6 dependency unless Nicholas selects it | Text/link/media publishing and scheduling; explicit API usage budget |
 
-Current phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`, with **L5-GBP-02 READY** to investigate the reported recurring reconnect and finish direct-connection reliability evidence. Nicholas reports Google Business connected on October 19; Google posting remains unimplemented. `L5-GBP-01 MANUAL` retains exact destination and access documentation, not an assertion that discovery is still blocked. YouTube and LinkedIn manual verification debt remains in their phase records. TikTok remains required and unopened; broader Level 5 is OPEN and Level 6 is not authorized.
+Current phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`; **L5-GBP-02 DONE** and **L5-GBP-03 READY** for secure Google Business emailed Request Connection. `L5-GBP-01 MANUAL` retains current project approval/quota, independently verified client mapping and Local Posts entitlement. Google posting remains unimplemented; YouTube/LinkedIn manual checks and TikTok readiness remain open. Broader Level 5 is OPEN and Level 6 is not authorized.
 
 Provider approvals may require lead time. Read-only feasibility research is allowed; configure credentials only when the relevant task reaches its external checkpoint. If a required provider is blocked, document the exact limitation and obtain Nicholas's explicit decision before skipping it or opening Level 6.
 
@@ -2091,11 +2091,11 @@ The user does not need to write a separate assignment. Start the new Chat with t
 Current delegation state (October 19, 2026):
 
 - Completed product stages: **Levels 0-4 and Level 5 Instagram**; preserve closed evidence.
-- Active product stage: **Level 5 Google Business direct-connection reliability**.
+- Active product stage: **Level 5 Google Business Request Connection**.
 - Active phase / progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
-- Next implementation task: **L5-GBP-02 READY**, reopened for the reported reconnect-every-few-hours symptom. Inspect first, correct only a demonstrated defect, and verify renewal/persistence under the same client and location.
-- This session: documentation reconciliation only; no connection fix, account action or provider publication.
-- Google Business is connected by owner report; Google publishing is not implemented. `L5-GBP-01 MANUAL` retains missing exact identity/access evidence; `L5-GBP-03+ WAITING`.
+- Next implementation task: **L5-GBP-03 READY**, secure emailed Google Business Request Connection and client-bound location confirmation; preserve verified direct OAuth.
+- Current handoff: L5-GBP-02 owner-accepted DONE October 19 with documented verification exceptions. No Google provider publication occurred.
+- Google Business direct connection is owner accepted; Google posting is not implemented. `L5-GBP-01 MANUAL` retains project quota, Local Posts entitlement and independently confirmed client mapping. `L5-GBP-03 READY`; `L5-GBP-04+ WAITING`.
 - YouTube: `L5-YT-02/05/07 MANUAL`, `L5-YT-08 WAITING`; preserve implemented upload/scheduling and the real Private Short evidence.
 - LinkedIn: `L5-LI-06/07 MANUAL` until genuine-post evidence; Company Pages `L5-LI-03 BLOCKED`; transition review `L5-LI-08 DONE` with exceptions. Media scheduling is enabled in delivered commit `7dfb620`.
 - UX-01 accepted; later delivered UX-02 through UX-05 retain their recorded deployed-review checkpoints in the YouTube log.
@@ -2112,7 +2112,7 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_5_platform_expansion_google_business_connection_reliability
+  status: level_5_platform_expansion_google_business_request_connection
   source_of_truth: README.md
   active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
   active_phase_document_status: open
@@ -2313,11 +2313,11 @@ social_connections:
     phase_active: true
     adapter_status: direct_connection_implemented_publishing_not_implemented
     connection_status: owner_confirmed_connected_2026_10_19
-    connection_reliability: recurring_reconnect_report_unresolved
+    connection_reliability: owner_accepted_same_location_renewal_evidence_2026_10_19
     access_status: owner_reports_connection_current_quota_and_approval_evidence_not_recorded
     can_publish: false
     live_test_client: not_captured_in_current_evidence
-    live_test_location: not_captured_in_current_evidence
+    live_test_location: "accounts/117585782904582812392/locations/13178639929087207302"
 
 content_and_publishing:
   client_delete_with_saved_content: blocked
@@ -2401,10 +2401,12 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_google_business_connection_reliability
+  current_stage: level_5_google_business_request_connection
   active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
-  current_task: L5-GBP-02
+  current_task: L5-GBP-03
   current_task_status: READY
+  previous_completed_task: L5-GBP-02
+  previous_completed_task_status: DONE
   level_5_provider_selected: google_business_profile
   previous_provider_phase_document: docs/LEVEL_5_YOUTUBE.md
   linkedin_review_status: owner_accepted_transition_with_exceptions
@@ -2413,7 +2415,7 @@ implementation:
   linkedin_company_pages_status: BLOCKED
   linkedIn_live_proof_policy: first_genuine_posts_only_no_test_only_public_content
   required_remaining_provider_order:
-    - google_business_profile_connection_reliability_then_adapter_tasks
+    - google_business_profile_request_connection_then_adapter_tasks
     - youtube_remaining_manual_verification
     - tiktok_readiness_and_adapter
   youtube_oauth_status: MANUAL
@@ -2431,7 +2433,7 @@ implementation:
   verified_instagram_live_test_client: Nicholas_Egner
   verified_instagram_live_test_destination: "@nicholasegner"
   google_business_profile_live_test_client: unconfirmed
-  google_business_profile_live_test_location: unconfirmed
+  google_business_profile_live_test_location: "accounts/117585782904582812392/locations/13178639929087207302"
   google_business_profile_project_id: content-social-hub
   google_business_profile_project_number: "503771980348"
   google_business_profile_case_id: "1-5407000042073"
@@ -2461,7 +2463,7 @@ implementation:
     level_2: first social provider OAuth credentials plus Resend
     level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS not required by the completed implementation
     level_5_instagram: completed_configuration_and_live_verification
-    level_5_google_business_profile: capture_current_access_and_exact_location_evidence_in_L5_GBP_01_and_resolve_connection_reliability_in_L5_GBP_02_before_later_tasks
+    level_5_google_business_profile: direct_connection_L5_GBP_02_owner_accepted; Local_Posts_entitlement_still_MANUAL_in_L5_GBP_01; emailed_request_connection_next_L5_GBP_03
 
 architecture_rules:
   application_source_of_truth: MongoDB
@@ -2490,14 +2492,14 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Investigate recurring Google Business reconnect reports, verify renewable credentials and exact same-client location persistence, and make only a demonstrated connection fix; no Google posting in this task.
+  goal: Implement secure Google Business Profile Request Connection using Resend, exact client/location scoping, one-time expiry/replacement guards and isolation tests; no posting in this task.
   task_source: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-GBP-02
-  google_access_status: owner_reports_connected_current_access_evidence_still_to_capture
+  active_task: L5-GBP-03
+  google_access_status: owner_accepted_direct_connection_Local_Posts_approval_MANUAL
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - L5-GBP-03 or later Google tasks before direct_connection_acceptance
+    - L5-GBP-04 or later Google tasks before emailed_request_connection_acceptance
     - L5-LI-03 Company Page connection until Community Management API access is approved
     - extra LinkedIn live test-only posts
     - claiming Google posting or scheduling from successful OAuth
@@ -2528,7 +2530,7 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Current next expected work:** `L5-GBP-02 READY` in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`: diagnose the recurring reconnect report and verify renewal plus client/location persistence. No Google publishing, emailed request or scheduler implementation in that task. `L5-GBP-03` becomes READY only after direct-connection acceptance; YouTube/LinkedIn manual evidence remains open and TikTok remains required. Level 6 is unopened.
+**Current next expected work:** `L5-GBP-03 READY` in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`: implement secure Google Business emailed Request Connection, exact client/location scoping and the one-time setup-link lifecycle. `L5-GBP-02 DONE` was owner accepted October 19. No Google editor, posting or scheduler work in the next task. Local Posts entitlement, other providers' manual evidence and TikTok readiness remain open; Level 6 unopened.
 
 Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. Renewal/recovery maintenance was deployed; some naturally unavailable edge-case proofs remain deferred.
 
