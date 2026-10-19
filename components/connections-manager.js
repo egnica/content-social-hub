@@ -4,20 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AccountAvatar from "@/components/account-avatar";
 import PlatformIcon from "@/components/platform-icon";
+import { getConnectionHealthDisplay } from "@/lib/connection-health-display";
 import styles from "@/components/ui.module.css";
-
-function labelHealth(status) {
-  return (
-    {
-      healthy: "Healthy",
-      expiring_soon: "Expiring Soon",
-      expired: "Expired",
-      disconnected: "Disconnected",
-      permission_problem: "Permission Problem",
-      api_error: "API Error",
-    }[status] || "Not checked"
-  );
-}
 
 function labelConnectionPlatform(connection) {
   return connection.platform === "instagram"
@@ -64,13 +52,13 @@ function AttachedAccounts({ connections, platform }) {
       {accounts.length ? <div className={styles.accountChips}>
         {accounts.map(connection => (
           <a key={connection._id} className={styles.accountChip}
-            href={`#account-${connection._id}`} title={`${connection.accountName} · ${labelHealth(connection.healthStatus)}`}
-            aria-label={`${connection.accountName}, ${labelHealth(connection.healthStatus)}. View account details.`}
+            href={`#account-${connection._id}`} title={`${connection.accountName} · ${getConnectionHealthDisplay(connection).label}`}
+            aria-label={`${connection.accountName}, ${getConnectionHealthDisplay(connection).label}. View account details.`}
             onClick={() => document.getElementById(`account-${connection._id}`)?.focus({ preventScroll: true })}>
             <AccountAvatar connection={connection} small />
             <span className={styles.accountChipName}>{connection.accountName}</span>
-            <span className={connection.healthStatus === "healthy" ? styles.accountChipHealthy : styles.accountChipStatus}>
-              {labelHealth(connection.healthStatus)}
+            <span className={getConnectionHealthDisplay(connection).healthy ? styles.accountChipHealthy : styles.accountChipStatus}>
+              {getConnectionHealthDisplay(connection).label}
             </span>
           </a>
         ))}
@@ -173,7 +161,7 @@ function ClientConnectionsManager({
         ),
       );
       setMessage(
-        `${result.connection.accountName} is ${labelHealth(result.connection.healthStatus).toLowerCase()}.`,
+        `${result.connection.accountName} is ${getConnectionHealthDisplay(result.connection).label.toLowerCase()}.`,
       );
     } catch (requestError) {
       setError(requestError.message);
@@ -447,38 +435,48 @@ function ClientConnectionsManager({
                   <div className={styles.connectionIdentity}>
                     <strong>{connection.accountName}</strong>
                     <span>{labelConnectionPlatform(connection)}</span>
-                    {connection.healthMessage ? (
+                    {connection.healthMessage &&
+                      !(connection.platform === "google_business_profile" && connection.healthStatus === "expiring_soon") ? (
                       <p>{connection.healthMessage}</p>
                     ) : null}
                     {connection.platform === "linkedin" && connection.tokenExpiresAt ? (
                       <p>Authorization expires {formatDate(connection.tokenExpiresAt)}</p>
                     ) : null}
-                    {(connection.platform === "youtube" || connection.platform === "google_business_profile") && connection.tokenExpiresAt ? (
-                      <p className={connection.platform === "google_business_profile" ? styles.connectionMetadata : undefined}>Access token expires {formatDate(connection.tokenExpiresAt)}. Check now renews it when needed.</p>
+                    {connection.platform === "youtube" && connection.tokenExpiresAt ? (
+                      <p>Access token expires {formatDate(connection.tokenExpiresAt)}. Check now renews it when needed.</p>
                     ) : null}
                     {connection.platform === "google_business_profile" && <>
                       <p className={styles.connectionMetadata}>{connection.address || "Service-area business or address not provided"}</p>
                       <p className={styles.connectionMetadata}>{connection.providerParent}</p>
-                      <p className={styles.connectionMetadata}>Account access connected. Posting support is an upcoming step.</p>
+                      <p className={styles.connectionMetadata}>Check access verifies the location and renews its token when needed. Reconnect opens Google sign-in.</p>
+                      <p className={styles.connectionMetadata}>Google Business posting support is an upcoming step.</p>
                     </>}
                   </div>
                   <div className={styles.connectionHealth}>
                     <span
                       className={
-                        connection.healthStatus === "healthy"
+                        getConnectionHealthDisplay(connection).healthy
                           ? styles.successBadge
                           : styles.statusBadge
                       }
                     >
-                      {labelHealth(connection.healthStatus)}
+                      {getConnectionHealthDisplay(connection).label}
                     </span>
                     <span>
                       Checked {formatDate(connection.lastHealthCheckAt)}
                     </span>
                   </div>
                   <div className={styles.connectionItemActions}>
-                    {connection.platform === "google_business_profile" && <a className={styles.buttonSecondary}
-                      href={`/api/connections/google-business/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>Reconnect</a>}
+                    {connection.platform === "google_business_profile" && <>
+                      <button className={styles.buttonSecondary} type="button"
+                        onClick={() => checkHealth(connection._id)}
+                        disabled={checkingId === connection._id}>
+                        {checkingId === connection._id ? "Checking" : "Check access"}
+                      </button>
+                      <a className={styles.buttonGhost}
+                        href={`/api/connections/google-business/start?clientId=${connection.clientId}&connectionId=${connection._id}`}
+                        title="Open Google sign-in to reauthorize this business location">Reconnect</a>
+                    </>}
                     {connection.platform === "youtube" && (
                       <button
                         className={styles.buttonSecondary}
@@ -499,14 +497,16 @@ function ClientConnectionsManager({
                         Reconnect
                       </a>
                     )}
-                    <button
-                      className={styles.buttonGhost}
-                      type="button"
-                      onClick={() => checkHealth(connection._id)}
-                      disabled={checkingId === connection._id}
-                    >
-                      {checkingId === connection._id ? "Checking" : "Check now"}
-                    </button>
+                    {connection.platform !== "google_business_profile" && (
+                      <button
+                        className={styles.buttonGhost}
+                        type="button"
+                        onClick={() => checkHealth(connection._id)}
+                        disabled={checkingId === connection._id}
+                      >
+                        {checkingId === connection._id ? "Checking" : "Check now"}
+                      </button>
+                    )}
                   </div>
                 </article>
               ))}
