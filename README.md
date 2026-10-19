@@ -26,7 +26,24 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 
 **Level 4 — Scheduling was reviewed and closed on September 30, 2026.** Client-timezone scheduling, Master defaults and destination overrides, revision-safe schedule records, EventBridge Scheduler, the scheduler-manager Lambda, the background release worker, missed-schedule handling, bounded certainty-aware retries, pre-dispatch cancellation, browser-closed publishing, durable Publish History, exact `View Post`, and duplicate-safe worker re-entry were verified with `Nicholas_Egner -> GIGnovate`.
 
-**Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. Its completed tasks remain closed. On October 2, Nicholas approved continuing Level 5 platform expansion before Workflow + Calendar; Google API access is pending and the active phase is now `docs/LEVEL_5_LINKEDIN.md`.
+**Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. Its completed tasks remain closed. On October 2, Nicholas approved continuing Level 5 platform expansion before Workflow + Calendar. The current October 19 checkpoint below and AI / Work Handoff Context supersede older provider handoffs.
+
+### Current checkpoint: October 19, 2026
+
+**Level 5 platform expansion remains OPEN. Google Business is now connected, as Nicholas reported October 19. Google posting is not implemented.** The current focus returns to `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`: `L5-GBP-02 READY` for investigation of the reported reconnect-every-few-hours symptom and completion of connection reliability evidence. This documentation session does not implement that follow-up.
+
+| Provider | Current evidence | Remaining work |
+| --- | --- | --- |
+| Facebook Pages | Connection, publishing and browser-closed scheduling verified; closed | Preserve working behavior |
+| Instagram Professional | Connection, image/carousel/Reel publishing and browser-closed scheduling verified; closed | Retain the documented maintenance edge-case deferrals |
+| LinkedIn personal profile | Connection and initial publishing accepted; media scheduling enabled on `main` in `7dfb620` | `L5-LI-06/07 MANUAL`: media and browser-closed schedule proof deferred to genuine posts; Company Pages `L5-LI-03 BLOCKED` |
+| YouTube | Connected channel, editor, emailed setup and a processed Private Short evidenced; scheduling implemented | `L5-YT-02/05/07 MANUAL`: renewal/reconnect debt, standard thumbnail/playlist proof, AWS deployment and browser-closed scheduling proof; `L5-YT-08 WAITING` |
+| Google Business Profile | Direct connection code delivered in `0c4c8fb`; Nicholas confirms a live connection October 19 | Investigate repeated reconnect report; capture exact saved client/account/location and non-secret access evidence; Request Connection/editor/publishing/scheduling not implemented |
+| TikTok | Required provider; no implemented adapter or opened phase found on `main` | Eligibility/access research remains future work |
+
+Google's earlier quota-zero/API-approval blocker is historical evidence from October 14. Today's reported connection advances the live checkpoint, but the approval email, current quota, exact saved location and Local Posts entitlement were not independently inspected in this session. `L5-GBP-01 MANUAL` retains those readiness records; do not claim either current quota zero or a fully verified publishing approval. Google connections explicitly retain `canPublish: false`.
+
+The latest recorded application verification is the October 15 baseline: **282 passing tests**, production build passed, lint had **zero errors and two existing LinkedIn image warnings**, and five mocked Google connection browser groups passed. These are retained historical results, not checks rerun today or proof of live token renewal. Level 6 remains unopened.
 
 Implemented:
 
@@ -1876,14 +1893,14 @@ The Instagram closure did not open another phase by itself. Nicholas subsequentl
 | --- | --- | --- | --- |
 | Complete | Facebook Pages | Verified; preserve existing implementation | Connection, publishing, and shared scheduling |
 | Complete | Instagram Professional | Verified; closed evidence record | Connection, image/carousel/Reel publishing, and shared scheduling |
-| 1 | Google Business Profile | Paused: API approval pending; adapter not implemented | Access approval, exact location selection, update posts, CTA links, images, scheduling |
-| Next | YouTube | **Active: L5-YT-01 READY**, API/channel access readiness only | Exact client/channel selection, video/thumbnail/metadata/visibility, resumable processing/scheduling, quota and upload audit restrictions |
+| Current | Google Business Profile | Live connection owner-confirmed October 19; `L5-GBP-02 READY` for connection reliability | Reconnect diagnosis and exact identity/access evidence first; emailed setup, editor, posts, images and scheduling remain later tasks |
+| Follow-up | YouTube | Implemented with live Private Short evidence; `L5-YT-02/05/07 MANUAL`, final review WAITING | Preserve renewal/reconnect, standard thumbnail/playlist and browser-closed scheduling checkpoints |
 | Parked | LinkedIn | Personal profile implemented and deployed; owner-accepted transition review, **L5-LI-06/07 MANUAL** until genuine-post evidence; Company Pages BLOCKED | Profile OAuth and publishing evidenced, background schedule and extra media untested live; Community Management approval unresolved |
 | 4 | TikTok | Required; eligibility unresolved; phase not opened | Resolve Direct Post eligibility for the owner-only app before promising public publishing or scheduling |
 | Optional | Pinterest | Candidate; not a Level 6 dependency unless Nicholas selects it | Board/Pin publishing; Trial versus Standard access and public visibility |
 | Optional | X | Candidate; not a Level 6 dependency unless Nicholas selects it | Text/link/media publishing and scheduling; explicit API usage budget |
 
-Current phase: `docs/LEVEL_5_YOUTUBE.md` with **`L5-YT-01 READY` for YouTube API/channel access research only**. Google `L5-GBP-01 MANUAL` remains paused pending API approval (case `1-5407000042073`, project number `503771980348`). Nicholas accepted LinkedIn personal-profile progress on October 13 but explicitly declined artificial live media/scheduled posts; `L5-LI-06` and `L5-LI-07` remain `MANUAL`, `L5-LI-03` Company Page remains BLOCKED, and `L5-LI-08` transition review is DONE with documented exceptions. Level 5 is NOT fully completed. See `docs/LEVEL_5_LINKEDIN.md`.
+Current phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`, with **L5-GBP-02 READY** to investigate the reported recurring reconnect and finish direct-connection reliability evidence. Nicholas reports Google Business connected on October 19; Google posting remains unimplemented. `L5-GBP-01 MANUAL` retains exact destination and access documentation, not an assertion that discovery is still blocked. YouTube and LinkedIn manual verification debt remains in their phase records. TikTok remains required and unopened; broader Level 5 is OPEN and Level 6 is not authorized.
 
 Provider approvals may require lead time. Read-only feasibility research is allowed; configure credentials only when the relevant task reaches its external checkpoint. If a required provider is blocked, document the exact limitation and obtain Nicholas's explicit decision before skipping it or opening Level 6.
 
@@ -2071,19 +2088,18 @@ The user does not need to write a separate assignment. Start the new Chat with t
 
 > Read `README.md` in full, especially **Implementation Status**, **Project Management and Chat Delegation Workflow**, **Locked Product Principles**, and **AI / Work Handoff Context**. Open the named `active_phase_document`, select its first `READY` task, and treat that task and its acceptance criteria as your complete assignment. Confirm what you selected and where progress will be recorded before changing code. Complete only that task, test it, update the authorized phase record, and finish with the README's required implementation handoff.
 
-Current delegation state:
+Current delegation state (October 19, 2026):
 
-- Completed product stages: **Levels 0–4 plus Level 5 Instagram — Instagram reviewed and closed October 2, 2026**
-- Active product stage: **Level 5 platform expansion — YouTube access readiness**
-- Active phase document: `docs/LEVEL_5_YOUTUBE.md`
-- Provider selected: **YouTube**
-- Current task: **L5-YT-01 — YouTube API & Channel Access Readiness (`READY`)**
-- Objective: verify current developer/API eligibility, audit and upload restrictions, OAuth and quota requirements, and the exact client/channel before any implementation.
-- Progress must be documented in: `docs/LEVEL_5_YOUTUBE.md`
-- LinkedIn exception: `L5-LI-08` transition review accepted; `L5-LI-06/07` remain `MANUAL` until genuine-post evidence; organization connection remains `BLOCKED`.
-- Google Business Profile `L5-GBP-01`: **MANUAL**, Google approval pending (case `1-5407000042073`).
-- UX-01: accepted for progression October 12; no new composer assignment is active.
-- Level 6 remains gated by platform coverage and operational readiness.
+- Completed product stages: **Levels 0-4 and Level 5 Instagram**; preserve closed evidence.
+- Active product stage: **Level 5 Google Business direct-connection reliability**.
+- Active phase / progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
+- Next implementation task: **L5-GBP-02 READY**, reopened for the reported reconnect-every-few-hours symptom. Inspect first, correct only a demonstrated defect, and verify renewal/persistence under the same client and location.
+- This session: documentation reconciliation only; no connection fix, account action or provider publication.
+- Google Business is connected by owner report; Google publishing is not implemented. `L5-GBP-01 MANUAL` retains missing exact identity/access evidence; `L5-GBP-03+ WAITING`.
+- YouTube: `L5-YT-02/05/07 MANUAL`, `L5-YT-08 WAITING`; preserve implemented upload/scheduling and the real Private Short evidence.
+- LinkedIn: `L5-LI-06/07 MANUAL` until genuine-post evidence; Company Pages `L5-LI-03 BLOCKED`; transition review `L5-LI-08 DONE` with exceptions. Media scheduling is enabled in delivered commit `7dfb620`.
+- UX-01 accepted; later delivered UX-02 through UX-05 retain their recorded deployed-review checkpoints in the YouTube log.
+- TikTok remains required and unopened. Level 6 remains gated by platform coverage and operational readiness.
 
 ---
 
@@ -2096,9 +2112,9 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_5_platform_expansion_youtube
+  status: level_5_platform_expansion_google_business_connection_reliability
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_5_YOUTUBE.md
+  active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
   active_phase_document_status: open
 
 current_infrastructure:
@@ -2294,11 +2310,14 @@ social_connections:
     verified_mapping: Nicholas_Egner -> @nicholasegner
     analytics_ui_status: deferred_level_8
   google_business_profile:
-    phase_active: false
-    adapter_status: not_implemented
-    access_status: pending_approval
-    live_test_client: unconfirmed
-    live_test_location: unconfirmed
+    phase_active: true
+    adapter_status: direct_connection_implemented_publishing_not_implemented
+    connection_status: owner_confirmed_connected_2026_10_19
+    connection_reliability: recurring_reconnect_report_unresolved
+    access_status: owner_reports_connection_current_quota_and_approval_evidence_not_recorded
+    can_publish: false
+    live_test_client: not_captured_in_current_evidence
+    live_test_location: not_captured_in_current_evidence
 
 content_and_publishing:
   client_delete_with_saved_content: blocked
@@ -2382,21 +2401,25 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_youtube_api_readiness
-  active_phase_document: docs/LEVEL_5_YOUTUBE.md
-  current_task: L5-YT-01
+  current_stage: level_5_google_business_connection_reliability
+  active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  current_task: L5-GBP-02
   current_task_status: READY
-  level_5_provider_selected: youtube
-  previous_provider_phase_document: docs/LEVEL_5_LINKEDIN.md
+  level_5_provider_selected: google_business_profile
+  previous_provider_phase_document: docs/LEVEL_5_YOUTUBE.md
   linkedin_review_status: owner_accepted_transition_with_exceptions
   linkedin_additional_media_status: MANUAL
   linkedin_background_scheduling_status: MANUAL
   linkedin_company_pages_status: BLOCKED
   linkedIn_live_proof_policy: first_genuine_posts_only_no_test_only_public_content
   required_remaining_provider_order:
-    - youtube
-    - tiktok
-    - google_business_profile_when_approved
+    - google_business_profile_connection_reliability_then_adapter_tasks
+    - youtube_remaining_manual_verification
+    - tiktok_readiness_and_adapter
+  youtube_oauth_status: MANUAL
+  youtube_upload_status: MANUAL
+  youtube_scheduling_status: MANUAL
+  youtube_final_review_status: WAITING
   optional_providers:
     - pinterest
     - x
@@ -2438,7 +2461,7 @@ implementation:
     level_2: first social provider OAuth credentials plus Resend
     level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS not required by the completed implementation
     level_5_instagram: completed_configuration_and_live_verification
-    level_5_google_business_profile: verify_API_access_eligibility_project_approval_exact_location_and_OAuth_configuration_in_L5_GBP_01_before_L5_GBP_02
+    level_5_google_business_profile: capture_current_access_and_exact_location_evidence_in_L5_GBP_01_and_resolve_connection_reliability_in_L5_GBP_02_before_later_tasks
 
 architecture_rules:
   application_source_of_truth: MongoDB
@@ -2467,17 +2490,17 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Research YouTube Data API and OAuth/upload eligibility, select the exact intended channel and Content Social Hub client, document provider quota/audit/privacy constraints and non-secret setup; stop at an external owner checkpoint before implementation.
-  task_source: docs/LEVEL_5_YOUTUBE.md
+  goal: Investigate recurring Google Business reconnect reports, verify renewable credentials and exact same-client location persistence, and make only a demonstrated connection fix; no Google posting in this task.
+  task_source: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-YT-01
-  google_access_status: pending_manual_approval
+  active_task: L5-GBP-02
+  google_access_status: owner_reports_connected_current_access_evidence_still_to_capture
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - L5-YT-02 and subsequent YouTube implementation before readiness is accepted
+    - L5-GBP-03 or later Google tasks before direct_connection_acceptance
     - L5-LI-03 Company Page connection until Community Management API access is approved
     - extra LinkedIn live test-only posts
-    - Google OAuth before API approval and exact test location confirmation
+    - claiming Google posting or scheduling from successful OAuth
     - Level 6 before required platform coverage and operational readiness review
     - optional X/Pinterest and blog integration without a separate approved phase
   level_5_platform_expansion_checkpoint: pending
@@ -2489,7 +2512,7 @@ Read this README in full before beginning implementation. Follow **Project Manag
 
 Levels 2, 3, 4, and the Level 5 Instagram adapter are closed. Broader Level 5 platform expansion is active. Do not reopen or rebuild the working Facebook or Instagram connection, publishing, or shared scheduling architecture unless a specific regression is demonstrated. The verified system now includes client-scoped OAuth/Request Connection, encrypted provider credentials, Account Health, destination-specific Facebook and Instagram editors, private-S3 provider transfer, durable provider results and Publish History, duplicate protection, exact `View Post`, client-timezone scheduling, EventBridge/Lambda background execution, missed-schedule behavior, controlled retry rules, and browser-closed scheduled publishing with real Facebook and Instagram results.
 
-`docs/LEVEL_5_INSTAGRAM.md` remains closed. Google Business Profile API access was requested October 12 under project `content-social-hub` (503771980348), support case `1-5407000042073`; `L5-GBP-01` is MANUAL while Google reviews the request. Nicholas accepted progressing beyond the UX-01 composer and moved LinkedIn ahead of YouTube. The active phase is `docs/LEVEL_5_LINKEDIN.md`; `L5-LI-01` is DONE and `L5-LI-02` remains MANUAL pending remaining acceptance verification. Google OAuth and later Google tasks remain WAITING. LinkedIn Share on LinkedIn Default Tier, w_member_social and callback are verified; L5-LI-01 is DONE and L5-LI-02 is DONE by product-owner acceptance after live production OAuth, reconnect, health and invitation checks; outstanding automated and isolation verification is deferred and recorded. L5-LI-04 is the sole READY task. Company Page L5-LI-03 is BLOCKED until Community Management API access. GitHub writes require explicit user confirmation.
+`docs/LEVEL_5_INSTAGRAM.md` remains closed. Continue from the October 19 current checkpoint and Google phase record. Google Business is connected by owner report; the exact saved destination/access evidence and reported repeated reconnect need verification. YouTube readiness is already DONE; do not restart L5-YT-01. LinkedIn media scheduling was delivered and must not be described as still restricted or uncommitted. Preserve all genuine-post verification deferrals and current manual statuses.
 
 Instagram is now proven through Instagram Login / Business Login for Instagram with a real Professional account. Preserve Instagram as its own `social_connections` record under the selected Content Social Hub client rather than treating it as a field on the Facebook Page connection.
 
@@ -2505,10 +2528,14 @@ Do not introduce new infrastructure solely because it is available. Prefer the a
 
 Never commit secrets to the repository. Never modify, create, delete, rename, commit, or push repository content without the user's explicit approval for that change.
 
-**Current next expected work:** `L5-YT-01 READY` in `docs/LEVEL_5_YOUTUBE.md`: research YouTube API, OAuth and upload eligibility, quotas and audit constraints; confirm the exact client and channel before touching credentials or code. LinkedIn `L5-LI-06/07 MANUAL` remain deferred until genuine-post proof; LinkedIn Company Page is BLOCKED on Community Management access. Google Business Profile approval remains pending in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`. Level 6 remains unopened.
+**Current next expected work:** `L5-GBP-02 READY` in `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`: diagnose the recurring reconnect report and verify renewal plus client/location persistence. No Google publishing, emailed request or scheduler implementation in that task. `L5-GBP-03` becomes READY only after direct-connection acceptance; YouTube/LinkedIn manual evidence remains open and TikTok remains required. Level 6 is unopened.
 
 Maintenance verification runtime: Node **24.19.0** (`npm test`, `npm run lint`, `npm run build`). See the active phase document for complete local evidence, retained runtime warnings, manual checkpoints, and deployment constraints. Renewal/recovery maintenance was deployed; some naturally unavailable edge-case proofs remain deferred.
 
+
+## Historical handoff entries
+
+The dated entries below preserve earlier decisions and preparation states. Their current/next-task, local-only and approval-pending wording is historical and superseded by the October 19 checkpoint, current delegation state and YAML above. Delivered implementation is present on `main`; consult each phase log for evidence still outstanding.
 
 ### October 13, 2026 LinkedIn task handoff update
 

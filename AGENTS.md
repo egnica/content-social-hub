@@ -94,15 +94,15 @@ End every implementation session with:
 
 ## Current documentation map
 
-- Product roadmap and source of truth: `README.md`
-- Level 0-1 setup record: `docs/LEVEL_0_1_SETUP.md`
-- Closed Facebook, publishing, scheduling, and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`
-- Active Level 5 YouTube plan and progress log: `docs/LEVEL_5_YOUTUBE.md`
-- Parked LinkedIn implementation and accepted-exception review: `docs/LEVEL_5_LINKEDIN.md` (`L5-LI-06/07 MANUAL`, Company Page `L5-LI-03 BLOCKED`, transition review `L5-LI-08 DONE`).
-- Paused Google Business Profile phase: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md` (L5-GBP-01 MANUAL, API approval pending, case `1-5407000042073`)
-- Current task: `L5-YT-01 READY` (YouTube API, channel and OAuth/upload access **readiness research only**). No YouTube code, credentials or live upload until current provider restrictions and channel selection are verified and Nicholas has the necessary external steps.
-- LinkedIn: personal OAuth/editor and text/link/image publishing accepted; additional media `L5-LI-06 MANUAL` and background scheduling `L5-LI-07 MANUAL` remain without live acceptance, by Nicholas's choice not to publish artificial posts on his professional LinkedIn profile. `L5-LI-08 DONE` is an owner-accepted review with those explicit exceptions, **not** evidence of untested publishing. Company Pages `L5-LI-03 BLOCKED` pending Community Management API.
-- UX-01 accepted for roadmap progression October 12. Do not reopen without a demonstrated issue.
-- Current priority: YouTube, then TikTok; resume Google Business Profile when approved. Preserve LinkedIn verification debt for first genuine posts; X and Pinterest optional. Level 6 remains gated.
+- Product roadmap and source of truth: `README.md`, current checkpoint **October 19, 2026**.
+- Level 0-1 setup record: `docs/LEVEL_0_1_SETUP.md`.
+- Closed Facebook, publishing, scheduling and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`.
+- Active Level 5 Google Business plan and progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
+- Current task: **L5-GBP-02 READY**, reopened to investigate the reported reconnect every few hours and complete direct-connection reliability evidence. Google Business is connected by Nicholas's October 19 report; exact saved client/account/location and current API access evidence still need recording. L5-GBP-01 remains MANUAL for that readiness evidence, not a claim that discovery remains blocked.
+- Google direct connection was delivered on `main` in `0c4c8fb`. It has `canPublish: false`. Emailed Request Connection, Google editor, posting and scheduling remain L5-GBP-03+ WAITING. Do not implement them during the connection follow-up.
+- YouTube evidence and open manual checkpoints: `docs/LEVEL_5_YOUTUBE.md`. L5-YT-01 is already DONE. OAuth/editor/request flow, a processed Private Short and implemented scheduling are recorded; L5-YT-02/05/07 MANUAL and L5-YT-08 WAITING remain. No YouTube READY task while Google is active.
+- LinkedIn accepted-exception record: `docs/LEVEL_5_LINKEDIN.md`. L5-LI-06/07 MANUAL until genuine-post evidence; L5-LI-03 BLOCKED on Community Management API; L5-LI-08 DONE for transition review with exceptions. Video/multi-image scheduling is enabled on main in `7dfb620`; old restrictions/local-only handoffs are superseded.
+- UX-01 accepted for progression October 12. Delivered UX-02 through UX-05 and their deployed-review checkpoints are recorded in the YouTube log; do not reopen without an issue.
+- TikTok remains required but its phase is unopened. X/Pinterest are optional. Broader Level 5 remains OPEN; Level 6 remains gated.
 
-Always follow the `active_phase_document` named in the README rather than assuming Level 2 will remain active permanently.
+Always use the `active_phase_document` in the README and its current ordered queue. Dated progress entries preserve history; they do not override the current checkpoint.

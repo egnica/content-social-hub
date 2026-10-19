@@ -6,17 +6,17 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **Direct connection prepared locally by owner request; live Google access remains blocked pending project approval. YouTube remains the broader active phase.**
-- Opened: **October 2, 2026**
-- Active phase document: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`
-- Provider: **Google Business Profile**
-- Application provider identity: `google_business_profile`
-- Dependency: completed Facebook publishing/scheduling and the closed Instagram adapter
-- API access: **October 14 screenshot: Account Management API enabled, Requests per minute value 0; approval not yet granted at that check.**
-- Live-test client and exact business location: **unconfirmed**
-- Current Google task: **L5-GBP-02 — Direct OAuth / Location / Renewal / Health (`MANUAL`: local implementation; publication, configuration and live verification outstanding). Owner authorized preparing it ahead of L5-GBP-01 approval on October 14.**
-- Active phase: `docs/LEVEL_5_YOUTUBE.md`
-- Direct OAuth code is prepared locally. No Google credentials were created, Cloud configuration changed, live location connected, or Google post published by this implementation.
+- Status: **OPEN. Google Business connected by owner report October 19; connection reliability unresolved; posting not implemented.**
+- Opened: **October 2, 2026**; current checkpoint **October 19, 2026**.
+- Active phase document and current progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
+- Provider: **Google Business Profile**; application identity: `google_business_profile`.
+- Current task: **L5-GBP-02 READY**, reopened to investigate Nicholas's report that the connection needs reconnecting every few hours and finish direct-connection reliability verification. This session updates documentation only.
+- Delivery: direct OAuth/location picker, encrypted persistence, reconnect and Account Health are on `main` in `0c4c8fb5540a694c2fc8207741d7da1691710f63` (October 15).
+- Live status: Nicholas explicitly reports Google Business connected October 19. Exact saved Content Social Hub client, business account and location resource IDs are not captured in the available evidence; record the actual saved values without guessing a business from earlier application screenshots.
+- API access: October 14 enabled/quota-zero evidence is historical. The new connection is owner-confirmed; today's approval email/current quotas/enabled API inventory were not independently inspected. `L5-GBP-01 MANUAL` retains readiness documentation and Local Posts eligibility checks.
+- Known issue: recurring reconnect is **reported, not diagnosed or fixed**. Existing code renews near-expiry access during Account Health. Verify that path and distinguish stored health/expiry display from actual refresh failure before changing it.
+- Not implemented: Google Request Connection, destination editor/preview, post publishing, image posts or scheduling. Connections retain **`canPublish: false`**, even when location access is Healthy.
+- Other providers: YouTube `L5-YT-02/05/07 MANUAL`, final review WAITING; LinkedIn genuine-post evidence remains deferred. TikTok unopened. Broader Level 5 OPEN; Level 6 unopened.
 
 ## Scope and phase pass condition
 
@@ -72,8 +72,8 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | --- | --- | --- | --- |
 | L5-GBP-00 | `DONE` | Baseline maintenance checkpoint | Accepted October 2, 2026 with deployed smoke evidence; unavailable live edge cases explicitly deferred |
 | UX-01 | `DONE` | Approved post composer experience | Accepted for roadmap progression October 12 after editor changes and user review |
-| L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | API application submitted October 12; await approval, then verify exact test client/location and remaining readiness |
-| L5-GBP-02 | `MANUAL` | Direct OAuth, location selection, credential renewal, Account Health | Owner authorized local preparation ahead of access approval October 14; deploy/configure and prove a real same-client location connection after approval |
+| L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | Owner reports a connection October 19; capture exact saved client/account/location, current access evidence and remaining Local Posts entitlement |
+| L5-GBP-02 | `READY` | Direct OAuth, location selection, credential renewal, Account Health | Delivered in 0c4c8fb; owner confirms connection; investigate recurring reconnect and finish same-client/location renewal and persistence evidence |
 | L5-GBP-03 | `WAITING` | Secure Request Connection and client scoping | Direct Connect proven; real emailed setup and link lifecycle verified |
 | L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
 | L5-GBP-05 | `WAITING` | Standard text/CTA update publisher | Editor accepted; real visible post, durable exact result/history, duplicate protection |
@@ -81,7 +81,9 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-October 12: Nicholas accepted moving past the published composer review and approved LinkedIn as the active provider while Google awaits API approval. UX-01 is DONE for roadmap progression; no new live post was submitted. L5-GBP-01 is MANUAL. L5-LI-01 is the sole READY task in the new LinkedIn phase. Google OAuth remains WAITING.
+**Queue authority:** the table above and October 19 entry are current; dated handoffs below preserve historical states. L5-GBP-02 is the sole READY task. L5-GBP-03+ stay WAITING.
+
+Historical October 12 handoff: Nicholas accepted moving past the published composer review and approved LinkedIn as the active provider while Google awaits API approval. UX-01 is DONE for roadmap progression; no new live post was submitted. L5-GBP-01 is MANUAL. L5-LI-01 is the sole READY task in the new LinkedIn phase. Google OAuth remains WAITING.
 
 ## UX-01 — Post Composer Experience
 
@@ -132,6 +134,17 @@ No OAuth implementation or external account modification in this task. It is `DO
 ## L5-GBP-02 — Direct OAuth / Location / Renewal / Health
 
 Add a dedicated provider adapter and only the shared connection seams it needs. Prove expiring one-time client-scoped OAuth, explicit location choice, encrypted credentials, supported token renewal, safe revoked/expired/permission handling, and location-scoped health/capability checks. Confirm the actual destination before persistence. Verify persistence and client switching with a real eligible location, without publishing.
+
+### October 19 follow-up: connection reliability
+
+The existing L5-GBP-02 task is reopened as READY; do not build another connection adapter or begin Google posting. Preserve the owner's confirmed connection while investigating the recurring reconnect report.
+
+1. Inspect existing OAuth, serialized expiry/health state and `refreshGoogleBusinessConnectionHealth` before editing. Record the actual client/account/location and sanitized health/error evidence. Verify refresh-token presence as a boolean only; never output credentials.
+2. Distinguish access-token expiry, stale displayed health, missing/revoked refresh authorization, OAuth-client mismatch and provider permission/API errors. Do not assume an expiring access token requires user reauthorization or claim a root cause from the report alone.
+3. If a defect is demonstrated, make the smallest correction preserving browser-bound one-time OAuth, encryption, same-location reconnect, client isolation, refresh-token retention and concurrent-update guards. Do not add a speculative background service.
+4. Run focused connection tests and relevant full checks for any code change. Keep new results separate from the October 15 282-test baseline.
+5. Verify the same saved location after reload/client switching and renewal across a natural access-token expiry without another consent flow. Use safe mocks for missing/revoked/omitted refresh fields and identity/concurrency negatives; do not revoke or alter production credentials just to test.
+6. Record what is automated versus live. If local fixes are ready but the natural live checkpoint remains, return to MANUAL. Mark DONE only with supported evidence and owner acceptance, then promote L5-GBP-03 alone to READY. Preserve L5-GBP-01's exact remaining evidence rather than treating OAuth success as Local Posts approval.
 
 ## L5-GBP-03 — Request Connection
 
@@ -443,3 +456,22 @@ Official references rechecked October 14: [basic setup](https://developers.googl
 - Verification remains the recorded 282 passing Node tests, successful production build, zero lint errors with two existing LinkedIn image warnings, five mocked browser check groups and clean diff check. Only documentation was changed after that verification.
 - Remote `main` was checked against local base `33dbd589974972ee344b348383aa19f1f1f34292` before delivery. No temporary preview route is included. Git delivery does not change Google Cloud, OAuth credentials, account data or posts. Nicholas reports adding the Amplify variables and starting a redeployment; no secret values were supplied or inspected.
 - Google API approval and a real direct connection remain unverified. L5-GBP-01/02 stay MANUAL and GBP-03 WAITING. Amplify must deploy the new delivered commit before the real callback is available. The handoff reports the verified commit and branch state.
+
+### October 19, 2026: Current checkpoint reconciled after owner-confirmed Google Business connection
+
+- **Task/outcome:** documentation-only reconciliation of L5-GBP-01/02 and the cross-provider handoff. Nicholas states Google Business is now connected and previously reported needing reconnect every few hours. Record the connection as owner-confirmed, with the recurring reconnect unresolved. L5-GBP-02 is reopened READY for that bounded investigation; no connection fix was implemented today. L5-GBP-01 stays MANUAL for missing exact destination/access documentation. L5-GBP-03+ remain WAITING.
+- **Repository evidence:** main at `0c4c8fb5540a694c2fc8207741d7da1691710f63`, Add Google Business Profile OAuth and location connections, delivered October 15. The earlier local/unpushed descriptions are preparation history. Reviewed README, YouTube phase, Google phase, AGENTS, current connection/provider, request-platform, destination and scheduling seams, and recent relevant commits. LinkedIn media scheduling was delivered in `7dfb620`; UX-02 through UX-05 and YouTube scheduling are also already represented on main.
+- **What is live:** the current owner's explicit connection report. No independent current health, natural-expiry refresh, exact saved client/location, quota or approval-email inspection was performed in this documentation session. No exact destination identity is inferred from the October 12 application. October 14 quota zero must not be stated as today's observed value.
+- **What is implemented:** dedicated direct OAuth, account/location selection, encrypted access/refresh credentials, same-location reconnect and Account Health. Current code refreshes near expiry through Account Health and preserves omitted refresh credentials/scopes. Its presence is not proof the reported live problem is fixed. Google credentials remain server-only.
+- **What is unfinished:** Google emailed Request Connection, destination editing/validation/preview, standard text/CTA publishing, private-S3 image publishing and shared background scheduling. Saved Google connections explicitly have canPublish false; a Healthy connection does not enable posting. No Google post or profile edit was performed.
+- **Other providers:** Facebook/Instagram closed evidence preserved. YouTube L5-YT-02/05/07 remain MANUAL and L5-YT-08 WAITING, including standard thumbnail/playlist and AWS/browser-closed scheduling evidence. LinkedIn L5-LI-06/07 live proof stays deferred to genuine posts and Company Pages remain BLOCKED. TikTok is required and unopened; Level 6 is not opened by this update.
+- **Files changed:** README.md, AGENTS.md, docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md, docs/LEVEL_5_YOUTUBE.md. Updated current summaries, roadmap rows, machine-readable handoff, queue and dated records together; historical entries retained and explicitly labeled superseded where appropriate.
+- **Checks/results:** `git diff --check` passed. README YAML parsed with Python/PyYAML; project/implementation/next-action phase and task pointers agree. Google ordered queue contains exactly one READY task (L5-GBP-02); YouTube contains none. Google publishing remains false in the handoff; code fences balance in all four edited files. Diff review and `git status --short --branch` confirm four documentation changes only. No npm test/lint/build rerun for this documentation-only change. Historical October 15 evidence remains 282 tests passed, successful build, zero lint errors/two existing LinkedIn image warnings, five mocked Google browser groups. None is relabeled as today's test or live-provider evidence.
+- **Decisions/blockers/remaining:** make this Google record active again for connection reliability; capture exact non-secret saved identity and current access evidence during the next task. Posting entitlement is a separate checkpoint. After L5-GBP-02 acceptance, L5-GBP-03 should become READY; do not skip directly to publishing or TikTok.
+- **Git:** clean main at 0c4c8fb before this docs edit; four documentation files prepared locally, uncommitted and unpushed. No GitHub write, deployment, account action, email, live schedule, upload or publication in this session. Explicit GitHub delivery confirmation remains required.
+
+### October 19, 2026: Documentation delivery authorized
+
+- Nicholas explicitly instructed **Commit and push**, authorizing delivery of the four reviewed documentation updates to main: README.md, AGENTS.md, this Google phase record and docs/LEVEL_5_YOUTUBE.md.
+- Documentation checks passed: README YAML parsing, aligned phase/task pointers, exactly one Google READY task and no YouTube READY task, balanced code fences and clean diff whitespace. No application code changed; application checks and live provider tests were not rerun.
+- This authorization supersedes the pending-delivery state in the preparation entry above. Google L5-GBP-02 remains READY for connection reliability; later Google tasks stay WAITING. Level 5 remains OPEN. Git delivery does not perform a deployment, account operation or social publication. The delivery handoff reports the verified commit and push result.
