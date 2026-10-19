@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash, randomUUID } from "node:crypto";
+import { ObjectId } from "mongodb";
 import * as logic from "../lib/google-business-connection-logic.js";
 import { isConnectionRequestUsableForPlatform, markConnectionRequestPlatformConnected } from "../lib/connection-request-logic.js";
 import { loadWithStubs } from "./helpers/load-with-stubs.js";
@@ -477,4 +478,72 @@ test("request confirmation enforces browser proof and owner flows still require 
   const owner = await loadWithStubs(path, { ...stubs, getGoogleBusinessSelectionFlow: async () => ({ mode: "owner" }) });
   assert.equal((await owner.POST(new Request("https://hub.example"))).status, 401);
   assert.equal(ownerChecked, 1); assert.equal(saved, 1);
+});
+
+
+test("serialized Google OAuth state rehydrates real BSON IDs for strict request lookup", async () => {
+  const clientId = new ObjectId(), requestId = new ObjectId();
+  const s = await setup({
+    toObjectId: value => ObjectId.isValid(value) ? new ObjectId(value) : null,
+  });
+  let lookups = 0;
+  s.collections.connection_requests.findOne = async filter => {
+    lookups += 1;
+    // Unlike the existing fake collection, real MongoDB does not match a
+    // string _id against an ObjectId _id with the same hexadecimal value.
+    assert.ok(filter._id instanceof ObjectId);
+    assert.ok(filter.clientId instanceof ObjectId);
+    assert.equal(filter._id.toHexString(), requestId.toHexString());
+    assert.equal(filter.clientId.toHexString(), clientId.toHexString());
+    return requestDoc({ _id: requestId, clientId });
+  };
+  // This is the exact shape returned by serializeDocument after consuming
+  // OAuth state; both identifiers are strings when the callback resumes.
+  const token = await s.server.createGoogleBusinessSelectionFlow({
+    state: { mode: "request", clientId: clientId.toHexString(),
+      requestId: requestId.toHexString(), oauthClientId: "oauth-client" },
+    locations: [location], tokens: tokens(),
+  });
+  assert.ok(token);
+  assert.equal(lookups, 1);
+  assert.equal(s.collections.account_selection_flows.documents.length, 1);
+});
+
+test("invalid serialized request IDs fail closed with a request-specific error", async () => {
+  const s = await setup({
+    toObjectId: value => ObjectId.isValid(value) ? new ObjectId(value) : null,
+  });
+  await assert.rejects(s.server.createGoogleBusinessSelectionFlow({
+    state: { mode: "request", clientId: "invalid", requestId: "invalid",
+      oauthClientId: "oauth-client" },
+    locations: [location], tokens: tokens(),
+  }), error => error instanceof TypeError && error.reason === "request");
+  assert.equal(s.collections.account_selection_flows.documents.length, 0);
+});
+
+test("Google callback identifies unavailable emailed requests rather than location identity errors", async () => {
+  const stubs = {
+    NextResponse: nextResponse, getAppBaseUrl: () => "https://hub.example",
+    matchesGoogleBusinessBrowser: async () => true,
+    consumeGoogleBusinessOauthState: async () =>
+      ({ mode: "request", requestId: "requestA", clientId: "clientA" }),
+    exchangeGoogleBusinessCode: async () => tokens(),
+    listGoogleBusinessLocations: async () => [location],
+    createGoogleBusinessSelectionFlow: async () => {
+      throw Object.assign(new TypeError("Request expired"), { reason: "request" });
+    },
+    GoogleBusinessApiError: class GoogleBusinessApiError extends Error {},
+    GOOGLE_BUSINESS_STATE_COOKIE: "state", GOOGLE_BUSINESS_SELECTION_COOKIE: "selection",
+    googleBusinessCookieOptions: () => ({}), hashSecureToken: hash,
+  };
+  const route = await loadWithStubs(
+    new URL("../app/api/connections/google-business/callback/route.js", import.meta.url), stubs,
+  );
+  const response = await route.GET(new Request(
+    "https://hub.example/api/connections/google-business/callback?state=valid&code=authorization-code",
+  ));
+  const url = new URL(response.headers.get("Location"));
+  assert.equal(url.pathname, "/connect/google-business/error");
+  assert.equal(url.searchParams.get("reason"), "request");
+  assert.equal(url.searchParams.has("code"), false);
 });

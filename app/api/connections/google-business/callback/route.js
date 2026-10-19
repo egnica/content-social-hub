@@ -47,7 +47,9 @@ export async function GET(request) {
       name: error?.name, reason: error?.reason || "identity", status: error?.status || null,
     });
     return redirect("/connect/google-business/error", {
-      reason: error instanceof GoogleBusinessApiError ? error.reason : error instanceof TypeError ? "identity" : "provider", clientId,
+      reason: error instanceof GoogleBusinessApiError ? error.reason
+        : error?.reason === "request" ? "request"
+        : error instanceof TypeError ? "identity" : "provider", clientId,
     });
   }
 }
