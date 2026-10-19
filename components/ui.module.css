@@ -2214,3 +2214,69 @@
 @media (max-width: 820px) {
   .connectionDetails { grid-column: 1 / -1; }
 }
+
+
+/* Request Connection feedback remains visible independent of scroll position. */
+.connectionRequestToast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 110;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 28px;
+  align-items: start;
+  gap: 11px;
+  width: min(410px, calc(100vw - 40px));
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--brand);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgba(21, 49, 33, 0.17);
+}
+.connectionRequestToastSuccess { border-left-color: var(--brand); }
+.connectionRequestToastError { border-left-color: var(--danger); }
+.connectionRequestToastIcon {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
+  font-size: 16px;
+  font-weight: 800;
+}
+.connectionRequestToastError .connectionRequestToastIcon {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.connectionRequestToastBody { min-width: 0; overflow-wrap: anywhere; }
+.connectionRequestToastBody strong { display: block; font-size: 14px; }
+.connectionRequestToastBody p { margin: 5px 0 7px; font-size: 13px; line-height: 1.5; }
+.connectionRequestToastBody small { color: var(--muted); font-size: 12px; }
+.connectionRequestToastClose {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+.connectionRequestToastClose:hover { color: var(--ink); background: var(--brand-soft); }
+.connectionRequestToastClose:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (max-width: 520px) {
+  .connectionRequestToast {
+    top: 12px;
+    right: 12px;
+    width: calc(100vw - 24px);
+    padding: 14px;
+  }
+}

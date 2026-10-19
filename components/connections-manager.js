@@ -6,11 +6,8 @@ import AccountAvatar from "@/components/account-avatar";
 import PlatformIcon from "@/components/platform-icon";
 import SocialConnectionCard from "@/components/social-connection-card";
 import { getConnectionHealthDisplay } from "@/lib/connection-health-display";
+import { labelRequestPlatform, makeConnectionRequestNotification } from "@/lib/connection-request-feedback";
 import styles from "@/components/ui.module.css";
-
-function labelRequestPlatform(platform) {
-  return platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : platform === "google_business_profile" ? "Google Business Profile" : "Facebook Pages";
-}
 
 function formatRequestPlatforms(request) {
   return (request.requestedPlatforms || ["facebook"])
@@ -85,6 +82,7 @@ function ClientConnectionsManager({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [sendingPlatform, setSendingPlatform] = useState("");
+  const [requestNotification, setRequestNotification] = useState(null);
   const [checkingId, setCheckingId] = useState("");
   const connectLabel = platform => connections.some(connection => connection.platform === platform) ? "Add account" : "Connect";
 
@@ -97,6 +95,7 @@ function ClientConnectionsManager({
     if (!selectedClient) return;
 
     setSendingPlatform(platform);
+    setRequestNotification(null);
     setMessage("");
     setError("");
 
@@ -124,11 +123,13 @@ function ClientConnectionsManager({
             : request,
         ),
       ]);
-      setMessage(
-        `${labelRequestPlatform(platform)} connection request sent to ${result.request.email}. The link expires in 48 hours.`,
+      setRequestNotification(
+        makeConnectionRequestNotification({ platform, email: result.request.email }),
       );
     } catch (requestError) {
-      setError(requestError.message);
+      setRequestNotification(
+        makeConnectionRequestNotification({ platform, error: requestError.message }),
+      );
     } finally {
       setSendingPlatform("");
     }
@@ -179,6 +180,30 @@ function ClientConnectionsManager({
 
   return (
     <div className={styles.connectionLayout}>
+      {requestNotification ? (
+        <div
+          className={`${styles.connectionRequestToast} ${requestNotification.type === "error" ? styles.connectionRequestToastError : styles.connectionRequestToastSuccess}`}
+          role={requestNotification.type === "error" ? "alert" : "status"}
+          aria-atomic="true"
+        >
+          <span className={styles.connectionRequestToastIcon} aria-hidden="true">
+            {requestNotification.type === "error" ? "!" : "✓"}
+          </span>
+          <div className={styles.connectionRequestToastBody}>
+            <strong>{requestNotification.title}</strong>
+            <p>{requestNotification.message}</p>
+            <small>{requestNotification.detail}</small>
+          </div>
+          <button
+            className={styles.connectionRequestToastClose}
+            type="button"
+            onClick={() => setRequestNotification(null)}
+            aria-label="Dismiss connection request notification"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
           <div>
