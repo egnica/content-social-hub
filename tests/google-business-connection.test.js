@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash, randomUUID } from "node:crypto";
 import * as logic from "../lib/google-business-connection-logic.js";
+import { isConnectionRequestUsableForPlatform, markConnectionRequestPlatformConnected } from "../lib/connection-request-logic.js";
 import { loadWithStubs } from "./helpers/load-with-stubs.js";
 import { fakeCollection, matches } from "./helpers/fake-mongo.js";
 
@@ -131,7 +132,8 @@ async function setup(overrides = {}) {
     .map(name => [name, collection(name === "clients" ? [{ _id: "clientA", name: "Client A" }, { _id: "clientB", name: "Client B" }] : [])]));
   const api = await provider(async () => { throw new Error("Unexpected live fetch"); });
   const stubs = {
-    ...logic, GoogleBusinessApiError: api.GoogleBusinessApiError,
+    ...logic, isConnectionRequestUsableForPlatform, markConnectionRequestPlatformConnected,
+    GoogleBusinessApiError: api.GoogleBusinessApiError,
     getDb: async () => ({ collection: name => collections[name] }),
     toObjectId: value => typeof value === "string" && value ? value : null,
     serializeDocument: doc => doc ? structuredClone(doc) : null,
@@ -280,7 +282,9 @@ test("confirmation requires an owner and browser-bound flow before touching cred
     completeGoogleBusinessSelection: async () => { saved++; },
   };
   const unauthorized = await loadWithStubs(new URL("../app/api/connections/google-business/confirm/route.js", import.meta.url), {
-    ...stubs, requireApiSession: async () => Response.json({ error: "Unauthorized" }, { status: 401 }),
+    ...stubs, matchesGoogleBusinessBrowser: async () => true,
+    getGoogleBusinessSelectionFlow: async () => ({ mode: "owner" }),
+    requireApiSession: async () => Response.json({ error: "Unauthorized" }, { status: 401 }),
   });
   assert.equal((await unauthorized.POST(new Request("https://hub.example"))).status, 401);
   const wrongBrowser = await loadWithStubs(new URL("../app/api/connections/google-business/confirm/route.js", import.meta.url), {
@@ -312,4 +316,165 @@ test("concurrent reconnect during a health lookup preserves the newer credential
   const result = await server.refreshSocialConnectionHealth(saved._id);
   assert.equal(current.tokenEncrypted, "encrypted:newer-reconnect");
   assert.equal(result.tokenEncrypted, undefined);
+});
+
+function requestDoc(overrides = {}) {
+  return { _id: "requestA", clientId: "clientA", status: "pending",
+    requestedPlatforms: ["google_business_profile"],
+    platformStatus: { google_business_profile: "requested" },
+    expiresAt: new Date(Date.now() + 3600000), ...overrides };
+}
+async function requested(s, overrides = {}) {
+  s.collections.connection_requests.documents.push(requestDoc(overrides));
+  const stateToken = await s.server.createGoogleBusinessOauthState({
+    clientId: "clientA", mode: "request", requestId: "requestA",
+  });
+  const state = await s.server.consumeGoogleBusinessOauthState(stateToken);
+  const token = await s.server.createGoogleBusinessSelectionFlow({ state, locations: [location], tokens: tokens() });
+  return { state, token };
+}
+
+test("emailed Google authorization binds the exact client/location, redacts credentials and completes once", async () => {
+  const s = await setup(), { state, token } = await requested(s);
+  assert.equal(state.clientId, "clientA"); assert.equal(state.requestId, "requestA");
+  const flow = await s.server.getGoogleBusinessSelectionFlow(token);
+  assert.equal(flow.mode, "request"); assert.equal(flow.clientName, "Client A");
+  assert.equal(JSON.stringify(flow).includes("secret"), false);
+  const saved = await s.server.completeGoogleBusinessSelection(token, location.providerParent);
+  assert.equal(saved.clientId, "clientA"); assert.equal(saved.providerAccountId, "locations/456");
+  assert.equal(saved.capabilities.canPublish, false); assert.equal(saved.tokenEncrypted, undefined);
+  assert.equal(s.collections.social_connections.documents.length, 1);
+  assert.equal(s.collections.connection_requests.documents[0].status, "completed");
+  await assert.rejects(s.server.completeGoogleBusinessSelection(token, location.providerParent));
+  assert.equal(s.collections.social_connections.documents.length, 1);
+});
+
+test("multi-platform request remains pending after the Google step", async () => {
+  const s = await setup(), { token } = await requested(s, {
+    requestedPlatforms: ["facebook", "google_business_profile"],
+    platformStatus: { facebook: "requested", google_business_profile: "requested" },
+  });
+  await s.server.completeGoogleBusinessSelection(token, location.providerParent);
+  const request = s.collections.connection_requests.documents[0];
+  assert.equal(request.status, "pending");
+  assert.deepEqual(request.platformStatus, { facebook: "requested", google_business_profile: "connected" });
+  assert.equal(isConnectionRequestUsableForPlatform(request, "facebook"), true);
+  assert.equal(isConnectionRequestUsableForPlatform(request, "google_business_profile"), false);
+});
+
+test("expired, replaced, completed and cross-client requests cannot start Google OAuth", async () => {
+  for (const change of [{ status: "revoked" }, { status: "completed" }, { expiresAt: new Date(0) },
+    { clientId: "clientB" }, { platformStatus: { google_business_profile: "connected" } }]) {
+    const s = await setup();
+    s.collections.connection_requests.documents.push(requestDoc(change));
+    await assert.rejects(s.server.createGoogleBusinessOauthState({
+      clientId: "clientA", mode: "request", requestId: "requestA",
+    }));
+    assert.equal(s.collections.oauth_states.documents.length, 0);
+  }
+});
+
+test("replacement during Google consent or selection blocks persistence", async () => {
+  for (const point of ["consent", "selection", "replacement"]) {
+    const s = await setup();
+    s.collections.connection_requests.documents.push(requestDoc());
+    const stateToken = await s.server.createGoogleBusinessOauthState({
+      clientId: "clientA", mode: "request", requestId: "requestA",
+    });
+    const state = await s.server.consumeGoogleBusinessOauthState(stateToken);
+    if (point === "consent") {
+      s.collections.connection_requests.documents[0].status = "revoked";
+      await assert.rejects(s.server.createGoogleBusinessSelectionFlow({ state, locations: [location], tokens: tokens() }));
+    } else {
+      const token = await s.server.createGoogleBusinessSelectionFlow({ state, locations: [location], tokens: tokens() });
+      if (point === "selection") s.collections.connection_requests.documents[0].expiresAt = new Date(0);
+      else s.collections.connection_requests.documents[0].status = "revoked";
+      await assert.rejects(s.server.completeGoogleBusinessSelection(token, location.providerParent));
+    }
+    assert.equal(s.collections.social_connections.documents.length, 0);
+  }
+});
+
+test("unoffered location, deleted client and identity mismatch cannot complete requested authorization", async () => {
+  for (const failure of ["unoffered", "deleted", "identity"]) {
+    const s = await setup(failure === "identity" ? {
+      verifyGoogleBusinessLocation: async () => ({ ...location, providerAccountId: "locations/999" }),
+    } : {});
+    const { token } = await requested(s);
+    if (failure === "deleted") s.collections.clients.documents.splice(0, 1);
+    await assert.rejects(s.server.completeGoogleBusinessSelection(token,
+      failure === "unoffered" ? "accounts/123/locations/999" : location.providerParent));
+    assert.equal(s.collections.social_connections.documents.length, 0);
+  }
+});
+
+test("secure Google request start uses emailed client without an owner session", async () => {
+  let started = null;
+  const stubs = {
+    NextResponse: nextResponse, getSession: async () => null,
+    getAppBaseUrl: () => "https://hub.example", requireEnv: () => "configured",
+    createGoogleBusinessAuthorizationUrl: value => `https://accounts.google.com/o/oauth2/v2/auth?state=${value}`,
+    getConnectionRequestByToken: async () => requestDoc(),
+    isConnectionRequestUsableForPlatform,
+    createGoogleBusinessOauthState: async args => { started = args; return "oauth-state"; },
+    hashSecureToken: hash, GOOGLE_BUSINESS_STATE_COOKIE: "state", googleBusinessCookieOptions: () => ({}),
+  };
+  const path = new URL("../app/api/connections/google-business/start/route.js", import.meta.url);
+  const route = await loadWithStubs(path, stubs);
+  const good = await route.GET(new Request("https://hub.example/api/connections/google-business/start?requestToken=secret"));
+  assert.equal(good.status, 303);
+  assert.equal(started.clientId, "clientA"); assert.equal(started.mode, "request");
+  assert.equal(started.requestId, "requestA");
+  assert.equal(new URL(good.headers.get("Location")).hostname, "accounts.google.com");
+  started = null;
+  const blocked = await loadWithStubs(path, {
+    ...stubs, getConnectionRequestByToken: async () => requestDoc({ status: "revoked" }),
+  });
+  const response = await blocked.GET(new Request("https://hub.example/api/connections/google-business/start?requestToken=secret"));
+  assert.equal(new URL(response.headers.get("Location")).searchParams.get("reason"), "request");
+  assert.equal(started, null);
+});
+
+test("Google request callback accepts client setup without owner login and rejects a wrong browser", async () => {
+  let exchanged = 0;
+  const stubs = {
+    NextResponse: nextResponse, getAppBaseUrl: () => "https://hub.example",
+    getSession: async () => null, matchesGoogleBusinessBrowser: async () => true,
+    consumeGoogleBusinessOauthState: async () => ({ mode: "request", requestId: "requestA", clientId: "clientA" }),
+    exchangeGoogleBusinessCode: async () => { exchanged++; return tokens(); },
+    listGoogleBusinessLocations: async () => [location], createGoogleBusinessSelectionFlow: async () => "selection",
+    GOOGLE_BUSINESS_STATE_COOKIE: "state", GOOGLE_BUSINESS_SELECTION_COOKIE: "selection",
+    googleBusinessCookieOptions: () => ({}), hashSecureToken: hash,
+  };
+  const path = new URL("../app/api/connections/google-business/callback/route.js", import.meta.url);
+  const route = await loadWithStubs(path, stubs);
+  const result = await route.GET(new Request("https://hub.example/api/connections/google-business/callback?state=valid&code=code"));
+  assert.equal(exchanged, 1);
+  assert.equal(new URL(result.headers.get("Location")).pathname, "/connect/google-business/select");
+  const bad = await loadWithStubs(path, { ...stubs, matchesGoogleBusinessBrowser: async () => false });
+  const rejected = await bad.GET(new Request("https://hub.example/api/connections/google-business/callback?state=bad&code=code"));
+  assert.equal(new URL(rejected.headers.get("Location")).searchParams.get("reason"), "invalid");
+  assert.equal(exchanged, 1);
+});
+
+test("request confirmation enforces browser proof and owner flows still require login", async () => {
+  let saved = 0, ownerChecked = 0;
+  const stubs = {
+    readJson: async () => ({ token: "selection", providerParent: location.providerParent }),
+    matchesGoogleBusinessBrowser: async () => true,
+    getGoogleBusinessSelectionFlow: async () => ({ mode: "request" }),
+    requireApiSession: async () => { ownerChecked++; return Response.json({ error: "Unauthorized" }, { status: 401 }); },
+    completeGoogleBusinessSelection: async () => { saved++; return { clientId: "clientA" }; },
+    cookies: async () => ({ delete() {} }), GOOGLE_BUSINESS_SELECTION_COOKIE: "selection",
+  };
+  const path = new URL("../app/api/connections/google-business/confirm/route.js", import.meta.url);
+  const publicRoute = await loadWithStubs(path, stubs);
+  assert.equal((await publicRoute.POST(new Request("https://hub.example"))).status, 200);
+  assert.equal(ownerChecked, 0); assert.equal(saved, 1);
+  const bad = await loadWithStubs(path, { ...stubs, matchesGoogleBusinessBrowser: async () => false });
+  assert.equal((await bad.POST(new Request("https://hub.example"))).status, 403);
+  assert.equal(saved, 1);
+  const owner = await loadWithStubs(path, { ...stubs, getGoogleBusinessSelectionFlow: async () => ({ mode: "owner" }) });
+  assert.equal((await owner.POST(new Request("https://hub.example"))).status, 401);
+  assert.equal(ownerChecked, 1); assert.equal(saved, 1);
 });

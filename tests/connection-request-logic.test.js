@@ -110,3 +110,22 @@ test("YouTube request link is scoped to platform, expiry and replacement state",
   assert.equal(isConnectionRequestUsableForPlatform({ ...request, expiresAt: "2026-10-12T00:00:00Z" }, "youtube", now), false);
   assert.equal(markConnectionRequestPlatformConnected(request, "youtube").status, "completed");
 });
+
+
+test("Google Business requests retain replacement, expiration and multi-platform completion guards", () => {
+  const now = new Date("2026-10-19T20:00:00Z");
+  const request = { status: "pending", requestedPlatforms: ["facebook", "google_business_profile"],
+    platformStatus: { facebook: "requested", google_business_profile: "requested" },
+    expiresAt: "2026-10-21T20:00:00Z" };
+  assert.deepEqual(normalizeConnectionRequestPlatforms("GOOGLE_BUSINESS_PROFILE"), ["google_business_profile"]);
+  assert.equal(requestsSharePlatform(["google_business_profile"], ["instagram"]), false);
+  assert.equal(requestsSharePlatform(["youtube", "google_business_profile"], ["google_business_profile"]), true);
+  assert.equal(isConnectionRequestUsableForPlatform(request, "google_business_profile", now), true);
+  assert.equal(isConnectionRequestUsableForPlatform({ ...request, status: "revoked" }, "google_business_profile", now), false);
+  assert.equal(isConnectionRequestUsableForPlatform({ ...request, expiresAt: "2026-10-18T20:00:00Z" }, "google_business_profile", now), false);
+  const next = markConnectionRequestPlatformConnected(request, "google_business_profile");
+  assert.equal(next.status, "pending");
+  assert.deepEqual(next.platformStatus, { facebook: "requested", google_business_profile: "connected" });
+  assert.equal(markConnectionRequestPlatformConnected({ ...request, platformStatus:
+    { facebook: "connected", google_business_profile: "requested" } }, "google_business_profile").status, "completed");
+});

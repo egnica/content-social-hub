@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import styles from "@/components/ui.module.css";
 
@@ -6,6 +5,7 @@ export const metadata = { title: "Google Business Connection", robots: { index: 
 export const dynamic = "force-dynamic";
 const messages = {
   expired: "The authorization expired or was already used. Start Connect again.",
+  request: "This connection request expired, was replaced or is already completed. Ask for a fresh link.",
   invalid: "This authorization does not match the browser that started Connect. Start again in the same browser.",
   cancelled: "Google authorization was cancelled. No connection was saved.",
   quota: "Google blocked business lookup because of a quota limit. If your project's quota is 0, Google must approve Business Profile API access before location selection can work.",
@@ -18,11 +18,12 @@ const messages = {
   unavailable: "Google Business Profile is temporarily unavailable. Try again later.",
 };
 export default async function GoogleBusinessErrorPage({ searchParams }) {
-  if (!await getSession()) redirect("/login");
+  const session = await getSession();
   const params = await searchParams;
   const clientId = typeof params?.clientId === "string" && /^[a-f0-9]{24}$/i.test(params.clientId) ? params.clientId : "";
   return <main className={styles.loginPage}><div className={styles.loginCard}>
     <h1>Google Business was not connected</h1><p role="alert">{messages[params?.reason] || messages.provider}</p>
-    <a className={styles.button} href={clientId ? `/connections?clientId=${clientId}` : "/connections"}>Back to Social Accounts</a>
+    {session ? <a className={styles.button} href={clientId ? `/connections?clientId=${clientId}` : "/connections"}>Back to Social Accounts</a>
+      : <p>Use the original setup link to try again, or ask the sender for a new link.</p>}
   </div></main>;
 }

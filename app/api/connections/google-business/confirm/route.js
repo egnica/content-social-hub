@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { readJson, apiError } from "@/lib/api";
-import { completeGoogleBusinessSelection } from "@/lib/connections";
+import { completeGoogleBusinessSelection, getGoogleBusinessSelectionFlow } from "@/lib/connections";
 import { GoogleBusinessApiError } from "@/lib/google-business";
 import { GOOGLE_BUSINESS_SELECTION_COOKIE, matchesGoogleBusinessBrowser } from "@/lib/google-business-oauth-browser";
 import { requireApiSession } from "@/lib/session";
@@ -8,11 +8,17 @@ import { requireApiSession } from "@/lib/session";
 export const dynamic = "force-dynamic";
 export async function POST(request) {
   try {
-    const unauthorized = await requireApiSession();
-    if (unauthorized) return unauthorized;
     const body = await readJson(request);
     if (!await matchesGoogleBusinessBrowser(GOOGLE_BUSINESS_SELECTION_COOKIE, body?.token)) {
       return Response.json({ error: "Restart Google Business Connect in this browser." }, { status: 403 });
+    }
+    const flow = await getGoogleBusinessSelectionFlow(body?.token);
+    if (!flow) return Response.json({ error: "This business location confirmation expired." }, { status: 400 });
+    if (flow.mode === "owner") {
+      const unauthorized = await requireApiSession();
+      if (unauthorized) return unauthorized;
+    } else if (flow.mode !== "request") {
+      return Response.json({ error: "Invalid Google Business connection flow." }, { status: 403 });
     }
     const connection = await completeGoogleBusinessSelection(body.token, body.providerParent);
     (await cookies()).delete(GOOGLE_BUSINESS_SELECTION_COOKIE);

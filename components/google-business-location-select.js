@@ -40,6 +40,7 @@ export default function GoogleBusinessLocationSelect({ flow, token }) {
       {error && <div className={styles.errorNotice} role="alert" ref={errorRef} tabIndex={-1}>{error}</div>}
       <button className={styles.button} type="submit" disabled={busy || !selected}>{busy ? "Connecting" : "Confirm location"}</button>
     </form>}
-    <a className={styles.buttonSecondary} href={`/connections?clientId=${flow.clientId}`}>Back to Social Accounts</a>
+    {flow.mode === "owner" && <a className={styles.buttonSecondary}
+      href={`/connections?clientId=${flow.clientId}`}>Back to Social Accounts</a>}
   </div>;
 }

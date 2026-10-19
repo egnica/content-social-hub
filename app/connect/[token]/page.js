@@ -19,7 +19,8 @@ function formatExpiration(value) {
 function platformLabel(platform) {
   return platform === "instagram"
     ? "Instagram Professional account"
-    : platform === "linkedin" ? "LinkedIn personal profile" : platform === "youtube" ? "YouTube channel" : "Facebook Page";
+    : platform === "linkedin" ? "LinkedIn personal profile" : platform === "youtube" ? "YouTube channel"
+      : platform === "google_business_profile" ? "Google Business Profile location" : "Facebook Page";
 }
 
 export default async function ConnectionRequestPage({ params }) {
@@ -72,7 +73,7 @@ export default async function ConnectionRequestPage({ params }) {
           the Content Social Hub workspace.
         </p>
         <div className={styles.notice}>
-          Facebook, Instagram, LinkedIn, and YouTube handle their own sign-in. Content Social Hub
+          Facebook, Instagram, LinkedIn, YouTube, and Google Business Profile handle their own sign-in. Content Social Hub
           never receives your social account password.
         </div>
 
@@ -83,10 +84,10 @@ export default async function ConnectionRequestPage({ params }) {
                 <strong>{platformLabel(platform)}</strong>
                 <small>Requested for {request.clientName}</small>
               </span>
-              <form action={`/api/connections/${platform}/start`} method="get">
+              <form action={`/api/connections/${platform === "google_business_profile" ? "google-business" : platform}/start`} method="get">
                 <input type="hidden" name="requestToken" value={token} />
                 <button className={styles.button} type="submit">
-                  Continue with {platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : "Facebook"}
+                  Continue with {platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : platform === "google_business_profile" ? "Google Business" : "Facebook"}
                 </button>
               </form>
             </div>

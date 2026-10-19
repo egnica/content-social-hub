@@ -13,20 +13,25 @@ function redirect(path, params = {}) {
   for (const [key, value] of Object.entries(params)) if (value) url.searchParams.set(key, value);
   const response = NextResponse.redirect(url, 303);
   response.cookies.set(GOOGLE_BUSINESS_STATE_COOKIE, "", googleBusinessCookieOptions(0));
-  response.headers.set("Cache-Control", "no-store"); response.headers.set("Referrer-Policy", "no-referrer");
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 export async function GET(request) {
   let clientId = "";
   try {
-    if (!await getSession()) return redirect("/login");
     const url = new URL(request.url), value = url.searchParams.get("state");
     if (!await matchesGoogleBusinessBrowser(GOOGLE_BUSINESS_STATE_COOKIE, value)) {
       return redirect("/connect/google-business/error", { reason: "invalid" });
     }
     const state = await consumeGoogleBusinessOauthState(value);
     if (!state) return redirect("/connect/google-business/error", { reason: "expired" });
-    clientId = state.clientId;
+    if (state.mode === "owner") {
+      if (!await getSession()) return redirect("/login");
+      clientId = state.clientId;
+    } else if (state.mode !== "request" || !state.requestId) {
+      return redirect("/connect/google-business/error", { reason: "request" });
+    }
     if (url.searchParams.get("error")) return redirect("/connect/google-business/error", { reason: "cancelled", clientId });
     const code = url.searchParams.get("code");
     if (!code) return redirect("/connect/google-business/error", { reason: "invalid", clientId });
@@ -37,9 +42,12 @@ export async function GET(request) {
     response.cookies.set(GOOGLE_BUSINESS_SELECTION_COOKIE, hashSecureToken(token), googleBusinessCookieOptions(1200));
     return response;
   } catch (error) {
-    // Never log provider responses, request URLs, codes, or credentials.
-    console.error("Google Business OAuth callback failed", { name: error?.name, reason: error?.reason || "identity", status: error?.status || null });
+    // Never log provider responses, URLs, codes or credentials.
+    console.error("Google Business OAuth callback failed", {
+      name: error?.name, reason: error?.reason || "identity", status: error?.status || null,
+    });
     return redirect("/connect/google-business/error", {
-      reason: error instanceof GoogleBusinessApiError ? error.reason : error instanceof TypeError ? "identity" : "provider", clientId });
+      reason: error instanceof GoogleBusinessApiError ? error.reason : error instanceof TypeError ? "identity" : "provider", clientId,
+    });
   }
 }

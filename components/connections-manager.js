@@ -9,7 +9,7 @@ import { getConnectionHealthDisplay } from "@/lib/connection-health-display";
 import styles from "@/components/ui.module.css";
 
 function labelRequestPlatform(platform) {
-  return platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : "Facebook Pages";
+  return platform === "instagram" ? "Instagram" : platform === "linkedin" ? "LinkedIn" : platform === "youtube" ? "YouTube" : platform === "google_business_profile" ? "Google Business Profile" : "Facebook Pages";
 }
 
 function formatRequestPlatforms(request) {
@@ -354,7 +354,7 @@ function ClientConnectionsManager({
             <PlatformIcon platform="google_business_profile" />
             <div className={styles.connectionProviderBody}>
               <strong>Google Business Profile</strong>
-              <p>Authorize Google, then choose the exact business location. Google must approve API access for location lookup. Posting support is an upcoming step.</p>
+              <p>Authorize Google, then select the exact business location. Connect directly or email a secure 48-hour setup link. Posting support is an upcoming step.</p>
               <AttachedAccounts connections={connections} platform="google_business_profile" />
               {!configuration.googleBusinessReady && <p className={styles.fieldHint}>
                 Setup is waiting for: {(configuration.missingGoogleBusiness || ["Google Business OAuth credentials"]).join(", ")}.
@@ -364,6 +364,12 @@ function ClientConnectionsManager({
               {configuration.googleBusinessReady
                 ? <a className={styles.button} href={`/api/connections/google-business/start?clientId=${selectedClient._id}`}>{connectLabel("google_business_profile")}</a>
                 : <button className={styles.button} type="button" disabled>{connectLabel("google_business_profile")}</button>}
+              <button className={styles.buttonSecondary} type="button"
+                onClick={() => sendRequest("google_business_profile")}
+                disabled={Boolean(sendingPlatform) || !configuration.googleBusinessReady ||
+                  !configuration.emailReady || !selectedClient.approvalReportEmail}>
+                {sendingPlatform === "google_business_profile" ? "Sending" : "Request Connection"}
+              </button>
             </div>
           </article>
           {!selectedClient.approvalReportEmail ? (

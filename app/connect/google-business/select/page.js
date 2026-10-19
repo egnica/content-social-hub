@@ -8,12 +8,12 @@ import styles from "@/components/ui.module.css";
 export const metadata = { title: "Connect Google Business Profile", robots: { index: false, follow: false }, referrer: "no-referrer" };
 export const dynamic = "force-dynamic";
 export default async function GoogleBusinessSelectPage({ searchParams }) {
-  if (!await getSession()) redirect("/login");
   const params = await searchParams;
   const flow = await matchesGoogleBusinessBrowser(GOOGLE_BUSINESS_SELECTION_COOKIE, params?.token)
     ? await getGoogleBusinessSelectionFlow(params.token) : null;
+  if (flow?.mode === "owner" && !await getSession()) redirect("/login");
   return <main className={styles.loginPage}>{flow
     ? <GoogleBusinessLocationSelect flow={flow} token={params.token} />
-    : <div className={styles.loginCard}><h1>Location selection expired</h1><p>Restart Google Business Connect in this browser.</p>
-      <a className={styles.button} href="/connections">Back to Social Accounts</a></div>}</main>;
+    : <div className={styles.loginCard}><h1>Location selection expired</h1>
+      <p>Restart Google Business Connect using the original setup link or Social Accounts.</p></div>}</main>;
 }
