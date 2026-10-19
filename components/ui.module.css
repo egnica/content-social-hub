@@ -1046,12 +1046,20 @@
 
 .connectionIdentity { min-width: 0; overflow-wrap: anywhere; }
 
-.connectionIdentity span,
-.connectionHealth > span:last-child {
+.connectionIdentity span {
   display: block;
   margin-top: 3px;
   color: var(--muted);
   font-size: 11px;
+}
+
+/* The date and optional stale notice are always separate from the badge. */
+.connectionHealth > span:not(:first-child) {
+  font-size: 11px;
+  line-height: 1.4;
+}
+.connectionHealth > span:nth-child(2) {
+  color: var(--muted);
 }
 
 .connectionIdentity p {
@@ -1061,6 +1069,10 @@
 }
 
 .connectionHealth {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   min-width: 138px;
   text-align: right;
 }
@@ -1202,6 +1214,7 @@
   }
 
   .connectionHealth {
+    align-items: flex-start;
     text-align: left;
   }
 }
