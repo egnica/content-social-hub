@@ -170,37 +170,6 @@ function ClientConnectionsManager({
     }
   }
 
-  async function refreshYouTubeNow(connectionId) {
-    setCheckingId(connectionId);
-    setMessage("");
-    setError("");
-
-    try {
-      const response = await fetch(`/api/connections/${connectionId}/refresh-youtube`, {
-        method: "POST",
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Unable to refresh YouTube authorization.");
-      }
-
-      setConnections((current) =>
-        current.map((connection) =>
-          connection._id === connectionId ? result.connection : connection,
-        ),
-      );
-
-      if (!["healthy", "expiring_soon"].includes(result.connection.healthStatus)) {
-        throw new Error(result.connection.healthMessage || "YouTube token refresh could not be verified.");
-      }
-
-      setMessage(`${result.connection.accountName}: YouTube access token renewed and channel identity verified.`);
-    } catch (refreshError) {
-      setError(refreshError.message);
-    } finally {
-      setCheckingId("");
-    }
-  }
 
   if (!clients.length) {
     return (
@@ -436,15 +405,15 @@ function ClientConnectionsManager({
                     <strong>{connection.accountName}</strong>
                     <span>{labelConnectionPlatform(connection)}</span>
                     {connection.healthMessage &&
-                      !(connection.platform === "google_business_profile" && connection.healthStatus === "expiring_soon") ? (
+                      !(["google_business_profile", "youtube"].includes(connection.platform) && connection.healthStatus === "expiring_soon") ? (
                       <p>{connection.healthMessage}</p>
                     ) : null}
                     {connection.platform === "linkedin" && connection.tokenExpiresAt ? (
                       <p>Authorization expires {formatDate(connection.tokenExpiresAt)}</p>
                     ) : null}
-                    {connection.platform === "youtube" && connection.tokenExpiresAt ? (
-                      <p>Access token expires {formatDate(connection.tokenExpiresAt)}. Check now renews it when needed.</p>
-                    ) : null}
+                    {connection.platform === "youtube" && (
+                      <p className={styles.connectionMetadata}>Check access verifies this channel and renews its token when needed. Reconnect opens Google sign-in.</p>
+                    )}
                     {connection.platform === "google_business_profile" && <>
                       <p className={styles.connectionMetadata}>{connection.address || "Service-area business or address not provided"}</p>
                       <p className={styles.connectionMetadata}>{connection.providerParent}</p>
@@ -477,27 +446,23 @@ function ClientConnectionsManager({
                         href={`/api/connections/google-business/start?clientId=${connection.clientId}&connectionId=${connection._id}`}
                         title="Open Google sign-in to reauthorize this business location">Reconnect</a>
                     </>}
-                    {connection.platform === "youtube" && (
-                      <button
-                        className={styles.buttonSecondary}
-                        type="button"
-                        onClick={() => refreshYouTubeNow(connection._id)}
-                        disabled={checkingId === connection._id}
-                      >
-                        {checkingId === connection._id ? "Refreshing" : "Refresh token now"}
+                    {connection.platform === "youtube" && <>
+                      <button className={styles.buttonSecondary} type="button"
+                        onClick={() => checkHealth(connection._id)}
+                        disabled={checkingId === connection._id}>
+                        {checkingId === connection._id ? "Checking" : "Check access"}
                       </button>
-                    )}
-                    {connection.platform === "youtube" && (
-                      <a className={styles.buttonSecondary}
-                        href={`/api/connections/youtube/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>Reconnect</a>
-                    )}
+                      <a className={styles.buttonGhost}
+                        href={`/api/connections/youtube/start?clientId=${connection.clientId}&connectionId=${connection._id}`}
+                        title="Open Google sign-in to reauthorize this YouTube channel">Reconnect</a>
+                    </>}
                     {connection.platform === "linkedin" && (
                       <a className={styles.buttonSecondary}
                         href={`/api/connections/linkedin/start?clientId=${connection.clientId}&connectionId=${connection._id}`}>
                         Reconnect
                       </a>
                     )}
-                    {connection.platform !== "google_business_profile" && (
+                    {!["google_business_profile", "youtube"].includes(connection.platform) && (
                       <button
                         className={styles.buttonGhost}
                         type="button"
