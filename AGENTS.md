@@ -94,12 +94,12 @@ End every implementation session with:
 
 ## Current documentation map
 
-- Product roadmap and source of truth: `README.md`, current checkpoint **October 19, 2026**.
+- Product roadmap and source of truth: `README.md`, current checkpoint **November 9, 2026**.
 - Level 0-1 setup record: `docs/LEVEL_0_1_SETUP.md`.
 - Closed Facebook, publishing, scheduling and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`.
 - Active Level 5 Google Business plan and progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
-- Current task: **L5-GBP-03 READY** for secure Google Business emailed Request Connection and exact client/location scoping. **L5-GBP-02 DONE** by October 19 owner acceptance after Healthy same-location and renewal screenshots. Location `accounts/117585782904582812392/locations/13178639929087207302` is evidenced; independent Content Social Hub client mapping and API/publishing entitlement remain under L5-GBP-01 MANUAL.
-- Google direct connection was delivered on `main` in `0c4c8fb`, with October 19 UI polish. It has `canPublish: false`. Emailed Request Connection is L5-GBP-03 READY; editor, posting and scheduling remain L5-GBP-04+ WAITING. Do not implement later tasks during secure emailed setup.
+- Current task: **L5-GBP-04 READY** for a separate Google standard-update draft version, continuous validation and approximate preview. **L5-GBP-03 DONE** after November 9 owner-supplied emailed setup/save/Healthy evidence and direction to proceed, with unobserved live negatives/session/database/mobile checks disclosed in the phase record. Client name `Nicholas_Egner` and location `accounts/117585782904582812392/locations/13178639929087207302` are evidenced by screenshots; independent client-ID mapping and API/publishing entitlement remain under L5-GBP-01 MANUAL.
+- Direct and emailed Google connections are delivered on `main`, including request-lifecycle follow-up `ec2b9c5`. Preserve `canPublish: false`. L5-GBP-04 is the sole READY task; L5-GBP-05+ remain WAITING. Draft editing must not enable publishing/scheduling, invoke Google media transfer or bypass the separate Local Posts entitlement checkpoint.
 - YouTube evidence and open manual checkpoints: `docs/LEVEL_5_YOUTUBE.md`. L5-YT-01 is already DONE. OAuth/editor/request flow, a processed Private Short and implemented scheduling are recorded; L5-YT-02/05/07 MANUAL and L5-YT-08 WAITING remain. No YouTube READY task while Google is active.
 - LinkedIn accepted-exception record: `docs/LEVEL_5_LINKEDIN.md`. L5-LI-06/07 MANUAL until genuine-post evidence; L5-LI-03 BLOCKED on Community Management API; L5-LI-08 DONE for transition review with exceptions. Video/multi-image scheduling is enabled on main in `7dfb620`; old restrictions/local-only handoffs are superseded.
 - UX-01 accepted for progression October 12. Delivered UX-02 through UX-05 and their deployed-review checkpoints are recorded in the YouTube log; do not reopen without an issue.

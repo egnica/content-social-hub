@@ -6,16 +6,16 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **OPEN. Google direct connection L5-GBP-02 DONE by owner acceptance October 19; L5-GBP-03 READY for emailed Request Connection. Posting not implemented.**
-- Opened: **October 2, 2026**; current local verification checkpoint **November 9, 2026**. Latest recorded live connection evidence remains October 19.
+- Status: **OPEN. L5-GBP-02 DONE; L5-GBP-03 DONE by owner-directed progression November 9 with disclosed live-verification exceptions. L5-GBP-04 READY for the draft editor/validation/preview. Posting not implemented.**
+- Opened: **October 2, 2026**; current local verification checkpoint **November 9, 2026**. Latest owner-supplied live emailed-connection evidence is November 9.
 - Active phase document and current progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
 - Provider: **Google Business Profile**; application identity: `google_business_profile`.
-- Current task: **L5-GBP-03 READY**, with the emailed flow delivered and November 9 local follow-up fixes verified. Approved delivery of those fixes and deployed/live acceptance remain outstanding. L5-GBP-02 is DONE by Nicholas's October 19 explicit acceptance.
+- Current task: **L5-GBP-04 READY** for a Google standard-update draft version, continuous validation and approximate preview. L5-GBP-03 is DONE following the November 9 successful emailed setup/location confirmation/Healthy screenshots and Nicholas's direction to move on; unobserved live negative checks remain disclosed below.
 - Delivery: direct OAuth/location picker, encrypted persistence, reconnect and Account Health are on `main` in `0c4c8fb5540a694c2fc8207741d7da1691710f63` (October 15).
-- Live status: October 19 screenshots show Nicholas Egner - Web Development, resource `accounts/117585782904582812392/locations/13178639929087207302`, Healthy after expiry advanced from 11:56 AM to 1:00 PM. Owner accepted connection/reliability. MongoDB client-ID mapping and the absence of an intervening consent redirect were not independently inspected.
+- Live status: November 9 screenshots show the emailed limited-purpose setup for `Nicholas_Egner`, explicit Google location selection, successful save to that client, and `Nicholas Egner - Web Development` Healthy with a 2:40 PM America/Chicago check. The exact resource remains `accounts/117585782904582812392/locations/13178639929087207302`. Independent database client-ID mapping, private-browser session state and completed/replaced-link negatives were not inspected. October 19 renewal evidence remains historical.
 - API access: October 14 enabled/quota-zero evidence is historical. The new connection is owner-confirmed; today's approval email/current quotas/enabled API inventory were not independently inspected. `L5-GBP-01 MANUAL` retains readiness documentation and Local Posts eligibility checks.
 - Reliability outcome: screenshots support successful renewal with the same saved location. No server-side refresh defect was demonstrated; credential renewal logic was preserved. Owner accepted the task with recorded verification exceptions.
-- Emailed Request Connection and the BSON lookup correction are present on `main` through `057f438` (October 19). Two further request-lifecycle fixes are prepared locally November 9; see the latest progress entry. Destination editor/preview, post publishing, image posts and scheduling remain unimplemented. Connections retain **`canPublish: false`**, even when location access is Healthy.
+- Emailed Request Connection, notification UI and BSON correction are on `main`; the November 9 lifecycle follow-up was delivered as `ec2b9c5` and its remote tree was verified identical to the tested source. Screenshots show a successful deployed user flow, but no Amplify job/commit attestation was independently retrieved. Destination editor/preview, publishing, images and scheduling remain unimplemented. Connections retain **`canPublish: false`**.
 - Other providers: YouTube `L5-YT-02/05/07 MANUAL`, final review WAITING; LinkedIn genuine-post evidence remains deferred. TikTok unopened. Broader Level 5 OPEN; Level 6 unopened.
 
 ## Scope and phase pass condition
@@ -74,14 +74,14 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | UX-01 | `DONE` | Approved post composer experience | Accepted for roadmap progression October 12 after editor changes and user review |
 | L5-GBP-01 | `MANUAL` | Google Business Profile access readiness | Location identity recorded; independently inspect selected Content Social Hub client ID, current Google quota/approval and Local Posts publishing entitlement |
 | L5-GBP-02 | `DONE` | Direct OAuth, location selection, credential renewal, Account Health | Owner accepted October 19 after Healthy connection, same-location renewal evidence, deployed UI review; manual/full-check exceptions retained |
-| L5-GBP-03 | `READY` | Secure Request Connection and client scoping | Emailed flow delivered; November 9 local fixes and 306 tests pass. Fix delivery, deployed browser checks, real emailed setup and client-isolation acceptance remain pending |
-| L5-GBP-04 | `WAITING` | Destination version, validation, and preview | Connection paths proven; separate editable Google version with Master protections |
+| L5-GBP-03 | `DONE` | Secure Request Connection and client scoping | November 9 owner-supplied setup, location picker, save and Healthy evidence; owner requested progression with unobserved live negatives disclosed |
+| L5-GBP-04 | `READY` | Destination version, validation, and preview | L5-GBP-03 owner-accepted with exceptions; expanded criteria below; draft editing only, no publishing capability |
 | L5-GBP-05 | `WAITING` | Standard text/CTA update publisher | Editor accepted; real visible post, durable exact result/history, duplicate protection |
 | L5-GBP-06 | `WAITING` | Private-S3 image update publishing | Text publisher proven; real image result without public bucket access |
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-**Queue authority:** the table above and the latest dated task evidence are current; older handoffs below preserve historical states. L5-GBP-02 is DONE; **L5-GBP-03 is the sole READY task**, pending delivery/live acceptance. L5-GBP-04+ remain WAITING.
+**Queue authority:** the table above and the latest dated task evidence are current; older handoffs below preserve historical states. L5-GBP-02/03 are DONE; **L5-GBP-04 is the sole READY task**. L5-GBP-05+ remain WAITING. Remaining connection-proof exceptions stay in the November 9 closure entry and are not falsely relabeled as passed.
 
 Historical October 12 handoff: Nicholas accepted moving past the published composer review and approved LinkedIn as the active provider while Google awaits API approval. UX-01 is DONE for roadmap progression; no new live post was submitted. L5-GBP-01 is MANUAL. L5-LI-01 is the sole READY task in the new LinkedIn phase. Google OAuth remains WAITING.
 
@@ -164,7 +164,28 @@ Extend requested-platform state, secure setup page, and Resend email copy for Go
 
 ## L5-GBP-04 — Version / Validation / Preview
 
-Implement Google destination selection and a separate version for standard updates, summary, supported CTA/link, image selection, and schedule inheritance. Verify Master inheritance/customization/reset behavior, revision boundaries, continuous blocking/warning rules, and an approximate preview. Do not publish yet. Expand detailed criteria before this task becomes `READY`.
+### Objective
+
+Create and persist a Google Business Profile standard-update draft under the exact connected client/location, using the existing Master Content and destination-version architecture. This task ends at editing, validation and preview; it does not enable Google publishing or background scheduling.
+
+### Acceptance criteria
+
+1. Inspect existing destination eligibility, platform-version storage/API, editor components and tests before editing. Preserve client/destination ownership and all working Facebook, Instagram, LinkedIn and YouTube behavior; no broad architecture change.
+2. Allow draft selection of the client's eligible Google location using its exact saved identity and usable location-management access. Separate edit eligibility from publish eligibility: preserve `canPublish: false` and block Google Publish Now, Schedule and worker dispatch on the server as well as in the UI. Do not mark a draft publishable merely because the connection is Healthy.
+3. Store a separate `google_business_profile` version using the existing client, Master ID, connection ID and revision model. Support STANDARD updates with summary, an optional supported CTA/link and zero or one compatible attached image. Events, offers, alerts, products and video are outside this task. Recheck current official payload guidance and record any validation limits/product restrictions; do not copy other networks' limits or invent unsupported fields.
+4. Inherit Master summary, eligible default image, clean link and release metadata through existing seams. Preserve independent customization, Master-change notices, deliberate reset/update behavior and existing revision boundaries. CTA may be absent; selecting a link CTA requires a valid supported URL. Reject foreign-client media and unsupported media selections. Store private S3 media identity, never a signed URL as durable media data.
+5. Render Google in the existing account tabs with summary, CTA/link and optional image editing plus continuous validation. Show exact business identity and an approximate post preview that follows edits. Make draft save/reopen, destination exclusion/reactivation and unsaved tab switching behave consistently with the established composer. Validation runs server-side as well as in the editor; invalid Google content must not block another valid destination.
+6. Preserve Master-default versus destination-override release metadata for future use without creating a scheduled release or invoking Google, AWS or a publishing API. No provider media transfer in this task. Do not use Google's native scheduling fields to replace the shared scheduler.
+7. Add meaningful provider-version tests for inheritance/customization/reset, client/location isolation, media ownership, CTA/URL validation, revision behavior and disabled Google publishing/scheduling. Run the full Node 24.19.0 test/lint/build checks and `git diff --check`. Report existing warnings and distinguish mocks from deployed proof.
+8. Verify desktop/mobile editor rendering, persistence after reopen, independent account edits and disabled publishing/scheduling. If browser tooling is unavailable, record the precise limitation and retain the deployed owner checkpoint; no build-as-live-proof claim. Keep credentials server-side and private media private.
+9. Append outcomes, changed files, checks/results, live evidence, decisions and blockers here. Commit/push still require explicit user confirmation. Mark L5-GBP-04 DONE only after supported evidence and owner acceptance; only then promote L5-GBP-05. Local Posts approval/quota remains separately MANUAL under L5-GBP-01 and must be resolved before publishing implementation/live dispatch.
+
+### Provider references checked November 9
+
+- [LocalPost resource](https://developers.google.com/my-business/reference/rest/v4/accounts.locations.localPosts): STANDARD topic and summary; CTA choices include BOOK, ORDER, SHOP, LEARN_MORE, SIGN_UP and CALL. CALL omits the URL; deprecated GET_OFFER is excluded. Return-only provider identity/state/link fields are not draft input.
+- [Post creation guidance](https://developers.google.com/my-business/content/posts-data): provider payload guidance is distinct from the application's private-media transfer and later publishing entitlement. Verify relevant field/media limits during implementation; these references do not prove this project's Local Posts access.
+
+L5-GBP-04 is prepared, not implemented by this documentation handoff.
 
 ## L5-GBP-05 — Standard Text / CTA Publisher
 
@@ -580,3 +601,23 @@ Official references rechecked October 14: [basic setup](https://developers.googl
 - Verification remains the recorded Node 24.19.0 results: 306 passing tests, successful production build, zero lint errors/two existing LinkedIn image warnings, and clean diff checks. Only this authorization entry was appended after verification.
 - L5-GBP-03 remains READY pending deployment and the documented live emailed-connection/browser checkpoint. L5-GBP-04 remains WAITING. Git publication is not evidence of a successful Amplify deployment, email delivery or Google authorization.
 - The final delivery handoff supplies the verified commit and remote branch state.
+
+
+### November 9, 2026: L5-GBP-03 live flow reviewed; owner directed progression to L5-GBP-04
+
+- **Task/outcome:** After reviewing the real emailed-connection flow screenshots, Nicholas asked whether logs were updated and said “Lets move on.” Record L5-GBP-03 **DONE by owner-directed progression with the verification exceptions below**. L5-GBP-04 alone becomes READY, with bounded editor/validation/preview criteria expanded above. No broader Level 5 or provider-publishing closure is claimed.
+- **Delivered source:** Five-file request-lifecycle follow-up committed/published to remote `main` as `ec2b9c5b9f27fb46ce7a141026b01f9380244d70`. Remote main and the exact tree were verified; local main was aligned and clean. The earlier local-only/pending-push entries are historical. The documented CLI authentication limitation was resolved through the connected GitHub account; no credentials were exposed.
+- **Live evidence supplied by Nicholas:** The 2:38 PM screenshot shows visible Google Request Connection success feedback to the configured email. The setup screenshot shows `Nicholas_Egner`, Google Business as the requested provider, a November 11 2:38 PM America/Chicago expiry, and no owner workspace navigation. The picker shows multiple Google-authorized businesses and requires explicit selection. A further screenshot shows “Business location connected” and save to `Nicholas_Egner`. The hub screenshot shows `Nicholas Egner - Web Development`, Healthy, checked November 9 at 2:40 PM, resource `accounts/117585782904582812392/locations/13178639929087207302`, with posting explicitly disabled. This is owner-supplied deployed browser evidence, not an agent-operated browser or independent database audit.
+- **Evidence files:** `Screenshot 2026-11-09 at 2.38.50 PM.png`, `Screenshot 2026-11-09 at 2.39.57 PM.png`, `Screenshot 2026-11-09 at 2.40.35 PM.png`, `Screenshot 2026-11-09 at 2.40.54 PM.png`, and `Screenshot 2026-11-09 at 2.41.30 PM.png`, supplied in this conversation. No screenshot, setup token or OAuth credential is committed.
+- **Exceptions retained:** No screenshot/result was supplied for reopening the completed email link, replacing an unfinished live link, or cross-client switching. Private/incognito session state, database client ObjectId mapping and Amplify's exact deployed commit/job were not independently inspected. Mobile rendering and error feedback were not exercised live. Automated scope, expiry, replay, replacement, typed-ID and persistence checks pass, but do not substitute for these unobserved live cases. Nicholas's direction permits roadmap progression; it does not make missing tests passed. Retain these exceptions for the final provider evidence review in L5-GBP-08.
+- **Automated evidence retained:** November 9 Node 24.19.0: 306 tests pass, production build passes, lint has zero errors/two existing LinkedIn image warnings. These checks were not repeated for documentation-only acceptance. Documentation validation checks YAML/task alignment, one READY task, balanced fences, expected three-file scope and clean diff whitespace; final results are reported in the handoff.
+- **Files changed:** `README.md`, `AGENTS.md`, and this phase document. Updated current checkpoint, machine-readable handoff, task queue and L5-GBP-04 acceptance criteria together; historical entries are preserved. No application code or external account changed in this handoff.
+- **Decisions/blockers:** Keep Google `canPublish: false`; L5-GBP-01 remains MANUAL for current quota/approval, independent client mapping and Local Posts entitlement. New Healthy connection evidence does not prove Google posting approval. L5-GBP-04 may prepare drafts without publishing. YouTube/LinkedIn manual evidence, TikTok readiness and Level 6 gates remain unchanged.
+- **Next assignment:** L5-GBP-04, standard-update draft version, continuous validation and approximate preview; no Google post, media transfer or schedule submission. One READY task per implementation chat remains the rule. L5-GBP-05+ remain WAITING.
+- **Git/publication:** This three-file documentation handoff is local, uncommitted and unpushed on main based on `ec2b9c5`. The prior push approval covered the earlier five-file patch; explicit confirmation is required to publish this new documentation change.
+
+### November 9, 2026: Connection closure and editor handoff publication authorized
+
+- Nicholas explicitly instructed **push**, approving commit/publication of the reviewed three-file documentation handoff: `README.md`, `AGENTS.md`, and this phase record.
+- Documentation validation passed: README YAML parses, all current task/phase pointers agree, L5-GBP-04 is the sole READY task, L5-GBP-03 is DONE with its disclosed exceptions, publishing remains disabled, code fences balance and `git diff --check` passes. No application code changed; the previously recorded 306-test/lint/build evidence was not rerun for this documentation-only update.
+- L5-GBP-04 is prepared for the next implementation chat. L5-GBP-05+ remain WAITING, Local Posts entitlement stays MANUAL, and broader Level 5 remains OPEN. The final delivery handoff reports the verified remote commit and Git state.
