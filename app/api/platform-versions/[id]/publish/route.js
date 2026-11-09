@@ -100,6 +100,10 @@ export async function POST(_request, { params }) {
     const { id } = await params;
     const target = await getPublishTarget(id);
 
+    if (target?.platform === "google_business_profile") {
+      return Response.json({ error: "Google Business publishing is not enabled." }, { status: 403 });
+    }
+
     if (target?.platform === "instagram") {
       await assertDestinationNotAwaitingReview(id);
       if (target.mediaCount >= 2) {
@@ -141,6 +145,10 @@ export async function GET(request, { params }) {
   try {
     const { id } = await params;
     const target = await getPublishTarget(id);
+
+    if (target?.platform === "google_business_profile") {
+      return Response.json({ error: "Google Business publishing is not enabled." }, { status: 403 });
+    }
 
     if (target?.platform === "instagram") {
       if (target.attemptMode === "carousel") {

@@ -20,11 +20,13 @@ function platformLabel(platform) {
   if (platform === "facebook") return "Facebook Page";
   if (platform === "linkedin") return "LinkedIn personal profile";
   if (platform === "youtube") return "YouTube channel";
+  if (platform === "google_business_profile") return "Google Business location";
   return platform || "Social destination";
 }
 
 function destinationStatus(destination) {
-  if (destination.selectable) return "Connected";
+  if (destination.selectable) return destination.platform === "google_business_profile"
+    ? "Connected · draft editing only; posting unavailable" : "Connected";
   if (destination.healthMessage) return destination.healthMessage;
   if (!destination.canPublish) {
     return `${platformLabel(destination.platform)} publishing permission is unavailable.`;

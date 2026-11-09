@@ -22,7 +22,7 @@ export default async function EditContentPage({ params }) {
   const platformVersions = destinationState?.platformVersions || [];
   const scheduleEntries = await Promise.all(
     platformVersions
-      .filter((version) => version.active !== false)
+      .filter((version) => version.active !== false && version.platform !== "google_business_profile")
       .map(async (version) => {
         try {
           return [version._id, await getDestinationScheduleState(version._id)];

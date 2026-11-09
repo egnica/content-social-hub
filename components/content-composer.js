@@ -9,6 +9,7 @@ import { FacebookVersionEditor } from "@/components/facebook-platform-editor";
 import { InstagramVersionEditor } from "@/components/instagram-platform-editor";
 import { YouTubeVersionEditor } from "@/components/youtube-platform-editor";
 import { LinkedInVersionEditor } from "@/components/linkedin-platform-editor";
+import { GoogleBusinessVersionEditor } from "@/components/google-business-platform-editor";
 import styles from "@/components/ui.module.css";
 import { composerStatus } from "@/lib/content-composer-logic";
 
@@ -23,7 +24,7 @@ export default function ContentComposer({
   const activeVersions = platformVersions.filter(
     (version) =>
       version.active !== false &&
-      ["facebook", "instagram", "linkedin", "youtube"].includes(version.platform),
+      ["facebook", "instagram", "linkedin", "youtube", "google_business_profile"].includes(version.platform),
   );
   const [selectedTab, setSelectedTab] = useState(activeVersions[0]?._id || "");
   const activeTab = activeVersions.some(
@@ -141,7 +142,7 @@ export default function ContentComposer({
                 <PlatformIcon platform={version.platform} />
                 <span>
                   <strong>
-                    {version.platform === "instagram" ? "Instagram" : version.platform === "linkedin" ? "LinkedIn" : version.platform === "youtube" ? "YouTube" : "Facebook"}
+                    {version.platform === "instagram" ? "Instagram" : version.platform === "linkedin" ? "LinkedIn" : version.platform === "youtube" ? "YouTube" : version.platform === "google_business_profile" ? "Google Business" : "Facebook"}
                   </strong>
                   <small>
                     {version.destinationName ||
@@ -168,7 +169,9 @@ export default function ContentComposer({
               (item) => item._id === version.socialConnectionId,
             );
             const Editor =
-              version.platform === "youtube"
+              version.platform === "google_business_profile"
+                ? GoogleBusinessVersionEditor
+                : version.platform === "youtube"
                 ? YouTubeVersionEditor
                 : version.platform === "instagram"
                 ? InstagramVersionEditor
