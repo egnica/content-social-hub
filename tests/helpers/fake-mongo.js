@@ -6,7 +6,7 @@ export function matches(document, filter) {
     if (key === "$or") return expected.some((part) => matches(document, part));
     if (key === "$and")
       return expected.every((part) => matches(document, part));
-    const actual = document[key];
+    const actual = key.split(".").reduce((value, part) => value?.[part], document);
     if (
       expected &&
       typeof expected === "object" &&
@@ -16,11 +16,14 @@ export function matches(document, filter) {
         if (op === "$lte") return actual != null && actual <= value;
         if (op === "$gt") return actual > value;
         if (op === "$ne") return !equal(actual, value);
-        if (op === "$in") return value.some((item) => equal(actual, item));
+        if (op === "$in") return value.some((item) =>
+          (Array.isArray(actual) ? actual : [actual]).some((entry) => equal(entry, item)));
         return false;
       });
     }
-    return equal(actual, expected);
+    return Array.isArray(actual)
+      ? actual.some((entry) => equal(entry, expected))
+      : equal(actual, expected);
   });
 }
 

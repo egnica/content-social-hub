@@ -3,7 +3,8 @@ import test from "node:test";
 import { createHash, randomUUID } from "node:crypto";
 import { ObjectId } from "mongodb";
 import * as logic from "../lib/google-business-connection-logic.js";
-import { isConnectionRequestUsableForPlatform, markConnectionRequestPlatformConnected } from "../lib/connection-request-logic.js";
+import { createRequestedPlatformStatus, normalizeConnectionRequestPlatforms,
+  isConnectionRequestUsableForPlatform, markConnectionRequestPlatformConnected } from "../lib/connection-request-logic.js";
 import { loadWithStubs } from "./helpers/load-with-stubs.js";
 import { fakeCollection, matches } from "./helpers/fake-mongo.js";
 
@@ -115,7 +116,16 @@ test("location access health never claims a publishing capability", () => {
 
 function collection(documents = []) {
   const c = fakeCollection(documents);
-  c.insertOne = async doc => { documents.push({ ...structuredClone(doc), _id: randomUUID() }); };
+  c.insertOne = async doc => {
+    const insertedId = randomUUID();
+    documents.push({ ...structuredClone(doc), _id: insertedId });
+    return { insertedId };
+  };
+  c.updateMany = async (filter, update) => {
+    const selected = documents.filter(doc => matches(doc, filter));
+    for (const doc of selected) Object.assign(doc, structuredClone(update.$set));
+    return { matchedCount: selected.length };
+  };
   c.findOneAndUpdate = async (filter, update, options = {}) => {
     let doc = documents.find(d => matches(d, filter));
     if (!doc && options.upsert) { doc = { ...filter, _id: randomUUID(), ...update.$setOnInsert }; documents.push(doc); }
@@ -133,7 +143,8 @@ async function setup(overrides = {}) {
     .map(name => [name, collection(name === "clients" ? [{ _id: "clientA", name: "Client A" }, { _id: "clientB", name: "Client B" }] : [])]));
   const api = await provider(async () => { throw new Error("Unexpected live fetch"); });
   const stubs = {
-    ...logic, isConnectionRequestUsableForPlatform, markConnectionRequestPlatformConnected,
+    ...logic, createRequestedPlatformStatus, normalizeConnectionRequestPlatforms,
+    isConnectionRequestUsableForPlatform, markConnectionRequestPlatformConnected,
     GoogleBusinessApiError: api.GoogleBusinessApiError,
     getDb: async () => ({ collection: name => collections[name] }),
     toObjectId: value => typeof value === "string" && value ? value : null,
@@ -363,8 +374,59 @@ test("multi-platform request remains pending after the Google step", async () =>
   assert.equal(isConnectionRequestUsableForPlatform(request, "google_business_profile"), false);
 });
 
+test("a new Google request replaces only unfinished Google setup for the same client", async () => {
+  const s = await setup();
+  s.collections.clients.documents[0].approvalReportEmail = "client@example.test";
+  const scenarios = [
+    requestDoc({ _id: "old-google" }),
+    requestDoc({ _id: "old-failed", status: "email_failed" }),
+    requestDoc({ _id: "other-client", clientId: "clientB" }),
+    requestDoc({ _id: "other-platform", requestedPlatforms: ["facebook"] }),
+    requestDoc({ _id: "google-already-connected", requestedPlatforms: ["facebook", "google_business_profile"],
+      platformStatus: { facebook: "requested", google_business_profile: "connected" } }),
+    requestDoc({ _id: "complete", status: "completed" }),
+  ];
+  s.collections.connection_requests.documents.push(...scenarios);
+  const result = await s.server.createConnectionRequest("clientA", ["google_business_profile"]);
+  assert.deepEqual(scenarios.map(doc => doc.status),
+    ["revoked", "revoked", "pending", "pending", "pending", "completed"]);
+  assert.equal(result.request.clientId, "clientA");
+  assert.equal(result.request.email, "client@example.test");
+  assert.deepEqual(result.request.requestedPlatforms, ["google_business_profile"]);
+  assert.equal(+new Date(result.request.expiresAt) - +new Date(result.request.createdAt), 48 * 60 * 60 * 1000);
+  assert.equal(result.request.tokenHash, undefined);
+});
+
+test("unavailable emailed requests cannot display previously authorized Google locations", async () => {
+  for (const change of [{ status: "revoked" }, { status: "completed" },
+    { expiresAt: new Date(0) }, { requestedPlatforms: ["facebook"] },
+    { clientId: "clientB" }, { platformStatus: { google_business_profile: "connected" } }, null]) {
+    const s = await setup(), { token } = await requested(s);
+    if (change) Object.assign(s.collections.connection_requests.documents[0], change);
+    else s.collections.connection_requests.documents.length = 0;
+    assert.equal(await s.server.getGoogleBusinessSelectionFlow(token), null);
+    assert.equal(s.collections.social_connections.documents.length, 0);
+  }
+});
+
+test("request replacement during provider revalidation prevents the final connection write", async () => {
+  const s = await setup();
+  const { token } = await requested(s);
+  const server = await loadWithStubs(new URL("../lib/connections.js", import.meta.url), {
+    ...s.stubs,
+    verifyGoogleBusinessLocation: async () => {
+      s.collections.connection_requests.documents[0].status = "revoked";
+      return location;
+    },
+  });
+  await assert.rejects(server.completeGoogleBusinessSelection(token, location.providerParent),
+    error => error.reason === "request");
+  assert.equal(s.collections.social_connections.documents.length, 0);
+});
+
 test("expired, replaced, completed and cross-client requests cannot start Google OAuth", async () => {
   for (const change of [{ status: "revoked" }, { status: "completed" }, { expiresAt: new Date(0) },
+    { requestedPlatforms: ["facebook"] },
     { clientId: "clientB" }, { platformStatus: { google_business_profile: "connected" } }]) {
     const s = await setup();
     s.collections.connection_requests.documents.push(requestDoc(change));
@@ -422,7 +484,7 @@ test("secure Google request start uses emailed client without an owner session",
   };
   const path = new URL("../app/api/connections/google-business/start/route.js", import.meta.url);
   const route = await loadWithStubs(path, stubs);
-  const good = await route.GET(new Request("https://hub.example/api/connections/google-business/start?requestToken=secret"));
+  const good = await route.GET(new Request("https://hub.example/api/connections/google-business/start?requestToken=secret&clientId=clientB&connectionId=other"));
   assert.equal(good.status, 303);
   assert.equal(started.clientId, "clientA"); assert.equal(started.mode, "request");
   assert.equal(started.requestId, "requestA");

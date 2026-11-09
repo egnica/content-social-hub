@@ -21,7 +21,8 @@ function formatRequestPlatforms(request) {
 }
 
 function requestOverlapsPlatform(request, platform) {
-  return (request.requestedPlatforms || ["facebook"]).includes(platform);
+  return (request.requestedPlatforms || ["facebook"]).includes(platform)
+    && request.platformStatus?.[platform] !== "connected";
 }
 
 function formatDate(value) {
