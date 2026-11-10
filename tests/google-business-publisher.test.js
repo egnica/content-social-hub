@@ -61,3 +61,15 @@ test("provider sanitizes disabled/denied/quota responses and rejects malformed a
   });
   await assert.rejects(bad.createGoogleBusinessPost({ accessToken: "mock", parent, version }), /identity/);
 });
+
+
+test("image posts send exactly one PHOTO source URL and reject missing/unrequested sources", () => {
+  const imageVersion = { ...version, mediaIds: ["image-id"] };
+  const signed = "https://private-bucket.s3.us-east-2.amazonaws.com/photo.png?X-Amz-Signature=short-lived";
+  const body = logic.googleBusinessPostPayload(imageVersion, signed);
+  assert.deepEqual(body.media, [{ mediaFormat: "PHOTO", sourceUrl: signed }]);
+  assert.equal(body.scheduledTime, undefined);
+  assert.throws(() => logic.googleBusinessPostPayload(imageVersion), /Invalid URL|photo source/);
+  assert.throws(() => logic.googleBusinessPostPayload(imageVersion, "http://example.test/photo.jpg"), /HTTPS/);
+  assert.throws(() => logic.googleBusinessPostPayload(version, signed), /text-only/);
+});

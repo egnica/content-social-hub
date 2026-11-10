@@ -6,9 +6,9 @@ Instagram remains completed in `docs/LEVEL_5_INSTAGRAM.md`. This phase must pres
 
 ## Phase state
 
-- Status: **OPEN. L5-GBP-02/03 DONE; L5-GBP-04 DONE by owner acceptance November 10 with retained browser/live exceptions. L5-GBP-05 MANUAL: text/CTA publisher prepared; commit/push authorized November 10, deployment and live verification pending.**
+- Status: **OPEN. L5-GBP-02/03/04 DONE with documented exceptions. L5-GBP-05 DONE for progression by November 10 owner direction, with real text/CTA/link evidence still unverified. L5-GBP-06 READY; code/tests/docs delivery authorized November 10, with full verification and live image proof pending.**
 - Active phase/progress record: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
-- Current task: **L5-GBP-05 MANUAL**, pending delivery and actual standard text/CTA publication. L5-GBP-06+ remain WAITING. No implementation task is READY during this manual checkpoint.
+- Current task: **L5-GBP-06 READY** for one private-S3 photo update. Code delivery is authorized; verified remote commit must be confirmed in the handoff. Missing L5-GBP-05 live checks remain explicit exceptions, not passed checks. L5-GBP-07+ remain WAITING.
 - Delivered source base: `main` at `c864d0eb1177e3efbc66c11dcb691d6b51668822` (draft editor). The new publisher is covered by the November 10 delivery authorization; see the final handoff for the verified remote commit.
 - Existing live connection: owner-accepted `Nicholas_Egner` -> `Nicholas Egner - Web Development`, location path `accounts/117585782904582812392/locations/13178639929087207302`. Independent client ObjectId mapping and earlier link/session/mobile negatives remain disclosed in the November 9 record.
 - Approval evidence: October 19 email from `googlebusinessprofile-support@google.com`, subject `[1-5407000042073] Your Business Profile support inquiry`, explicitly approves project `503771980348` and grants default 300 QPM. Read November 10 through connected Gmail. Current console quotas and Local Posts activation/write entitlement have not been inspected. L5-GBP-01 remains MANUAL for those remaining checks and independent client mapping.
@@ -74,12 +74,12 @@ Google OAuth consent, API approval, and the actual user's access to a location a
 | L5-GBP-02 | `DONE` | Direct OAuth, location selection, credential renewal, Account Health | Owner accepted October 19 after Healthy connection, same-location renewal evidence, deployed UI review; manual/full-check exceptions retained |
 | L5-GBP-03 | `DONE` | Secure Request Connection and client scoping | November 9 owner-supplied setup, location picker, save and Healthy evidence; owner requested progression with unobserved live negatives disclosed |
 | L5-GBP-04 | `DONE` | Destination version, validation, and preview | Owner accepted November 10 after 316 passing tests/build/lint; browser/deployed exceptions retained |
-| L5-GBP-05 | `MANUAL` | Standard text/CTA update publisher | Local implementation and 336 tests/build/lint pass; delivery, live text/CTA post and exact result review pending |
-| L5-GBP-06 | `WAITING` | Private-S3 image update publishing | Text publisher proven; real image result without public bucket access |
+| L5-GBP-05 | `DONE` | Standard text/CTA update publisher | Owner accepted progression November 10 with actual text/CTA/exact-link verification exceptions retained |
+| L5-GBP-06 | `READY` | Private-S3 image update publishing | Owner authorized code/docs delivery; full checks, deployment and real image result required |
 | L5-GBP-07 | `WAITING` | Shared background scheduling and reliability | Direct publisher proven; browser-closed publish, cancellation/stale guards, worker re-entry |
 | L5-GBP-08 | `WAITING` | Final adapter evidence and Work review | Complete deployed evidence, Facebook/Instagram regression review, closure decision |
 
-**Queue authority:** the table above and November 10 task evidence are current. L5-GBP-04 is owner-accepted DONE with retained exceptions. L5-GBP-05 is MANUAL after local implementation, with no READY task until the live checkpoint is accepted. Only then should L5-GBP-06 become READY. Historical editor-next summaries below are superseded; missing live checks are not relabeled as passed.
+**Queue authority:** this table and Nicholas's November 10 instruction supersede the earlier manual gate. L5-GBP-05 is DONE for progression only, not proof of an exact visible text/CTA result. L5-GBP-06 is the sole READY task. Previous live exceptions remain tracked; L5-GBP-07 stays WAITING until verified image acceptance.
 
 Historical October 12 handoff: Nicholas accepted moving past the published composer review and approved LinkedIn as the active provider while Google awaits API approval. UX-01 is DONE for roadmap progression; no new live post was submitted. L5-GBP-01 is MANUAL. L5-LI-01 is the sole READY task in the new LinkedIn phase. Google OAuth remains WAITING.
 
@@ -201,6 +201,15 @@ Require final confirmation, server-side ownership/health/validation rechecks, an
 ## L5-GBP-06 — Image Publisher
 
 Confirm current media constraints, transfer/retrieval, and lifetime requirements. Prove one image update from private S3 while preserving originals. Reuse the existing publisher/result barrier; media handling must not create a second post. Verify the actual Google image result, exact post link, and durable history.
+
+### L5-GBP-06 acceptance criteria (November 10)
+
+1. Allow one client-owned JPG/PNG image attached to the selected Master, 10 KB–5 MB and at least 250×250 px. Reject missing, foreign, unattached, incompatible, tampered or changed media before Google's create request.
+2. Preserve the private S3 bucket and source originals. Read/verify the original and generate a short-lived HTTPS GET capability only after the revision is claimed; send `media: [{ mediaFormat: "PHOTO", sourceUrl }]` on the **same** STANDARD create call. Never store the presigned URL or credentials in attempts, errors, logs or durable history.
+3. Reuse location/client identity validation, health renewal, text/CTA validation, atomic revision claim, durable result and duplicate barrier. Allow deliberate retry only after a definitive pre-acceptance failure. An unknown result stays locked; status refresh only reads the saved Google post.
+4. Show the selected photo in the final owner confirmation. Preserve save/reopen and read-only post state, exact returned post link, PROCESSING/REJECTED/LIVE handling and history. No generic Google profile-link substitute.
+5. Run Node 24 full tests, lint, build and diff checks. Test payload and S3 failures, saved media ownership/compatibility, photo magic bytes, stale/changed content, exact result persistence, concurrency, duplicate protection and ambiguous-result barriers.
+6. Separately approve commit/push, confirm Amplify deployment and conduct one explicitly owner-authorized real image post. Verify Google actually displays the image as well as the text and CTA, the returned exact link, history after reopen and duplicate protection. Confirm whether a one-hour signed URL survives Google's delayed fetch. This is a manual checkpoint; an API success alone is not proof of image visibility. L5-GBP-07 stays WAITING until completion.
 
 ## L5-GBP-07 — Background Scheduling / Reliability
 
@@ -704,3 +713,20 @@ Official references rechecked October 14: [basic setup](https://developers.googl
 - Nicholas explicitly instructed **Commit and push**, authorizing the three-file projection correction, realistic regression test and phase-log update for delivery to main.
 - Verification remains 337 passing Node 24.19.0 tests, successful production build, zero lint errors/two existing LinkedIn image warnings, and clean diff whitespace. Only this authorization entry changed after verification.
 - The earlier local/uncommitted wording is preparation history; final delivery is verified in the handoff. L5-GBP-05 remains MANUAL until the correction is deployed and the location-selection/text-post checkpoints pass. L5-GBP-06 stays WAITING. No live post or account change is authorized by this delivery.
+
+
+### November 10, 2026: L5-GBP-06 owner advancement and uncommitted Git-object staging
+
+- **Authorization and outcome:** Nicholas explicitly directed advancement to L5-GBP-06 after being told the text/CTA exact-link live checkpoint was outstanding. L5-GBP-05 is DONE for roadmap progression with that real-post proof retained as a disclosed exception; it is not marked independently verified. Nicholas subsequently approved applying the L5-GBP-06 code and documentation changes but reserved commit/push as a separate checkpoint. The seven application/test files and three source-of-truth files are staged as a Git tree object without a commit or branch-ref update.
+- **Implementation prepared:** a single JPG/PNG photo attached to the Master and owned by the exact client is reloaded before publishing; supported byte size and dimensions, S3 original path, actual Content-Type/length and JPEG/PNG signature are checked. A temporary signed HTTPS S3 GET URL is generated immediately before the existing Google STANDARD post create request and sent as one PHOTO media item, alongside the existing text/CTA. No signed URL is persisted. The existing revision claim, attempt record, retry barriers, exact Google result, and status-only refresh remain in place. Final confirmation identifies the photo.
+- **Files changed in staged Git tree:** `lib/google-business-publish-logic.js`; `lib/google-business-publisher.js`; `lib/google-business-publishing.js`; `components/google-business-publish-controls.js`; `components/google-business-platform-editor.js`; `tests/google-business-publisher.test.js`; `tests/google-business-publishing.test.js`; `README.md`; `AGENTS.md`; `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
+- **Checks:** exact original-source anchor matching before each replacement and staging-path verification completed. Local full Node 24 tests, lint, production build, runtime S3 integration, actual MongoDB and Google calls were **not run** because this session had no runnable checkout/network access from the code runtime. The earlier 337-test result belongs to the previous commit only and does not validate these changes.
+- **Live/manual:** no Google account, post, S3 object, AWS infrastructure or deployment was modified. The private bucket remains private. Google's Local Posts endpoint requires a fetchable image URL; the existing 1-hour signed S3 URL must be tested against asynchronous Google ingestion and actual visible image result. The L5-GBP-05 real text/CTA/exact-link exception remains unverified.
+- **Remaining work:** obtain explicit separate commit/push approval after review; checkout the staged changes and run full tests/lint/build, fix failures before delivery; verify deployed desktop/mobile image selection and owner confirmation; publish one separately authorized real image update; inspect the image, exact returned link, saved history, refresh and duplicate lock. Keep L5-GBP-06 READY pending checks, then MANUAL until live acceptance. L5-GBP-07 remains WAITING. Broader Level 5 remains OPEN.
+
+### November 10, 2026: L5-GBP-06 source delivery authorized
+
+- **Authorization:** Nicholas explicitly instructed "committing and pushing" the previously reviewed L5-GBP-06 source, tests, and phase documentation. This authorizes one commit and a normal fast-forward push to `main`; it is not authorization to deploy, modify Google Business Profile, or submit a real image post.
+- **Scope:** ten prepared files listed in the preceding L5-GBP-06 entry. The added documentation changes only reconcile delivery authorization and the current task handoff.
+- **Verification:** focused payload/syntax checks and documentation queue consistency were performed for the staged tree; full Node tests, lint, production build, deployed UI checks, S3 and Google live tests remain **not run**. No new test pass is claimed. The final delivery handoff supplies the remote commit and push result.
+- **Status:** L5-GBP-06 remains READY pending full checks, then MANUAL at live acceptance; L5-GBP-07 WAITING. Existing L5-GBP-05 text/link live exceptions remain explicit. Level 5 is OPEN.

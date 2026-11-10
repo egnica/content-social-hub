@@ -158,7 +158,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
         This Google location is no longer Healthy or its saved identity changed. Reconnect the correct location before editing.
       </div> : null}
       <div className={styles.notice}>
-        Text updates can be submitted after confirmation. Google checks posting access before submission. Images and scheduling are not enabled yet.
+        Text and one JPG/PNG photo can be submitted after confirmation. Google checks posting access before submission. Scheduling is not enabled yet.
       </div>
       {masterChanged ? <div className={styles.notice}>
         <strong>Shared content changed.</strong> Your existing Google version is preserved.

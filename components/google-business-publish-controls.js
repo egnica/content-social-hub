@@ -15,7 +15,7 @@ export default function GoogleBusinessPublishControls({ version, form, masterCon
   const status = current?.status || version.lastPublishStatus || "";
   const locked = version.googlePublishLock || Boolean(version.publishedRevision) ||
     ["submitting", "processing", "unknown", "succeeded", "rejected"].includes(status);
-  const validation = validateGoogleBusinessPublish({ ...version, ...form }, masterContent);
+  const validation = validateGoogleBusinessPublish({ ...version, ...form }, masterContent, masterContent.media || []);
   const postUrl = current?.providerPostUrl || version.providerPostUrl || "";
   const endpoint = `/api/platform-versions/${version._id}/publish`;
   useEffect(() => {
@@ -36,6 +36,8 @@ export default function GoogleBusinessPublishControls({ version, form, masterCon
       `Location: ${version.googleBusinessParent || version.providerAccountId}`,
       `Saved revision: ${version.revision}`, "", form.summary, "",
       `Button: ${form.ctaType || "None"}`, form.ctaUrl || "",
+      `Photo: ${form.mediaIds?.length ? (masterContent.media || []).find(asset =>
+        String(asset._id) === String(form.mediaIds[0]))?.originalName || "Selected JPG/PNG" : "None"}`,
       "This submits a real Google Business Profile post. Google may review or reject it.",
     ].join("\n"))) return;
     setWorking(true); setError(""); setNotice("");
@@ -66,7 +68,7 @@ export default function GoogleBusinessPublishControls({ version, form, masterCon
       version={version} attempt={current} postUrl={postUrl} timezone={masterContent.clientTimezone}
       resultLabel="Reported live" postLabel="View Post ↗" /> : null}
     {status !== "succeeded" ? <>
-      <div className={styles.sectionHeader}><h3>Publish Now</h3><p>Publish this saved text update to {version.destinationName}.</p></div>
+      <div className={styles.sectionHeader}><h3>Publish Now</h3><p>Publish this saved update to {version.destinationName}.</p></div>
       {dirty ? <p className={styles.notice}>Save the Google draft before publishing.</p> : null}
       {status === "processing" ? <p role="status" className={styles.notice}>Google is processing this post. It is not confirmed live. Refresh status checks the same recorded post.</p> : null}
       {status === "unknown" || status === "submitting" ? <p className={styles.errorNotice}>This submission needs review. Check the recorded post on Google before taking further action. Duplicate publication is blocked.</p> : null}

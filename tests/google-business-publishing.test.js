@@ -3,7 +3,7 @@ import test from "node:test";
 import { fakeCollection } from "./helpers/fake-mongo.js";
 import { loadWithStubs } from "./helpers/load-with-stubs.js";
 import * as logic from "../lib/google-business-publish-logic.js";
-import { googleBusinessParent } from "../lib/google-business-post-logic.js";
+import { googleBusinessParent, googleBusinessImageCompatible } from "../lib/google-business-post-logic.js";
 
 const parent = "accounts/123/locations/456";
 const result = (state = "LIVE") => ({ name: `${parent}/localPosts/post-1`, state, searchUrl: "https://local.google.com/place?id=456&use=posts&lpsid=123" });
@@ -11,10 +11,15 @@ async function fixture(options = {}) {
   const version = { _id: "version", platform: "google_business_profile", active: true,
     clientId: "client", masterContentId: "master", socialConnectionId: "connection", providerAccountId: "locations/456",
     googleBusinessParent: parent, revision: 1, masterRevisionSynced: 1,
-    summary: "A real future update", ctaType: "LEARN_MORE", ctaUrl: "https://example.org", mediaIds: [] };
+    summary: "A real future update", ctaType: "LEARN_MORE", ctaUrl: "https://example.org",
+    mediaIds: options.image ? ["image"] : [] };
   const tables = {
     platform_versions: fakeCollection([version]), publish_attempts: fakeCollection([]),
-    master_content: fakeCollection([{ _id: "master", clientId: "client", revision: 1 }]),
+    master_content: fakeCollection([{ _id: "master", clientId: "client", revision: 1,
+      mediaIds: options.image ? ["image"] : [] }]),
+    media_assets: fakeCollection(options.image ? [{ _id: "image", clientId: "client", status: "uploaded",
+      objectKey: "clients/client/originals/photo.jpg", contentType: "image/jpeg", size: 12000,
+      width: 720, height: 720 }] : []),
     social_connections: fakeCollection([{ _id: "connection", clientId: "client", platform: "google_business_profile",
       providerAccountId: "locations/456", accountResourceName: "accounts/123", locationResourceName: "locations/456",
       providerParent: parent, tokenEncrypted: "old", healthStatus: "healthy", capabilities: { canManageLocation: true, canPublish: false } }]),
@@ -27,7 +32,15 @@ async function fixture(options = {}) {
   };
   const events = [];
   const server = await loadWithStubs(new URL("../lib/google-business-publishing.js", import.meta.url), {
-    ...logic, googleBusinessParent, getDb: async () => ({ collection: name => tables[name] }),
+    ...logic, googleBusinessParent, googleBusinessImageCompatible,
+    createMediaViewUrl: async key => { events.push("signed-url"); if (options.signError) throw options.signError;
+      assert.equal(key, "clients/client/originals/photo.jpg");
+      return "https://bucket.s3.us-east-2.amazonaws.com/image.jpg?X-Amz-Signature=TEMP"; },
+    readMediaObject: async key => { events.push("read-media"); if (options.mediaReadError) throw options.mediaReadError;
+      assert.equal(key, "clients/client/originals/photo.jpg");
+      const bytes = new Uint8Array(12000); bytes.set([0xff, 0xd8, 0xff]);
+      return { bytes, contentLength: 12000, contentType: "image/jpeg" }; },
+    getDb: async () => ({ collection: name => tables[name] }),
     toObjectId: id => id, serializeDocument: value => structuredClone(value), decryptSecret: value => `decrypted-${value}`,
     refreshSocialConnectionHealth: async () => { events.push("health"); tables.social_connections.documents[0].tokenEncrypted = "renewed"; await options.onHealth?.(tables); },
     checkGoogleBusinessPostsAccess: async ({ accessToken, parent: actualParent }) => {
@@ -37,7 +50,9 @@ async function fixture(options = {}) {
     },
     createGoogleBusinessPost: async args => {
       events.push("create"); assert.equal(args.accessToken, "decrypted-renewed");
-      assert.equal(args.parent, parent); if (options.createError) throw options.createError;
+      assert.equal(args.parent, parent);
+      assert.equal(Boolean(args.imageSourceUrl), Boolean(options.image));
+      if (options.createError) throw options.createError;
       await options.onCreate?.(tables);
       return logic.googleBusinessPostResult(result(options.state || "LIVE"), parent);
     },
@@ -197,4 +212,46 @@ test("a late processing refresh cannot regress a concurrently recorded live resu
   const live = await f.server.refreshGoogleBusinessPostStatus("version");
   assert.equal(live.attempt.status, "succeeded");
   assert.equal(live.platformVersion.publishedRevision, 1);
+});
+
+
+test("private S3 photo is authenticated, used once, and never persisted as a signed URL", async () => {
+  const f = await fixture({ image: true });
+  const published = await f.server.publishGoogleBusinessVersion("version", 1);
+  assert.equal(published.attempt.status, "succeeded");
+  assert.equal(published.attempt.publishMode, "standard_image");
+  assert.deepEqual(published.attempt.submittedContent.mediaIds, ["image"]);
+  assert.deepEqual(f.events, ["health", "access", "read-media", "signed-url", "create"]);
+  assert.equal(JSON.stringify(f.tables.publish_attempts.documents).includes("X-Amz-Signature"), false);
+  assert.equal(f.events.filter(event => event === "create").length, 1);
+  await assert.rejects(f.server.publishGoogleBusinessVersion("version", 1));
+  assert.equal(f.events.filter(event => event === "create").length, 1);
+});
+
+test("private S3 read or signing failure never creates a remote post", async () => {
+  for (const key of ["mediaReadError", "signError"]) {
+    const f = await fixture({ image: true, [key]: new Error("private-storage-secret") });
+    await assert.rejects(f.server.publishGoogleBusinessVersion("version", 1));
+    assert.equal(f.events.includes("create"), false);
+    assert.equal(f.tables.publish_attempts.documents[0].status, "failed");
+    assert.equal(f.tables.platform_versions.documents[0].googlePublishLock, false);
+    assert.equal(JSON.stringify(f.tables.publish_attempts.documents).includes("private-storage-secret"), false);
+  }
+});
+
+test("photo ownership and metadata mismatches fail before Google submission", async () => {
+  for (const change of [
+    tables => { tables.media_assets.documents[0].clientId = "other"; },
+    tables => { tables.media_assets.documents[0].status = "pending"; },
+    tables => { tables.master_content.documents[0].mediaIds = []; },
+    tables => { tables.media_assets.documents[0].size = 9000; },
+    tables => { tables.media_assets.documents[0].width = 100; },
+    tables => { tables.media_assets.documents[0].objectKey = ""; },
+  ]) {
+    const f = await fixture({ image: true });
+    change(f.tables);
+    await assert.rejects(f.server.publishGoogleBusinessVersion("version", 1));
+    assert.equal(f.events.includes("create"), false);
+    assert.equal(f.tables.publish_attempts.documents.length, 0);
+  }
 });
