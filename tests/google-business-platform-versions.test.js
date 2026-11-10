@@ -44,12 +44,20 @@ function makeFixture() {
       return {
         createIndex: async () => "index",
         findOne: async (filter) => docs.find((doc) => matches(doc, filter)) || null,
-        find(filter) {
+        find(filter, options = {}) {
           let result = docs.filter((doc) => matches(doc, filter));
+          let projection = options.projection;
+          const projected = (doc) => {
+            if (!projection) return doc;
+            const fields = Object.entries(projection).filter(([, include]) => include === 1).map(([key]) => key);
+            const output = projection._id === 0 ? {} : { _id: doc._id };
+            for (const key of fields) if (doc[key] !== undefined) output[key] = doc[key];
+            return output;
+          };
           return {
-            project() { return this; },
+            project(fields) { projection = fields; return this; },
             sort() { return this; },
-            async toArray() { return result; },
+            async toArray() { return result.map(projected); },
           };
         },
         async updateOne(filter, update, opts = {}) {
@@ -188,4 +196,25 @@ test("Google recorded submissions cannot be edited or reset, including a claim r
   };
   await assert.rejects(api.saveGoogleBusinessPlatformVersion(id, { summary: "race", mediaIds: [] }), /changed before saving/);
   assert.equal(f.records.platform_versions[0].summary, "Original Google update");
+});
+
+
+test("account picker preserves Google identity fields through Mongo projection for actual location-only connections", async () => {
+  const f = makeFixture();
+  Object.assign(f.records.social_connections[0], {
+    providerAccountId: "locations/55", accountResourceName: "accounts/44",
+    locationResourceName: "locations/55", providerParent: "accounts/44/locations/55",
+    tokenEncrypted: "never-expose-credential",
+  });
+  const api = await platformApi(f);
+  const state = await api.getPlatformDestinationState(f.masterId.toString());
+  assert.equal(state.destinations[0].selectable, true);
+  assert.equal(state.destinations[0].canPublish, false);
+  assert.equal(JSON.stringify(state).includes("never-expose-credential"), false);
+  const selected = await api.syncPlatformVersionSelection(f.masterId.toString(), [f.connectionId.toString()]);
+  assert.equal(selected.destinations[0].selectable, true);
+  assert.equal(selected.platformVersions[0].googleBusinessParent, "accounts/44/locations/55");
+  f.records.social_connections[0].providerParent = "accounts/other/locations/55";
+  const unavailable = await api.getPlatformDestinationState(f.masterId.toString());
+  assert.equal(unavailable.destinations[0].selectable, false);
 });
