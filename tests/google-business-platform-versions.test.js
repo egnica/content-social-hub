@@ -156,10 +156,36 @@ test("rejects cross-client media, unlinked destinations, and renamed location id
   }), /no longer connected/);
 });
 
-test("Google draft cannot schedule or invoke a publishing route", async () => {
+test("Google scheduling remains blocked while publisher requires an exact confirmed revision", async () => {
   const scheduling = await readFile(new URL("../lib/scheduling.js", import.meta.url), "utf8");
   const publishRoute = await readFile(new URL("../app/api/platform-versions/[id]/publish/route.js", import.meta.url), "utf8");
   assert.match(scheduling, /platform: \{ \$in: \["facebook", "instagram", "linkedin", "youtube"\] \}/);
   assert.match(publishRoute, /target\?\.platform === "google_business_profile"/);
-  assert.match(publishRoute, /Google Business publishing is not enabled/);
+  assert.match(publishRoute, /publishGoogleBusinessVersion\(id, body\?\.revision\)/);
+});
+
+
+test("Google recorded submissions cannot be edited or reset, including a claim racing a save", async () => {
+  const f = makeFixture();
+  const api = await platformApi(f);
+  const selected = await api.syncPlatformVersionSelection(f.masterId.toString(), [f.connectionId.toString()]);
+  const id = selected.platformVersions[0]._id;
+  f.records.platform_versions[0].googlePublishLock = true;
+  await assert.rejects(api.saveGoogleBusinessPlatformVersion(id, { summary: "changed", mediaIds: [] }), /read-only/);
+  await assert.rejects(api.resetGoogleBusinessPlatformVersionFromMaster(id), /read-only/);
+  f.records.platform_versions[0].googlePublishLock = false;
+  const collection = f.db.collection.bind(f.db);
+  f.db.collection = name => {
+    const value = collection(name);
+    if (name === "platform_versions") {
+      const update = value.findOneAndUpdate;
+      value.findOneAndUpdate = async (...args) => {
+        f.records.platform_versions[0].googlePublishLock = true;
+        return update(...args);
+      };
+    }
+    return value;
+  };
+  await assert.rejects(api.saveGoogleBusinessPlatformVersion(id, { summary: "race", mediaIds: [] }), /changed before saving/);
+  assert.equal(f.records.platform_versions[0].summary, "Original Google update");
 });

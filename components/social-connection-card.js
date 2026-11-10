@@ -57,7 +57,7 @@ export default function SocialConnectionCard({ connection, checking, onCheckHeal
             <div>
               <p>{connection.address || "Service-area business; no street address supplied"}</p>
               <p>Google resource: {connection.providerParent}</p>
-              <p>Publishing to Google Business Profile is not yet enabled.</p>
+              <p>Text posting access is checked when publishing from Content. Images and scheduling are not enabled yet.</p>
             </div>
           ) : null}
           {connection.platform === "linkedin" && connection.tokenExpiresAt ? (

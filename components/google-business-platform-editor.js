@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
+import GoogleBusinessPublishControls from "@/components/google-business-publish-controls";
 import PlatformIcon from "@/components/platform-icon";
 import { MediaThumbnail } from "@/components/media-choice";
 import { useUnsavedChanges } from "@/components/unsaved-changes";
@@ -84,6 +85,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
   const selectedImage = media.find((asset) => stringId(asset._id) === form.mediaIds[0]) || null;
   const business = version.destinationName || destination?.accountName || "Google Business location";
   const locationId = version.providerAccountId || destination?.providerAccountId || "";
+  const readOnly = Boolean(version.googlePublishLock || version.publishedRevision);
   const available = destination?.healthStatus === "healthy" &&
     destination?.providerAccountId === version.providerAccountId;
 
@@ -156,7 +158,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
         This Google location is no longer Healthy or its saved identity changed. Reconnect the correct location before editing.
       </div> : null}
       <div className={styles.notice}>
-        Google posting is not enabled yet. You can prepare and save a draft, but Publish Now and Schedule are disabled.
+        Text updates can be submitted after confirmation. Google checks posting access before submission. Images and scheduling are not enabled yet.
       </div>
       {masterChanged ? <div className={styles.notice}>
         <strong>Shared content changed.</strong> Your existing Google version is preserved.
@@ -172,7 +174,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
         <div>
           <details className={styles.editorContentDetails} open>
             <summary>Standard update content</summary>
-            <fieldset className={styles.editorFieldset} disabled={saving || !available}>
+            <fieldset className={styles.editorFieldset} disabled={saving || !available || readOnly}>
               <div className={styles.fieldGrid}>
                 <label className={styles.fieldFull}>
                   <span className={styles.label}>Update summary</span>
@@ -246,7 +248,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
                 <p className={styles.fieldHint}>This preference is saved only. No schedule is created.</p>
               </details>
               <div className={styles.formActions}>
-                <button className={styles.buttonSecondary} type="button" onClick={reset} disabled={saving || !available}>
+                <button className={styles.buttonSecondary} type="button" onClick={reset} disabled={saving || !available || readOnly}>
                   {masterChanged ? "Update from shared content" : "Reset to shared content"}
                 </button>
                 <button className={styles.button} type="button" onClick={save}
@@ -259,12 +261,8 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
         </div>
         <GooglePreview business={business} form={form} image={selectedImage} />
       </div>
-      <div className={styles.notice} style={{ marginTop: 16 }}>
-        <strong>Publishing unavailable.</strong>{" "}
-        <button type="button" disabled className={styles.buttonSecondary}>Publish Now</button>{" "}
-        <button type="button" disabled className={styles.buttonSecondary}>Schedule</button>
-        <p className={styles.fieldHint}>The Google Local Posts entitlement and publisher are separate upcoming checkpoints.</p>
-      </div>
+      <GoogleBusinessPublishControls version={version} form={form} masterContent={masterContent}
+        dirty={dirty} busy={saving || !available} onChange={setVersion} />
     </section>
   );
 }

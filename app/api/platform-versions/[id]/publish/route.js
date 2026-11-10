@@ -1,4 +1,5 @@
-import { apiError } from "@/lib/api";
+import { GoogleBusinessPublishConflictError, GoogleBusinessPublishProviderError, publishGoogleBusinessVersion, refreshGoogleBusinessPostStatus } from "@/lib/google-business-publishing";
+import { apiError, readJson } from "@/lib/api";
 import { getDb } from "@/lib/mongodb";
 import { toObjectId } from "@/lib/ids";
 import {
@@ -30,6 +31,7 @@ export const dynamic = "force-dynamic";
 
 function publishErrorResponse(error) {
   if (
+    error instanceof GoogleBusinessPublishConflictError ||
     error instanceof PublishConflictError ||
     error instanceof InstagramPublishConflictError || error instanceof LinkedInPublishConflictError || error instanceof YouTubePublishConflictError
   ) {
@@ -40,6 +42,7 @@ function publishErrorResponse(error) {
   }
 
   if (
+    error instanceof GoogleBusinessPublishProviderError ||
     error instanceof PublishProviderError ||
     error instanceof InstagramPublishProviderError || error instanceof LinkedInPublishProviderError || error instanceof YouTubePublishProviderError
   ) {
@@ -92,7 +95,7 @@ async function getPublishTarget(id) {
   };
 }
 
-export async function POST(_request, { params }) {
+export async function POST(request, { params }) {
   const unauthorized = await requireApiSession();
   if (unauthorized) return unauthorized;
 
@@ -101,7 +104,8 @@ export async function POST(_request, { params }) {
     const target = await getPublishTarget(id);
 
     if (target?.platform === "google_business_profile") {
-      return Response.json({ error: "Google Business publishing is not enabled." }, { status: 403 });
+      const body = await readJson(request);
+      return Response.json(await publishGoogleBusinessVersion(id, body?.revision));
     }
 
     if (target?.platform === "instagram") {
@@ -147,7 +151,7 @@ export async function GET(request, { params }) {
     const target = await getPublishTarget(id);
 
     if (target?.platform === "google_business_profile") {
-      return Response.json({ error: "Google Business publishing is not enabled." }, { status: 403 });
+      return Response.json(await refreshGoogleBusinessPostStatus(id));
     }
 
     if (target?.platform === "instagram") {

@@ -26,7 +26,7 @@ function platformLabel(platform) {
 
 function destinationStatus(destination) {
   if (destination.selectable) return destination.platform === "google_business_profile"
-    ? "Connected · draft editing only; posting unavailable" : "Connected";
+    ? "Connected · posting access checked on submission" : "Connected";
   if (destination.healthMessage) return destination.healthMessage;
   if (!destination.canPublish) {
     return `${platformLabel(destination.platform)} publishing permission is unavailable.`;

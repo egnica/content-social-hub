@@ -94,15 +94,13 @@ End every implementation session with:
 
 ## Current documentation map
 
-- Product roadmap and source of truth: `README.md`, current checkpoint **November 9, 2026**.
-- Level 0-1 setup record: `docs/LEVEL_0_1_SETUP.md`.
-- Closed Facebook, publishing, scheduling and Instagram records: `docs/LEVEL_2_FACEBOOK_SETUP.md`, `docs/LEVEL_3_FACEBOOK_PUBLISHER.md`, `docs/LEVEL_4_SCHEDULING.md`, `docs/LEVEL_5_INSTAGRAM.md`.
-- Active Level 5 Google Business plan and progress log: `docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md`.
-- Current task: **L5-GBP-04 READY** for a separate Google standard-update draft version, continuous validation and approximate preview. **L5-GBP-03 DONE** after November 9 owner-supplied emailed setup/save/Healthy evidence and direction to proceed, with unobserved live negatives/session/database/mobile checks disclosed in the phase record. Client name `Nicholas_Egner` and location `accounts/117585782904582812392/locations/13178639929087207302` are evidenced by screenshots; independent client-ID mapping and API/publishing entitlement remain under L5-GBP-01 MANUAL.
-- Direct and emailed Google connections are delivered on `main`, including request-lifecycle follow-up `ec2b9c5`. Preserve `canPublish: false`. L5-GBP-04 is the sole READY task; L5-GBP-05+ remain WAITING. Draft editing must not enable publishing/scheduling, invoke Google media transfer or bypass the separate Local Posts entitlement checkpoint.
-- YouTube evidence and open manual checkpoints: `docs/LEVEL_5_YOUTUBE.md`. L5-YT-01 is already DONE. OAuth/editor/request flow, a processed Private Short and implemented scheduling are recorded; L5-YT-02/05/07 MANUAL and L5-YT-08 WAITING remain. No YouTube READY task while Google is active.
-- LinkedIn accepted-exception record: `docs/LEVEL_5_LINKEDIN.md`. L5-LI-06/07 MANUAL until genuine-post evidence; L5-LI-03 BLOCKED on Community Management API; L5-LI-08 DONE for transition review with exceptions. Video/multi-image scheduling is enabled on main in `7dfb620`; old restrictions/local-only handoffs are superseded.
-- UX-01 accepted for progression October 12. Delivered UX-02 through UX-05 and their deployed-review checkpoints are recorded in the YouTube log; do not reopen without an issue.
-- TikTok remains required but its phase is unopened. X/Pinterest are optional. Broader Level 5 remains OPEN; Level 6 remains gated.
+- Product source of truth: README.md, current checkpoint November 10, 2026.
+- Active phase: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md.
+- L5-GBP-04 DONE by owner acceptance November 10, with browser/deployed exceptions retained; its code is on main in c864d0e.
+- Current task L5-GBP-05 MANUAL: Google STANDARD text/CTA publisher implemented locally, 336 tests/build pass, lint zero errors/two existing LinkedIn image warnings. Commit/push authorized November 10; verified delivery is recorded in the handoff. Deployment and live verification remain pending. Continue the phase log's delivery/live checkpoint before new implementation. No READY task while that checkpoint is pending; L5-GBP-06+ WAITING.
+- Google approval email October 19 confirms project 503771980348 and 300 QPM. Current Local Posts activation/write eligibility and client mapping remain L5-GBP-01 MANUAL. Publisher rechecks access at dispatch; connection health canPublish remains false and is not publishing entitlement.
+- Real text/CTA publication, exact link/history/reopen/duplicate checks and desktop/mobile review remain manual. Managed preview rejected unsupported launcher CLI flags; no successful browser proof. Images and Google scheduling remain blocked.
+- Closed Facebook/Instagram records and all YouTube/LinkedIn manual evidence are preserved; TikTok unopened and Level 6 gated.
+- Add task evidence to the existing phase record. Never commit/push without Nicholas's explicit confirmation.
 
-Always use the `active_phase_document` in the README and its current ordered queue. Dated progress entries preserve history; they do not override the current checkpoint.
+Always use the active_phase_document in README and its current queue. Older preparation entries are history, not current instructions.

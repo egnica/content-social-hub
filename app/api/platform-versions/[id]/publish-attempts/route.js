@@ -20,7 +20,7 @@ export async function GET(_request, { params }) {
     const db = await getDb();
     const version = await db.collection("platform_versions").findOne({
       _id: platformVersionId,
-      platform: { $in: ["facebook", "instagram", "linkedin"] },
+      platform: { $in: ["facebook", "instagram", "linkedin", "google_business_profile"] },
     });
 
     if (!version) {

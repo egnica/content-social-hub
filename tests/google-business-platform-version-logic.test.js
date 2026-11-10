@@ -72,3 +72,11 @@ test("release metadata is draft-only and override values validate", () => {
   assert.equal(validateGoogleBusinessDraft({ ...normalized, destinationLocalDateTime: "" }).saveable, false);
   assert.equal(normalizeGoogleBusinessDraft({ ...source, releaseSource: "master" }).destinationLocalDateTime, "");
 });
+
+test("actual connection location ID and separately bound account are eligible, mismatched parents are not", () => {
+  const connection = { platform: "google_business_profile", clientId: "client", healthStatus: "healthy",
+    providerAccountId: "locations/456", accountResourceName: "accounts/123", locationResourceName: "locations/456",
+    providerParent: "accounts/123/locations/456" };
+  assert.equal(isEditableGoogleBusinessConnection(connection, "client"), true);
+  assert.equal(isEditableGoogleBusinessConnection({ ...connection, providerParent: "accounts/999/locations/456" }, "client"), false);
+});

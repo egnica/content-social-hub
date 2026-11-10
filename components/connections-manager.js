@@ -380,7 +380,7 @@ function ClientConnectionsManager({
             <PlatformIcon platform="google_business_profile" />
             <div className={styles.connectionProviderBody}>
               <strong>Google Business Profile</strong>
-              <p>Authorize Google, then select the exact business location. Connect directly or email a secure 48-hour setup link. Posting support is an upcoming step.</p>
+              <p>Authorize Google, then select the exact business location. Connect directly or email a secure 48-hour setup link. Text updates can be submitted from Content after confirmation and a posting-access check.</p>
               <AttachedAccounts connections={connections} platform="google_business_profile" />
               {!configuration.googleBusinessReady && <p className={styles.fieldHint}>
                 Setup is waiting for: {(configuration.missingGoogleBusiness || ["Google Business OAuth credentials"]).join(", ")}.
