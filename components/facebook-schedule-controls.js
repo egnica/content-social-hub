@@ -88,7 +88,7 @@ export default function DestinationScheduleControls({
   const [destinationLocalDateTime, setDestinationLocalDateTime] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const platform = ["facebook", "instagram", "linkedin", "youtube"].includes(version.platform)
+  const platform = ["facebook", "instagram", "linkedin", "youtube", "google_business_profile"].includes(version.platform)
     ? version.platform
     : "facebook";
   const platformLabel = {
@@ -96,6 +96,7 @@ export default function DestinationScheduleControls({
     instagram: "Instagram",
     linkedin: "LinkedIn",
     youtube: "YouTube",
+    google_business_profile: "Google Business Profile",
   }[platform];
   const destinationName =
     version.destinationName ||
@@ -106,7 +107,9 @@ export default function DestinationScheduleControls({
         ? "LinkedIn personal profile"
         : platform === "youtube"
           ? "YouTube channel"
-        : "Facebook Page");
+        : platform === "google_business_profile"
+          ? "Google Business location"
+          : "Facebook Page");
   const clientTimezone =
     scheduleState?.clientTimezone || masterContent.clientTimezone || "";
 

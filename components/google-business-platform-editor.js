@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/components/ui.module.css";
 import GoogleBusinessPublishControls from "@/components/google-business-publish-controls";
+import DestinationScheduleControls from "@/components/facebook-schedule-controls";
+import DestinationPublishingPanel from "@/components/destination-publishing-panel";
 import PlatformIcon from "@/components/platform-icon";
 import { MediaThumbnail } from "@/components/media-choice";
 import { useUnsavedChanges } from "@/components/unsaved-changes";
@@ -86,6 +88,8 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
   const business = version.destinationName || destination?.accountName || "Google Business location";
   const locationId = version.providerAccountId || destination?.providerAccountId || "";
   const readOnly = Boolean(version.googlePublishLock || version.publishedRevision);
+  const published = Number(version.publishedRevision || 0) === Number(version.revision || 1);
+  const needsReview = ["unknown", "submitting", "processing", "rejected"].includes(String(version.lastPublishStatus || ""));
   const available = destination?.healthStatus === "healthy" &&
     destination?.providerAccountId === version.providerAccountId;
 
@@ -122,7 +126,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
       setVersion(saved);
       setForm(draftFromVersion(saved));
       setDirty(false);
-      setMessage("Google Business Profile draft saved. Nothing has been published or scheduled.");
+      setMessage("Google Business Profile draft saved.");
       router.refresh();
     } catch (err) {
       setError(err.message);
@@ -158,7 +162,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
         This Google location is no longer Healthy or its saved identity changed. Reconnect the correct location before editing.
       </div> : null}
       <div className={styles.notice}>
-        Text and one JPG/PNG photo can be submitted after confirmation. Google checks posting access before submission. Scheduling is not enabled yet.
+        Text and one JPG/PNG photo can be submitted after confirmation. Google checks posting access before submission. Schedule a saved draft below, or publish immediately after confirmation.
       </div>
       {masterChanged ? <div className={styles.notice}>
         <strong>Shared content changed.</strong> Your existing Google version is preserved.
@@ -169,7 +173,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
       {validation.blocking.length ? <div className={styles.errorNotice} role="status">
         <strong>Draft checks</strong>
         <ul style={{ margin: "8px 0 0 18px" }}>{validation.blocking.map((item) => <li key={item}>{item}</li>)}</ul>
-      </div> : <div className={styles.editorReady}>{dirty ? "Unsaved changes" : "Saved draft"}</div>}
+      </div> : <div className={styles.editorReady}>{readOnly ? "Submission recorded" : dirty ? "Unsaved changes" : "Saved draft"}</div>}
       <div className={styles.composerColumns}>
         <div>
           <details className={styles.editorContentDetails} open>
@@ -226,7 +230,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
                 })}
               </div>
               <details style={{ marginTop: 20 }}>
-                <summary>Future release preference (draft metadata only)</summary>
+                <summary>Release preference</summary>
                 <div className={styles.fieldGrid} style={{ marginTop: 12 }}>
                   <label className={styles.fieldFull}>
                     <span className={styles.label}>Release setting</span>
@@ -245,7 +249,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
                     </label>
                   ) : <p className={styles.fieldHint}>Shared default: {masterContent.defaultReleaseAt || "Not set"}</p>}
                 </div>
-                <p className={styles.fieldHint}>This preference is saved only. No schedule is created.</p>
+                <p className={styles.fieldHint}>Save this preference, then schedule the exact revision below.</p>
               </details>
               <div className={styles.formActions}>
                 <button className={styles.buttonSecondary} type="button" onClick={reset} disabled={saving || !available || readOnly}>
@@ -261,8 +265,16 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
         </div>
         <GooglePreview business={business} form={form} image={selectedImage} />
       </div>
-      <GoogleBusinessPublishControls version={version} form={form} masterContent={masterContent}
-        dirty={dirty} busy={saving || !available} onChange={setVersion} />
+      <DestinationPublishingPanel
+        published={published}
+        attention={needsReview}
+        destinationName={business}
+        schedule={<DestinationScheduleControls version={version} destination={destination}
+          masterContent={masterContent} dirty={dirty} busy={saving || !available} />}
+        publish={<GoogleBusinessPublishControls version={version} form={form}
+          masterContent={masterContent} dirty={dirty} busy={saving || !available}
+          onChange={setVersion} />}
+      />
     </section>
   );
 }

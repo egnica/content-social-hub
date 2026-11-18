@@ -93,6 +93,6 @@ export default function GoogleBusinessPublishControls({ version, form, masterCon
       </div>)}
       {loaded && !attempts.length ? <p>No Google publish attempts yet.</p> : null}
     </details>
-    <p className={styles.fieldHint}>Google scheduling is not enabled yet. Release preferences remain draft metadata.</p>
+    <p className={styles.fieldHint}>Scheduled posts use the same saved Google revision, image and publishing history.</p>
   </section>;
 }

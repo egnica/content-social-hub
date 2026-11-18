@@ -15,6 +15,7 @@ async function fixture(options = {}) {
     mediaIds: options.image ? ["image"] : [] };
   const tables = {
     platform_versions: fakeCollection([version]), publish_attempts: fakeCollection([]),
+    scheduled_releases: fakeCollection([]),
     master_content: fakeCollection([{ _id: "master", clientId: "client", revision: 1,
       mediaIds: options.image ? ["image"] : [] }]),
     media_assets: fakeCollection(options.image ? [{ _id: "image", clientId: "client", status: "uploaded",
@@ -254,4 +255,63 @@ test("photo ownership and metadata mismatches fail before Google submission", as
     assert.equal(f.events.includes("create"), false);
     assert.equal(f.tables.publish_attempts.documents.length, 0);
   }
+});
+
+function addGoogleRelease(f, changes = {}) {
+  const release = {
+    _id: "schedule", platform: "google_business_profile",
+    platformVersionId: "version", platformVersionRevision: 1,
+    clientId: "client", socialConnectionId: "connection",
+    providerAccountId: "locations/456", googleBusinessParent: parent,
+    state: "dispatching", active: true, dispatchedAt: new Date(), ...changes,
+  };
+  f.tables.scheduled_releases.documents.push(release);
+  return release;
+}
+
+test("scheduled Google release uses its exact revision and one provider attempt; manual publish is blocked", async () => {
+  const f = await fixture({ image: true });
+  addGoogleRelease(f);
+  await assert.rejects(f.server.publishGoogleBusinessVersion("version", 1), /active Google schedule/);
+  assert.equal(f.events.includes("create"), false);
+  const published = await f.server.publishGoogleBusinessVersion("version", 1, { scheduledReleaseId: "schedule" });
+  assert.equal(published.attempt.status, "succeeded");
+  assert.equal(published.attempt.trigger, "scheduled");
+  assert.equal(published.attempt.triggeredBy, "worker");
+  assert.equal(published.attempt.scheduledReleaseId, "schedule");
+  assert.equal(published.attempt.publishMode, "standard_image");
+  assert.equal(f.events.filter(item => item === "create").length, 1);
+  assert.equal(JSON.stringify(published.attempt).includes("X-Amz-Signature"), false);
+  await assert.rejects(f.server.publishGoogleBusinessVersion("version", 1, { scheduledReleaseId: "schedule" }));
+  assert.equal(f.events.filter(item => item === "create").length, 1);
+});
+
+test("changed, cancelled or different Google scheduled release never reaches the provider", async () => {
+  const changes = [
+    { platformVersionRevision: 2 }, { clientId: "other" },
+    { socialConnectionId: "other" }, { providerAccountId: "locations/999" },
+    { googleBusinessParent: "accounts/999/locations/456" }, { active: false },
+    { state: "cancelled" }, { dispatchedAt: null },
+  ];
+  for (const change of changes) {
+    const f = await fixture();
+    addGoogleRelease(f, change);
+    await assert.rejects(f.server.publishGoogleBusinessVersion("version", 1, { scheduledReleaseId: "schedule" }));
+    assert.equal(f.events.includes("create"), false);
+    assert.equal(f.tables.publish_attempts.documents.length, 0);
+  }
+  const missing = await fixture();
+  await assert.rejects(missing.server.publishGoogleBusinessVersion("version", 1, { scheduledReleaseId: "schedule" }));
+  assert.equal(missing.events.includes("create"), false);
+});
+
+test("cancellation or account mutation before scheduled Google create fails closed without remote posts", async () => {
+  const f = await fixture({ onAccess: tables => {
+    tables.scheduled_releases.documents[0].state = "cancelled";
+    tables.scheduled_releases.documents[0].active = false;
+  } });
+  addGoogleRelease(f);
+  await assert.rejects(f.server.publishGoogleBusinessVersion("version", 1, { scheduledReleaseId: "schedule" }));
+  assert.equal(f.events.includes("create"), false);
+  assert.equal(f.tables.publish_attempts.documents.length, 0);
 });

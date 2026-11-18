@@ -423,3 +423,58 @@ test("LinkedIn scheduled success stores exact remote ID and URL", () => {
   assert.equal(data.providerPostId, "urn:li:ugcPost:1234");
   assert.match(data.providerPostUrl, /linkedin.com\/feed\/update/);
 });
+
+const googleVersion = {
+  ...version, platform: "google_business_profile",
+  clientId: "client", socialConnectionId: "google-connection",
+  providerAccountId: "locations/456", googleBusinessParent: "accounts/123/locations/456",
+};
+const googleSchedule = {
+  ...schedule, platform: "google_business_profile",
+  clientId: "client", socialConnectionId: "google-connection",
+  providerAccountId: "locations/456", googleBusinessParent: "accounts/123/locations/456",
+};
+
+test("Google scheduling binds the exact account, location and revision", () => {
+  assert.deepEqual(evaluateScheduledReleaseDispatch({ schedule: googleSchedule, version: googleVersion }),
+    { action: "claim", reason: "ready" });
+  for (const changed of [
+    { clientId: "other" }, { socialConnectionId: "other" },
+    { providerAccountId: "locations/999" }, { googleBusinessParent: "accounts/999/locations/456" },
+    { revision: 7 },
+  ]) {
+    assert.equal(evaluateScheduledReleaseDispatch({
+      schedule: googleSchedule, version: { ...googleVersion, ...changed },
+    }).action, "noop");
+  }
+});
+
+test("Google PROCESSING and success after interrupted worker only refresh existing post", () => {
+  for (const lastPublishStatus of ["processing", "succeeded", "rejected"]) {
+    assert.equal(evaluateScheduledReleaseDispatch({
+      schedule: { ...googleSchedule, state: "dispatching", dispatchedAt: new Date() },
+      version: { ...googleVersion, lastPublishStatus,
+        publishedRevision: lastPublishStatus === "succeeded" ? 6 : 0 },
+    }).action, "refresh_processing");
+  }
+  for (const lastPublishStatus of ["", "submitting", "unknown"]) {
+    assert.deepEqual(evaluateScheduledReleaseDispatch({
+      schedule: { ...googleSchedule, state: "dispatching", dispatchedAt: new Date() },
+      version: { ...googleVersion, lastPublishStatus },
+    }), { action: "review_ambiguous", reason: "interrupted_google_submission" });
+  }
+});
+
+test("Google rejected result is definitive; ambiguous results are never automatic retries", () => {
+  assert.equal(classifyScheduledPublishResult({ attempt: { status: "rejected" } }), "failed");
+  assert.equal(classifyScheduledDispatchError({
+    name: "GoogleBusinessPublishProviderError", attempt: { status: "rejected" },
+  }, googleSchedule).outcome, "failed");
+  assert.equal(classifyScheduledDispatchError({
+    name: "GoogleBusinessPublishProviderError", attempt: { status: "unknown",
+      providerError: { isTransient: true } },
+  }, googleSchedule).outcome, "review_required");
+  assert.equal(classifyScheduledDispatchError({
+    name: "GoogleBusinessPublishConflictError", attempt: { status: "unknown" },
+  }, googleSchedule).outcome, "review_required");
+});

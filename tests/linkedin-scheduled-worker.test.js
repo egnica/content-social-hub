@@ -32,6 +32,8 @@ class PublishProviderError extends Error {}
 class InstagramPublishProviderError extends Error {}
 class YouTubePublishConflictError extends Error {}
 class YouTubePublishProviderError extends Error {}
+class GoogleBusinessPublishConflictError extends Error {}
+class GoogleBusinessPublishProviderError extends Error {}
 
 const id = (letter) => letter.repeat(24);
 
@@ -111,6 +113,8 @@ async function fixture({ scheduleChange = {}, versionChange = {}, publish } = {}
       InstagramPublishProviderError,
       YouTubePublishConflictError,
       YouTubePublishProviderError,
+      GoogleBusinessPublishConflictError,
+      GoogleBusinessPublishProviderError,
       validateLinkedInScheduledPublishDraft,
     },
   );

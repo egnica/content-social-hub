@@ -26,6 +26,7 @@ import { LinkedInPublishConflictError, LinkedInPublishProviderError, publishLink
 import { YouTubePublishConflictError, YouTubePublishProviderError, publishYouTubeVersion, resumeYouTubeVersion, getYouTubePublishStatus } from "@/lib/youtube-publishing";
 import { requireApiSession } from "@/lib/session";
 import { assertDestinationNotAwaitingReview } from "@/lib/scheduled-release-guard";
+import { dispatchScheduledRelease } from "@/lib/scheduled-release-dispatch";
 
 export const dynamic = "force-dynamic";
 
@@ -151,7 +152,13 @@ export async function GET(request, { params }) {
     const target = await getPublishTarget(id);
 
     if (target?.platform === "google_business_profile") {
-      return Response.json(await refreshGoogleBusinessPostStatus(id));
+      const result = await refreshGoogleBusinessPostStatus(id);
+      // Owner read-only refresh may finish a delayed scheduled post after the
+      // one-time EventBridge invocation. Reconcile its existing schedule only.
+      if (result.attempt?.trigger === "scheduled" && result.attempt?.scheduledReleaseId) {
+        await dispatchScheduledRelease(String(result.attempt.scheduledReleaseId));
+      }
+      return Response.json(result);
     }
 
     if (target?.platform === "instagram") {
