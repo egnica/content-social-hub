@@ -726,7 +726,7 @@ export default function MasterContentForm({
         </div>
 
         <div className={styles.fieldGrid}>
-          <label className={styles.field}>
+          <label className={styles.fieldFull}>
             <span className={styles.label}>Internal title</span>
             <input
               className={styles.input}
@@ -739,22 +739,6 @@ export default function MasterContentForm({
               <span className={styles.fieldError}>{errors.internalTitle}</span>
             ) : null}
           </label>
-
-          <aside aria-label="Link preview" style={{ border: "1px solid #d8e0d9", borderRadius: 14,
-            padding: 12, minHeight: 140, overflow: "hidden", minWidth: 0 }}>
-            {linkPreview?.requestedUrl === form.primaryUrl.trim() && linkPreview.preview?.imageUrl ? (
-              <>
-                <img src={linkPreview.preview.imageUrl} alt={linkPreview.preview.title || "Linked page image"}
-                  style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", borderRadius: 8 }} />
-                <strong style={{ display: "block", marginTop: 8 }}>
-                  {linkPreview.preview.title || "Linked page"}
-                </strong>
-                <small>Link image preview. If no media is attached, it will be imported on save.</small>
-              </>
-            ) : (
-              <span className={styles.fieldHint}>A linked page image will appear here when available.</span>
-            )}
-          </aside>
 
           <label className={styles.fieldFull}>
             <span className={styles.label}>Link to Share (optional)</span>
@@ -775,6 +759,24 @@ export default function MasterContentForm({
               <span className={styles.fieldError}>{errors.primaryUrl}</span>
             ) : null}
           </label>
+
+          {linkPreview?.requestedUrl === form.primaryUrl.trim() &&
+          linkPreview.preview?.imageUrl ? (
+            <aside className={styles.masterLinkPreview} aria-label="Linked page image preview">
+              <img
+                src={linkPreview.preview.imageUrl}
+                alt={linkPreview.preview.title || "Linked page image"}
+                referrerPolicy="no-referrer"
+              />
+              <div className={styles.masterLinkPreviewInfo}>
+                <strong>{linkPreview.preview.title || "Linked page image"}</strong>
+                <span className={styles.fieldHint}>
+                  Image found in the link metadata. It becomes the default media
+                  only if you save without an attached image or video.
+                </span>
+              </div>
+            </aside>
+          ) : null}
 
           <label className={styles.fieldFull}>
             <span className={styles.label}>Shared text</span>

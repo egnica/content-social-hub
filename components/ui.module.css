@@ -481,6 +481,44 @@
   grid-column: 1 / -1;
 }
 
+/* A linked image is supporting information, not a competing form field. */
+.masterLinkPreview {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  max-width: 640px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.masterLinkPreview img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.masterLinkPreviewInfo {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.masterLinkPreviewInfo strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.4;
+}
+@media (max-width: 520px) {
+  .masterLinkPreview {
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+
 .label {
   color: #3f4d44;
   font-size: 12px;
