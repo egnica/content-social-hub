@@ -195,6 +195,7 @@ export default function MasterContentForm({
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [linkPreview, setLinkPreview] = useState(null);
   const isEditing = Boolean(content?._id);
   const draftFingerprint = JSON.stringify({ form, media: media.map(asset => asset._id || asset.localId) });
   const [savedFingerprint, setSavedFingerprint] = useState(draftFingerprint);
@@ -202,6 +203,24 @@ export default function MasterContentForm({
   useUnsavedChanges(dirty || uploading || thumbnailUploading);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   useEffect(() => { onBusyChange?.(pending || uploading || thumbnailUploading); }, [pending, uploading, thumbnailUploading, onBusyChange]);
+
+  useEffect(() => {
+    const url = form.primaryUrl.trim();
+    if (!/^https?:\/\//i.test(url)) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+        const data = await response.json();
+        if (!controller.signal.aborted) {
+          setLinkPreview({ requestedUrl: url, preview: response.ok ? data.preview : null });
+        }
+      } catch {
+        if (!controller.signal.aborted) setLinkPreview({ requestedUrl: url, preview: null });
+      }
+    }, 450);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [form.primaryUrl]);
 
   const selectedClient = useMemo(
     () => clients.find((client) => client._id === form.clientId) || null,
@@ -218,10 +237,11 @@ export default function MasterContentForm({
   );
   const effectivePrimaryMedia = useMemo(
     () =>
-      defaultMediaOptions.find(
-        (asset) => String(asset._id || "") === form.defaultPrimaryMediaId,
-      ) ||
-      defaultMediaOptions[0] ||
+      (() => {
+        const manual = defaultMediaOptions.filter((asset) => asset.sourceType !== "open_graph");
+        const eligible = manual.length ? manual : defaultMediaOptions;
+        return eligible.find((asset) => String(asset._id || "") === form.defaultPrimaryMediaId) || eligible[0];
+      })() ||
       null,
     [defaultMediaOptions, form.defaultPrimaryMediaId],
   );
@@ -555,6 +575,18 @@ export default function MasterContentForm({
       if (!isEditing) {
         router.push(`/content/${result.content._id}`);
       } else {
+        const reloaded = await fetch(`/api/content/${content._id}`, { cache: "no-store" });
+        if (reloaded.ok) {
+          const { content: saved } = await reloaded.json();
+          const updatedMedia = (saved.media || []).map((asset) => ({
+            ...asset, previewUrl: `/api/media/${asset._id}/url`, progress: 100,
+          }));
+          const updatedForm = { ...form, defaultPrimaryMediaId: String(saved.defaultPrimaryMediaId || "") };
+          setMedia(updatedMedia);
+          setForm(updatedForm);
+          setSavedFingerprint(JSON.stringify({ form: updatedForm,
+            media: updatedMedia.map((asset) => asset._id || asset.localId) }));
+        }
         router.refresh();
       }
     } catch (requestError) {
@@ -707,6 +739,22 @@ export default function MasterContentForm({
               <span className={styles.fieldError}>{errors.internalTitle}</span>
             ) : null}
           </label>
+
+          <aside aria-label="Link preview" style={{ border: "1px solid #d8e0d9", borderRadius: 14,
+            padding: 12, minHeight: 140, overflow: "hidden", minWidth: 0 }}>
+            {linkPreview?.requestedUrl === form.primaryUrl.trim() && linkPreview.preview?.imageUrl ? (
+              <>
+                <img src={linkPreview.preview.imageUrl} alt={linkPreview.preview.title || "Linked page image"}
+                  style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", borderRadius: 8 }} />
+                <strong style={{ display: "block", marginTop: 8 }}>
+                  {linkPreview.preview.title || "Linked page"}
+                </strong>
+                <small>Link image preview. If no media is attached, it will be imported on save.</small>
+              </>
+            ) : (
+              <span className={styles.fieldHint}>A linked page image will appear here when available.</span>
+            )}
+          </aside>
 
           <label className={styles.fieldFull}>
             <span className={styles.label}>Link to Share (optional)</span>

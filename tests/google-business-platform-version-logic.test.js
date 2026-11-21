@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildInheritedGoogleBusinessFields, googleBusinessImageCompatible,
+  googleBusinessImageUsable,
   isEditableGoogleBusinessConnection, isGoogleBusinessVersionOutOfSync,
   normalizeGoogleBusinessDraft, validateGoogleBusinessDraft,
 } from "../lib/google-business-post-logic.js";
@@ -42,7 +43,7 @@ test("Google draft access requires exact client, healthy location, not canPublis
 test("reject foreign or invalid media, duplicates and video", () => {
   assert.throws(() => normalizeGoogleBusinessDraft({ mediaIds: ["foreign"] }, [goodImage]), /owned/);
   assert.throws(() => normalizeGoogleBusinessDraft({ mediaIds: ["photo1", "photo1"] }, [goodImage]), /one/);
-  assert.throws(() => normalizeGoogleBusinessDraft({ mediaIds: ["video1"] }, [badVideo]), /JPG or PNG/);
+  assert.throws(() => normalizeGoogleBusinessDraft({ mediaIds: ["video1"] }, [badVideo]), /convertible/);
   assert.equal(googleBusinessImageCompatible({ ...goodImage, width: 249 }), false);
   assert.equal(googleBusinessImageCompatible({ ...goodImage, size: 9 * 1024 }), false);
   assert.equal(googleBusinessImageCompatible({ ...goodImage, size: 6 * 1024 * 1024 }), false);
@@ -79,4 +80,22 @@ test("actual connection location ID and separately bound account are eligible, m
     providerParent: "accounts/123/locations/456" };
   assert.equal(isEditableGoogleBusinessConnection(connection, "client"), true);
   assert.equal(isEditableGoogleBusinessConnection({ ...connection, providerParent: "accounts/999/locations/456" }, "client"), false);
+});
+
+test("WebP master images are inheritable, selectable and converted for Google", () => {
+  const webp = { ...goodImage, _id: "webp1", contentType: "image/webp" };
+  const source = { ...master, mediaIds: ["webp1"], defaultPrimaryMediaId: "webp1" };
+  const inherited = buildInheritedGoogleBusinessFields(source, [webp]);
+  assert.deepEqual(inherited.mediaIds, ["webp1"]);
+  assert.equal(googleBusinessImageUsable(webp), true);
+  assert.equal(googleBusinessImageCompatible(webp), false);
+  assert.deepEqual(normalizeGoogleBusinessDraft(inherited, [webp]).mediaIds, ["webp1"]);
+  assert.equal(validateGoogleBusinessDraft(inherited, [webp]).saveable, true);
+});
+
+test("too-small images and unsupported videos still cannot be selected for Google", () => {
+  const small = { ...goodImage, _id: "small", width: 240 };
+  assert.equal(googleBusinessImageUsable(small), false);
+  assert.equal(googleBusinessImageUsable(badVideo), false);
+  assert.throws(() => normalizeGoogleBusinessDraft({ mediaIds: ["small"] }, [small]), /convertible/);
 });

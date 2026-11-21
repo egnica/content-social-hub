@@ -15,6 +15,7 @@ import {
   GOOGLE_BUSINESS_CTA_TYPES,
   isGoogleBusinessVersionOutOfSync,
   googleBusinessImageCompatible,
+  googleBusinessImageUsable,
   validateGoogleBusinessDraft,
 } from "@/lib/google-business-post-logic";
 
@@ -162,7 +163,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
         This Google location is no longer Healthy or its saved identity changed. Reconnect the correct location before editing.
       </div> : null}
       <div className={styles.notice}>
-        Text and one JPG/PNG photo can be submitted after confirmation. Google checks posting access before submission. Schedule a saved draft below, or publish immediately after confirmation.
+        Text and one supported photo can be submitted after confirmation. Google checks posting access before submission. Schedule a saved draft below, or publish immediately after confirmation.
       </div>
       {masterChanged ? <div className={styles.notice}>
         <strong>Shared content changed.</strong> Your existing Google version is preserved.
@@ -206,7 +207,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
               </div>
               <div className={styles.sectionHeader} style={{ marginTop: 20 }}>
                 <h3>Photo (optional)</h3>
-                <p>Choose one attached JPG/PNG image. Videos, multiple images and offers/events are not supported here.</p>
+                <p>Choose a JPG, PNG, WebP or AVIF image. Convertible photos are automatically prepared as JPEG for Google. Videos, multiple images and offers/events are not supported.</p>
               </div>
               <div className={styles.mediaChoiceGrid}>
                 <label className={styles.mediaSelection}>
@@ -216,7 +217,8 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
                   <span>No photo</span>
                 </label>
                 {media.map((asset) => {
-                  const compatible = googleBusinessImageCompatible(asset);
+                  const compatible = googleBusinessImageUsable(asset);
+                  const direct = googleBusinessImageCompatible(asset);
                   const id = stringId(asset._id);
                   return <label className={styles.mediaSelection} key={id}>
                     <input type="radio" name={"google-photo-" + version._id} disabled={!compatible}
@@ -224,7 +226,7 @@ export function GoogleBusinessVersionEditor({ initialVersion, destination, maste
                       onChange={() => update("mediaIds", [id])} />
                     <MediaThumbnail asset={asset} />
                     <span><strong>{asset.originalName || "Uploaded image"}</strong>
-                      <span>{compatible ? "Google-compatible photo" : "Not compatible with Google updates"}</span>
+                      <span>{!compatible ? "Not compatible with Google updates" : direct ? "Google-compatible photo" : "Will convert to JPEG for Google"}</span>
                     </span>
                   </label>;
                 })}
