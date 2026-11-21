@@ -760,23 +760,264 @@ export default function MasterContentForm({
             ) : null}
           </label>
 
-          {linkPreview?.requestedUrl === form.primaryUrl.trim() &&
-          linkPreview.preview?.imageUrl ? (
-            <aside className={styles.masterLinkPreview} aria-label="Linked page image preview">
-              <img
-                src={linkPreview.preview.imageUrl}
-                alt={linkPreview.preview.title || "Linked page image"}
-                referrerPolicy="no-referrer"
-              />
-              <div className={styles.masterLinkPreviewInfo}>
-                <strong>{linkPreview.preview.title || "Linked page image"}</strong>
-                <span className={styles.fieldHint}>
-                  Image found in the link metadata. It becomes the default media
-                  only if you save without an attached image or video.
+          <section className={styles.masterMediaSection}>
+            <div className={styles.sectionHeader}>
+              <h2>Media</h2>
+              <p>Shared media for your posts. Each channel can choose its own.</p>
+            </div>
+
+            <div className={styles.masterMediaTray} aria-label="Shared media">
+              <button
+                className={styles.masterMediaAdd}
+                type="button"
+                onClick={() => mediaInputRef.current?.click()}
+                disabled={!form.clientId || uploading || thumbnailUploading || pending}
+              >
+                <span className={styles.masterMediaAddIcon} aria-hidden="true">
+                  +
                 </span>
+                <strong>{uploading ? "Uploading…" : "Add media"}</strong>
+                <span>Images or videos</span>
+              </button>
+              {linkPreview?.requestedUrl === form.primaryUrl.trim() &&
+              linkPreview.preview?.imageUrl &&
+              !media.some((asset) =>
+                asset.sourceType === "open_graph" &&
+                asset.sourcePageUrl === form.primaryUrl.trim()
+              ) ? (
+                <aside className={styles.masterLinkCandidate} aria-label="Image detected from link">
+                  <img
+                    src={linkPreview.preview.imageUrl}
+                    alt={linkPreview.preview.title || "Linked page image"}
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className={styles.masterLinkCandidateInfo}>
+                    <strong>Image from link</strong>
+                    <span>{linkPreview.preview.title || "Linked page image"}</span>
+                    <small>
+                      {media.some((asset) => asset.sourceType !== "open_graph")
+                        ? "Preview only. Uploaded media takes priority."
+                        : "Becomes the default on save if no media is uploaded."}
+                    </small>
+                  </div>
+                </aside>
+              ) : null}
+              {media.map((asset, index) => {
+                const selected = Boolean(
+                  asset._id && effectivePrimaryMedia === asset,
+                );
+                const ready = Boolean(asset._id && asset.status !== "error");
+                return (
+                  <div
+                    className={styles.masterMediaCard}
+                    data-default={selected || undefined}
+                    key={asset._id || asset.localId}
+                  >
+                    <button
+                      className={styles.masterMediaSelect}
+                      type="button"
+                      aria-label={`Use ${asset.originalName} as default`}
+                      aria-pressed={selected}
+                      disabled={
+                        !ready || uploading || thumbnailUploading || pending
+                      }
+                      onClick={() =>
+                        update("defaultPrimaryMediaId", String(asset._id))
+                      }
+                    >
+                      <span className={form.contentLength === "short" && asset.contentType?.startsWith("video/") ? styles.masterMediaPortraitPreview : undefined}>
+                        <MediaThumbnail asset={asset} />
+                      </span>
+                      <span className={styles.masterMediaName}>
+                        {asset.originalName}
+                      </span>
+                      <span className={styles.masterMediaCaption}>
+                        {selected ? (
+                          <span className={styles.masterMediaBadge}>Default</span>
+                        ) : ready ? (
+                          "Use as default"
+                        ) : asset.status === "error" ? (
+                          "Upload failed"
+                        ) : (
+                          "Uploading…"
+                        )}
+                      </span>
+                    </button>
+                    <button
+                      className={styles.masterMediaRemove}
+                      type="button"
+                      onClick={() => removeMedia(index)}
+                      disabled={uploading || thumbnailUploading || pending}
+                      aria-label={`Remove ${asset.originalName} from this content`}
+                      title="Remove from this content"
+                    >
+                      <span aria-hidden="true">×</span>
+                    </button>
+                    {asset.status === "error" ? (
+                      <p className={styles.fieldError} role="alert">
+                        {asset.error}
+                      </p>
+                    ) : asset.progress < 100 ? (
+                      <div className={styles.masterMediaProgress}>
+                        <span className={styles.fieldHint} aria-live="polite">
+                          {asset.status === "inspecting"
+                            ? "Preparing file…"
+                            : `Uploading ${asset.progress}%`}
+                        </span>
+                        <div
+                          className={styles.progressTrack}
+                          role="progressbar"
+                          aria-label={`Uploading ${asset.originalName}`}
+                          aria-valuenow={asset.progress}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        >
+                          <div
+                            className={styles.progressBar}
+                            style={{ width: `${asset.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className={styles.masterMediaTools}>
+                      <details className={styles.masterMediaDetails}>
+                        <summary>Details</summary>
+                        <span>{formatBytes(asset.size)}</span>
+                        {asset.width && asset.height ? (
+                          <span>
+                            {asset.width} × {asset.height} · {asset.orientation}
+                          </span>
+                        ) : null}
+                        {asset.duration ? (
+                          <span>{asset.duration.toFixed(1)} seconds</span>
+                        ) : null}
+                      </details>
+                      {media.length > 1 ? (
+                        <div className={styles.masterMediaOrder}>
+                          <button
+                            type="button"
+                            onClick={() => moveMedia(index, -1)}
+                            disabled={
+                              index === 0 ||
+                              uploading ||
+                              thumbnailUploading ||
+                              pending
+                            }
+                            aria-label={`Move ${asset.originalName} earlier`}
+                            title="Move earlier"
+                          >
+                            ←
+                          </button>
+                          <span
+                            aria-label={`Position ${index + 1} of ${media.length}`}
+                          >
+                            {index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => moveMedia(index, 1)}
+                            disabled={
+                              index === media.length - 1 ||
+                              uploading ||
+                              thumbnailUploading ||
+                              pending
+                            }
+                            aria-label={`Move ${asset.originalName} later`}
+                            title="Move later"
+                          >
+                            →
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {!form.clientId ? (
+              <p className={styles.fieldHint}>
+                Choose a client before adding media.
+              </p>
+            ) : null}
+
+            {videoIsPrimary ? (
+              <div style={{ marginTop: 18 }}>
+                <div className={styles.sectionHeader}>
+                  <h2>Default video thumbnail / cover</h2>
+                  <p>
+                    Optional default for video platforms. Each platform version can
+                    override this without changing Master Content.
+                    {form.contentLength !== "long" ? " YouTube Shorts use a frame chosen in the YouTube mobile app after upload." : ""}
+                  </p>
+                </div>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Video thumbnail / cover</span>
+                  <select
+                    className={styles.select}
+                    value={form.defaultVideoThumbnailMediaId}
+                    onChange={(event) =>
+                      update("defaultVideoThumbnailMediaId", event.target.value)
+                    }
+                  >
+                    <option value="">Let each platform choose automatically</option>
+                    {thumbnailOptions.map((asset) => (
+                      <option key={asset._id} value={asset._id}>
+                        {asset.originalName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <p className={styles.fieldHint} style={{ marginTop: 10 }}>
+                  Recommended for {form.contentLength === "long" ? "long-form" : "short-form"} video: <strong>{form.contentLength === "long" ? "16:9 landscape" : "9:16 portrait"}</strong>. The preview frame changes with your selection; the uploaded image is never cropped or altered.
+                </p>
+                {selectedThumbnail ? (
+                  <div style={{ marginTop: 12 }}>
+                    <div className={styles.thumbnailAspectFrame} style={{
+                      aspectRatio: form.contentLength === "long" ? "16 / 9" : "9 / 16",
+                      width: form.contentLength === "long" ? "min(100%, 320px)" : "min(100%, 188px)",
+                    }}>
+                      <img
+                        src={mediaPreviewUrl(selectedThumbnail)}
+                        alt="Selected video thumbnail shown without cropping"
+                        style={{ display: "block", width: "100%", height: "100%", objectFit: "contain" }}
+                      />
+                    </div>
+                    <p className={styles.fieldHint} style={{ marginTop: 7 }}>
+                      {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).dimensions
+                        ? `Original: ${thumbnailAspectGuidance(selectedThumbnail, form.contentLength).dimensions}`
+                        : "Original dimensions unavailable"}
+                      {" · "}Preview frame: {form.contentLength === "long" ? "16:9" : "9:16"}
+                    </p>
+                    {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).warning ? (
+                      <div className={styles.thumbnailAspectWarning} role="status">
+                        {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).warning}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {thumbnailAsset?.status === "error" ? (
+                  <div className={styles.errorNotice} style={{ marginTop: 10 }}>
+                    {thumbnailAsset.error}
+                  </div>
+                ) : null}
+
+                <button
+                  className={styles.buttonSecondary}
+                  type="button"
+                  style={{ marginTop: 12 }}
+                  onClick={() => thumbnailInputRef.current?.click()}
+                  disabled={uploading || thumbnailUploading}
+                >
+                  {thumbnailUploading
+                    ? "Uploading Thumbnail…"
+                    : "Upload Thumbnail Image"}
+                </button>
               </div>
-            </aside>
-          ) : null}
+            ) : null}
+          </section>
 
           <label className={styles.fieldFull}>
             <span className={styles.label}>Shared text</span>
@@ -831,242 +1072,6 @@ export default function MasterContentForm({
             ) : null}
           </label>
         </div>
-      </section>
-
-      <section className={styles.formSection}>
-        <div className={styles.sectionHeader}>
-          <h2>Media</h2>
-          <p>Shared media for your posts. Each channel can choose its own.</p>
-        </div>
-
-        <div className={styles.masterMediaTray} aria-label="Shared media">
-          {media.map((asset, index) => {
-            const selected = Boolean(
-              asset._id && effectivePrimaryMedia === asset,
-            );
-            const ready = Boolean(asset._id && asset.status !== "error");
-            return (
-              <div
-                className={styles.masterMediaCard}
-                data-default={selected || undefined}
-                key={asset._id || asset.localId}
-              >
-                <button
-                  className={styles.masterMediaSelect}
-                  type="button"
-                  aria-label={`Use ${asset.originalName} as default`}
-                  aria-pressed={selected}
-                  disabled={
-                    !ready || uploading || thumbnailUploading || pending
-                  }
-                  onClick={() =>
-                    update("defaultPrimaryMediaId", String(asset._id))
-                  }
-                >
-                  <span className={form.contentLength === "short" && asset.contentType?.startsWith("video/") ? styles.masterMediaPortraitPreview : undefined}>
-                    <MediaThumbnail asset={asset} />
-                  </span>
-                  <span className={styles.masterMediaName}>
-                    {asset.originalName}
-                  </span>
-                  <span className={styles.masterMediaCaption}>
-                    {selected ? (
-                      <span className={styles.masterMediaBadge}>Default</span>
-                    ) : ready ? (
-                      "Use as default"
-                    ) : asset.status === "error" ? (
-                      "Upload failed"
-                    ) : (
-                      "Uploading…"
-                    )}
-                  </span>
-                </button>
-                <button
-                  className={styles.masterMediaRemove}
-                  type="button"
-                  onClick={() => removeMedia(index)}
-                  disabled={uploading || thumbnailUploading || pending}
-                  aria-label={`Remove ${asset.originalName} from this content`}
-                  title="Remove from this content"
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-                {asset.status === "error" ? (
-                  <p className={styles.fieldError} role="alert">
-                    {asset.error}
-                  </p>
-                ) : asset.progress < 100 ? (
-                  <div className={styles.masterMediaProgress}>
-                    <span className={styles.fieldHint} aria-live="polite">
-                      {asset.status === "inspecting"
-                        ? "Preparing file…"
-                        : `Uploading ${asset.progress}%`}
-                    </span>
-                    <div
-                      className={styles.progressTrack}
-                      role="progressbar"
-                      aria-label={`Uploading ${asset.originalName}`}
-                      aria-valuenow={asset.progress}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    >
-                      <div
-                        className={styles.progressBar}
-                        style={{ width: `${asset.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-                <div className={styles.masterMediaTools}>
-                  <details className={styles.masterMediaDetails}>
-                    <summary>Details</summary>
-                    <span>{formatBytes(asset.size)}</span>
-                    {asset.width && asset.height ? (
-                      <span>
-                        {asset.width} × {asset.height} · {asset.orientation}
-                      </span>
-                    ) : null}
-                    {asset.duration ? (
-                      <span>{asset.duration.toFixed(1)} seconds</span>
-                    ) : null}
-                  </details>
-                  {media.length > 1 ? (
-                    <div className={styles.masterMediaOrder}>
-                      <button
-                        type="button"
-                        onClick={() => moveMedia(index, -1)}
-                        disabled={
-                          index === 0 ||
-                          uploading ||
-                          thumbnailUploading ||
-                          pending
-                        }
-                        aria-label={`Move ${asset.originalName} earlier`}
-                        title="Move earlier"
-                      >
-                        ←
-                      </button>
-                      <span
-                        aria-label={`Position ${index + 1} of ${media.length}`}
-                      >
-                        {index + 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => moveMedia(index, 1)}
-                        disabled={
-                          index === media.length - 1 ||
-                          uploading ||
-                          thumbnailUploading ||
-                          pending
-                        }
-                        aria-label={`Move ${asset.originalName} later`}
-                        title="Move later"
-                      >
-                        →
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
-          <button
-            className={styles.masterMediaAdd}
-            type="button"
-            onClick={() => mediaInputRef.current?.click()}
-            disabled={!form.clientId || uploading || thumbnailUploading || pending}
-          >
-            <span className={styles.masterMediaAddIcon} aria-hidden="true">
-              +
-            </span>
-            <strong>{uploading ? "Uploading…" : "Add media"}</strong>
-            <span>Images or videos</span>
-          </button>
-        </div>
-        {!form.clientId ? (
-          <p className={styles.fieldHint}>
-            Choose a client before adding media.
-          </p>
-        ) : null}
-
-        {videoIsPrimary ? (
-          <div style={{ marginTop: 18 }}>
-            <div className={styles.sectionHeader}>
-              <h2>Default video thumbnail / cover</h2>
-              <p>
-                Optional default for video platforms. Each platform version can
-                override this without changing Master Content.
-                {form.contentLength !== "long" ? " YouTube Shorts use a frame chosen in the YouTube mobile app after upload." : ""}
-              </p>
-            </div>
-
-            <label className={styles.field}>
-              <span className={styles.label}>Video thumbnail / cover</span>
-              <select
-                className={styles.select}
-                value={form.defaultVideoThumbnailMediaId}
-                onChange={(event) =>
-                  update("defaultVideoThumbnailMediaId", event.target.value)
-                }
-              >
-                <option value="">Let each platform choose automatically</option>
-                {thumbnailOptions.map((asset) => (
-                  <option key={asset._id} value={asset._id}>
-                    {asset.originalName}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <p className={styles.fieldHint} style={{ marginTop: 10 }}>
-              Recommended for {form.contentLength === "long" ? "long-form" : "short-form"} video: <strong>{form.contentLength === "long" ? "16:9 landscape" : "9:16 portrait"}</strong>. The preview frame changes with your selection; the uploaded image is never cropped or altered.
-            </p>
-            {selectedThumbnail ? (
-              <div style={{ marginTop: 12 }}>
-                <div className={styles.thumbnailAspectFrame} style={{
-                  aspectRatio: form.contentLength === "long" ? "16 / 9" : "9 / 16",
-                  width: form.contentLength === "long" ? "min(100%, 320px)" : "min(100%, 188px)",
-                }}>
-                  <img
-                    src={mediaPreviewUrl(selectedThumbnail)}
-                    alt="Selected video thumbnail shown without cropping"
-                    style={{ display: "block", width: "100%", height: "100%", objectFit: "contain" }}
-                  />
-                </div>
-                <p className={styles.fieldHint} style={{ marginTop: 7 }}>
-                  {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).dimensions
-                    ? `Original: ${thumbnailAspectGuidance(selectedThumbnail, form.contentLength).dimensions}`
-                    : "Original dimensions unavailable"}
-                  {" · "}Preview frame: {form.contentLength === "long" ? "16:9" : "9:16"}
-                </p>
-                {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).warning ? (
-                  <div className={styles.thumbnailAspectWarning} role="status">
-                    {thumbnailAspectGuidance(selectedThumbnail, form.contentLength).warning}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {thumbnailAsset?.status === "error" ? (
-              <div className={styles.errorNotice} style={{ marginTop: 10 }}>
-                {thumbnailAsset.error}
-              </div>
-            ) : null}
-
-            <button
-              className={styles.buttonSecondary}
-              type="button"
-              style={{ marginTop: 12 }}
-              onClick={() => thumbnailInputRef.current?.click()}
-              disabled={uploading || thumbnailUploading}
-            >
-              {thumbnailUploading
-                ? "Uploading Thumbnail…"
-                : "Upload Thumbnail Image"}
-            </button>
-          </div>
-        ) : null}
       </section>
 
       <section className={styles.formSection}>

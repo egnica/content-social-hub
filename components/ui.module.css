@@ -481,42 +481,49 @@
   grid-column: 1 / -1;
 }
 
-/* A linked image is supporting information, not a competing form field. */
-.masterLinkPreview {
+/* Master media shares a single location directly beneath Link to Share. */
+.masterMediaSection {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 14px;
-  align-items: center;
-  width: 100%;
-  max-width: 640px;
+  min-width: 0;
+  margin-top: 2px;
+}
+.masterLinkCandidate {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-soft);
 }
-.masterLinkPreview img {
+.masterLinkCandidate > img {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: 8px;
 }
-.masterLinkPreviewInfo {
+.masterLinkCandidateInfo {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
+  padding-top: 10px;
 }
-.masterLinkPreviewInfo strong {
-  overflow-wrap: anywhere;
+.masterLinkCandidateInfo strong {
   font-size: 13px;
-  line-height: 1.4;
+  color: var(--ink);
 }
-@media (max-width: 520px) {
-  .masterLinkPreview {
-    grid-template-columns: 110px minmax(0, 1fr);
-    gap: 10px;
-  }
+.masterLinkCandidateInfo span {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.masterLinkCandidateInfo small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .label {
@@ -1479,9 +1486,16 @@
 }
 .masterMediaTray {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 240px));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
+  width: 100%;
+  max-width: 760px;
+}
+@media (max-width: 560px) {
+  .masterMediaTray {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .masterMediaCard {
   position: relative;
