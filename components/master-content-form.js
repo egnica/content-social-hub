@@ -570,10 +570,13 @@ export default function MasterContentForm({
         throw new Error(result.error || "Unable to save the content package.");
       }
 
-      setMessage("Master Content saved.");
+      const mediaImportWarning = result.content?.mediaImportWarning || "";
+      setMessage(mediaImportWarning
+        ? `Master Content saved without a link image. ${mediaImportWarning}`
+        : "Master Content saved.");
       setSavedFingerprint(draftFingerprint);
       if (!isEditing) {
-        router.push(`/content/${result.content._id}`);
+        router.push(`/content/${result.content._id}${mediaImportWarning ? "?mediaImportWarning=1" : ""}`);
       } else {
         const reloaded = await fetch(`/api/content/${content._id}`, { cache: "no-store" });
         if (reloaded.ok) {

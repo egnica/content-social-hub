@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import ContentComposer from "@/components/content-composer";
 import PageHeader from "@/components/page-header";
+import styles from "@/components/ui.module.css";
 import { getDestinationScheduleState } from "@/lib/scheduling";
 import { getContentById, listClients } from "@/lib/data";
 import { getPlatformDestinationState } from "@/lib/platform-versions";
@@ -8,8 +9,9 @@ import { getPlatformDestinationState } from "@/lib/platform-versions";
 export const metadata = { title: "Edit Content" };
 export const dynamic = "force-dynamic";
 
-export default async function EditContentPage({ params }) {
+export default async function EditContentPage({ params, searchParams }) {
   const { id } = await params;
+  const { mediaImportWarning } = (await searchParams) || {};
   const [content, clients] = await Promise.all([
     getContentById(id),
     listClients({ includeInactive: false }),
@@ -54,6 +56,12 @@ export default async function EditContentPage({ params }) {
         title={content.internalTitle}
         description="Choose your accounts, customize each post, and preview it before publishing."
       />
+      {mediaImportWarning === "1" ? (
+        <div className={styles.errorNotice} role="alert">
+          Master Content was saved, but its linked image could not be imported.
+          Open Shared content and save again to retry, or upload an image manually.
+        </div>
+      ) : null}
       <ContentComposer
         content={content}
         clients={clients}
