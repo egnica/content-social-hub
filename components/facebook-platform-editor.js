@@ -361,6 +361,16 @@ export function FacebookVersionEditor({
         ? previewState.status
         : "loading";
   const media = useMemo(() => masterContent.media || [], [masterContent.media]);
+  const manualMedia = media.filter((asset) => asset.sourceType !== "open_graph");
+  const linkImageAsset = media.find((asset) =>
+    asset.sourceType === "open_graph" &&
+    asset.sourcePageUrl === form.destinationUrl.trim() &&
+    ["image/jpeg", "image/png", "image/gif"].includes(asset.contentType) &&
+    Number(asset.size) > 0 && Number(asset.size) <= 10 * 1024 * 1024,
+  ) || null;
+  const linkImageSelected = Boolean(linkImageAsset &&
+    form.mediaIds.length === 1 &&
+    form.mediaIds[0] === stringId(linkImageAsset._id));
   const masterChanged = isFacebookVersionOutOfSync(
     version,
     masterContent.revision,
@@ -484,7 +494,8 @@ export function FacebookVersionEditor({
   function toggleMedia(mediaId, checked) {
     setForm((current) => {
       const nextMediaIds = checked
-        ? [...new Set([...current.mediaIds, mediaId])]
+        ? [...new Set([...current.mediaIds.filter((id) =>
+            media.find((asset) => stringId(asset._id) === id)?.sourceType !== "open_graph"), mediaId])]
         : current.mediaIds.filter((id) => id !== mediaId);
       const nextPrimary = nextMediaIds.includes(current.primaryMediaId)
         ? current.primaryMediaId
@@ -502,6 +513,12 @@ export function FacebookVersionEditor({
   }
 
   function selectPrimaryFacebookMedia(value) {
+    if (value === "__link_image__" && linkImageAsset) {
+      const id = stringId(linkImageAsset._id);
+      setForm((current) => ({ ...current, mediaIds: [id], primaryMediaId: id }));
+      setDirty(true); setMessage(""); setError("");
+      return;
+    }
     if (value !== "__link_preview__") {
       update("primaryMediaId", value);
       return;
@@ -703,11 +720,11 @@ export function FacebookVersionEditor({
             <div className={styles.sectionHeader}>
               <h2>Facebook media</h2>
               <p>
-                Choose uploaded images or video, or use the website preview.
+                Website preview uses the page metadata. You can also attach the imported link image or your uploaded images and video.
               </p>
             </div>
             <div className={styles.mediaChoiceGrid}>
-              {media.map((asset) => {
+              {manualMedia.map((asset) => {
                 const mediaId = stringId(asset._id);
                 const checked = form.mediaIds.includes(mediaId);
 
@@ -752,6 +769,17 @@ export function FacebookVersionEditor({
                 {!form.mediaIds.length ? (
                   <span className={styles.composerStatus}>Selected</span>
                 ) : null}
+              </button>
+            ) : null}
+            {linkImageAsset && form.destinationUrl ? (
+              <button className={styles.websiteChoice} type="button"
+                aria-pressed={linkImageSelected}
+                onClick={() => selectPrimaryFacebookMedia("__link_image__")}>
+                <MediaThumbnail asset={linkImageAsset} />
+                <span><strong>Use link image</strong>
+                  <small>Attach the imported image instead of a native link preview.</small>
+                </span>
+                {linkImageSelected ? <span className={styles.composerStatus}>Selected</span> : null}
               </button>
             ) : null}
             {selectedMedia.length > 1 ? (

@@ -49,3 +49,22 @@ test("LinkedIn accepts 2–20 images but no mixed video or unsupported files", (
   assert.throws(()=>normalizeLinkedInVersionDraft({mediaIds:["video-1","i0"]},
     [video,...images]), /Choose 1/);
 });
+
+test("LinkedIn inherits a native URL link card rather than an automatic Open Graph photo", () => {
+  const og = { _id: "og-1", sourceType: "open_graph", contentType: "image/jpeg" };
+  const inherited = buildInheritedLinkedInFields({
+    text: "Article", primaryUrl: "https://example.com", mediaIds: ["og-1"],
+    media: [og], revision: 2,
+  });
+  assert.deepEqual(inherited.mediaIds, []);
+  assert.equal(inherited.destinationUrl, "https://example.com");
+  assert.deepEqual(normalizeLinkedInVersionDraft({ mediaIds: ["og-1"] }, [og]).mediaIds, ["og-1"]);
+});
+
+test("LinkedIn keeps manually uploaded video instead of an auto-imported link image", () => {
+  const inherited = buildInheritedLinkedInFields({
+    primaryUrl: "https://example.com", mediaIds: ["og-1", "video-1"],
+    media: [{ _id: "og-1", sourceType: "open_graph", contentType: "image/jpeg" }, video],
+  });
+  assert.deepEqual(inherited.mediaIds, ["video-1"]);
+});

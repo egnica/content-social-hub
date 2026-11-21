@@ -137,3 +137,28 @@ test("Facebook draft normalization keeps attached media and independent thumbnai
     },
   );
 });
+
+test("Facebook defaults to a native link card instead of automatically attaching an Open Graph image", () => {
+  const og = { _id: "og-1", sourceType: "open_graph", contentType: "image/jpeg" };
+  const inherited = buildInheritedFacebookFields({
+    text: "Article", primaryUrl: "https://example.com", mediaIds: ["og-1"],
+    defaultPrimaryMediaId: "og-1", media: [og], revision: 2,
+  });
+  assert.deepEqual(inherited.mediaIds, []);
+  assert.equal(inherited.primaryMediaId, "");
+  assert.equal(inherited.destinationUrl, "https://example.com");
+  // The user can still explicitly attach this client-owned imported image.
+  assert.deepEqual(normalizeFacebookVersionDraft({
+    destinationUrl: inherited.destinationUrl, mediaIds: ["og-1"],
+    primaryMediaId: "og-1" }, ["og-1"]).mediaIds, ["og-1"]);
+});
+
+test("Facebook retains manual media when a link and automatic image coexist", () => {
+  const inherited = buildInheritedFacebookFields({
+    primaryUrl: "https://example.com", mediaIds: ["og-1", "manual-1"],
+    defaultPrimaryMediaId: "og-1",
+    media: [{ _id: "og-1", sourceType: "open_graph" }, { _id: "manual-1", contentType: "video/mp4" }],
+  });
+  assert.deepEqual(inherited.mediaIds, ["manual-1"]);
+  assert.equal(inherited.primaryMediaId, "manual-1");
+});

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import PlatformIcon from "@/components/platform-icon";
 import LinkedInPublishControls from "@/components/linkedin-publish-controls";
@@ -21,6 +21,37 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const media = useMemo(() => masterContent.media || [], [masterContent.media]);
+  const manualMedia = media.filter((asset) => asset.sourceType !== "open_graph");
+  const linkImage = media.find((asset) =>
+    asset.sourceType === "open_graph" &&
+    asset.sourcePageUrl === form.destinationUrl.trim() &&
+    ["image/jpeg", "image/png", "image/gif"].includes(asset.contentType) &&
+    Number(asset.size) > 0 && Number(asset.size) <= 8 * 1024 * 1024,
+  ) || null;
+  const linkSelected = Boolean(linkImage && form.mediaIds.length === 1 &&
+    form.mediaIds[0] === String(linkImage._id));
+  const manualSelected = form.mediaIds.filter((id) =>
+    manualMedia.some((asset) => String(asset._id) === id));
+  const [previewState, setPreviewState] = useState(null);
+  useEffect(() => {
+    const url = form.destinationUrl.trim();
+    if (!/^https?:\/\//i.test(url)) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`,
+          { signal: controller.signal });
+        const body = await response.json();
+        if (!controller.signal.aborted)
+          setPreviewState({ url, preview: response.ok ? body.preview : null });
+      } catch {
+        if (!controller.signal.aborted) setPreviewState({ url, preview: null });
+      }
+    }, 400);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [form.destinationUrl]);
+  const linkPreview = previewState?.url === form.destinationUrl.trim()
+    ? previewState.preview : null;
   const outOfSync = isLinkedInVersionOutOfSync(version, masterContent.revision);
   const validation = validateLinkedInVersionDraft({ ...form, media, masterChanged: outOfSync,
     customized: version.customized, healthStatus: destination?.healthStatus,
@@ -64,16 +95,29 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
             <input className={styles.input} type="url" value={form.destinationUrl} placeholder="https://example.com"
               onChange={(event)=>update("destinationUrl",event.target.value)} /></label>
           <fieldset className={styles.fieldFull} style={{border:"1px solid #d8dde3",borderRadius:8,padding:12}}>
-            <legend className={styles.label}>LinkedIn media (up to 20 images or one MP4 video)</legend>
-            {media.filter((asset)=>/^(image\/(jpeg|png|gif)|video\/mp4)$/.test(asset.contentType||"")).map((asset)=>{
+            <legend className={styles.label}>LinkedIn media</legend>
+            {form.destinationUrl ? <button className={styles.websiteChoice} type="button"
+              aria-pressed={!form.mediaIds.length}
+              onClick={() => update("mediaIds", [])}>
+              <span><strong>Website preview</strong><small>Let LinkedIn create the native link card.</small></span>
+              {!form.mediaIds.length ? <span className={styles.composerStatus}>Selected</span> : null}
+            </button> : null}
+            {linkImage ? <button className={styles.websiteChoice} type="button"
+              aria-pressed={linkSelected}
+              onClick={() => update("mediaIds", [String(linkImage._id)])}>
+              <span><strong>Use link image</strong><small>Attach the imported image as a photo.</small></span>
+              {linkSelected ? <span className={styles.composerStatus}>Selected</span> : null}
+            </button> : null}
+            <p className={styles.fieldHint}>Use uploaded media: up to 20 images or one MP4 video.</p>
+            {manualMedia.filter((asset)=>/^(image\/(jpeg|png|gif)|video\/mp4)$/.test(asset.contentType||"")).map((asset)=>{
               const id=String(asset._id);
               const checked=form.mediaIds.includes(id);
               const isVideo=asset.contentType==="video/mp4";
-              const hasVideo=media.some((a)=>form.mediaIds.includes(String(a._id))&&a.contentType==="video/mp4");
+              const hasVideo=manualMedia.some((a)=>manualSelected.includes(String(a._id))&&a.contentType==="video/mp4");
               return <label key={id} style={{display:"block",margin:"8px 0"}}>
                 <input type="checkbox" checked={checked}
-                  disabled={!checked&&(form.mediaIds.length>=20||hasVideo||(isVideo&&form.mediaIds.length>0))}
-                  onChange={(event)=>update("mediaIds",event.target.checked?[...form.mediaIds,id]:form.mediaIds.filter((x)=>x!==id))} />
+                  disabled={!checked&&(manualSelected.length>=20||hasVideo||(isVideo&&manualSelected.length>0))}
+                  onChange={(event)=>update("mediaIds",event.target.checked?[...manualSelected,id]:manualSelected.filter((x)=>x!==id))} />
                 {" "}{asset.originalName||"Attached media"} {isVideo?"(video)":"(image)"}
               </label>;
             })}
@@ -98,7 +142,14 @@ export function LinkedInVersionEditor({ initialVersion, destination, masterConte
             <img src={selected.previewUrl || `/api/media/${selected._id}/url`} alt="" style={{display:"block",width:"100%",maxHeight:400,objectFit:"contain"}}/> : null}
           {selected?.contentType==="video/mp4" ? <p style={{padding:16}}>Video selected: {selected.originalName || "MP4 video"}</p> : null}
           {form.mediaIds.length>1 ? <p style={{padding:16}}>Multi-image post · {form.mediaIds.length} images</p> : null}
-          {form.destinationUrl ? <div style={{padding:16,background:"#f5f7f9",overflowWrap:"anywhere"}}>Link: {form.destinationUrl}</div> : null}
+          {!form.mediaIds.length && form.destinationUrl && linkPreview?.imageUrl ?
+            <img src={linkPreview.imageUrl} alt="" referrerPolicy="no-referrer"
+              style={{display:"block",width:"100%",maxHeight:300,objectFit:"cover"}} /> : null}
+          {!form.mediaIds.length && form.destinationUrl && linkPreview?.title ?
+            <p style={{padding:"8px 16px"}}>{linkPreview.title}</p> : null}
+          {form.destinationUrl ? <div style={{padding:16,background:"#f5f7f9",overflowWrap:"anywhere"}}>
+            Link: {form.destinationUrl}{!form.mediaIds.length ? " · Website preview (LinkedIn controls final appearance)" : ""}
+          </div> : null}
         </div>
       </div>
     </div>
