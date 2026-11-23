@@ -40,7 +40,7 @@ export default async function CalendarPage({ searchParams }) {
         </p>
       </div>
 
-      <CalendarBulkPreview key={selectedClient?._id || "all"} client={selectedClient?.status === "active" ? { id: selectedClient._id, name: selectedClient.name, timezone: selectedClient.timezone } : null} accounts={accounts} />
+      <CalendarBulkPreview key={selectedClient?._id || "all"} client={selectedClient?.status === "active" ? { id: selectedClient._id, name: selectedClient.name, timezone: selectedClient.timezone } : null} accounts={accounts} draftImportEnabled={process.env.BULK_DRAFT_WRITES_ENABLED === "true"} />
 
       <div className={styles.placeholderGrid}>
         <article className={styles.placeholderCard}>

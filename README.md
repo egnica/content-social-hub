@@ -30,7 +30,7 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 
 ### Current checkpoint: November 23, 2026
 
-Nicholas explicitly opened **Level 6 Workflow + Calendar** and paused TikTok. `docs/LEVEL_6_WORKFLOW_CALENDAR.md` is active; L6-01 now uses Nicholas's one-sheet `.xlsx` design: one Master post per row, X/blank per exact connected account, optional link/media URLs and one client-local release time. Its local read-only preview is MANUAL pending deployed verification. Draft creation, media import and scheduling remain later checkpoints. Google Business Profile publishing and scheduling are owner-reported working, while `L5-GBP-08 WAITING` retains final review and evidence exceptions. YouTube/LinkedIn manual checkpoints and the six existing Node test failures are also retained. Google and broader Level 5 are not declared closed. This checkpoint supersedes older provider handoffs below.
+Nicholas explicitly opened **Level 6 Workflow + Calendar** and paused TikTok. `docs/LEVEL_6_WORKFLOW_CALENDAR.md` is active; L6-01 uses the owner-approved one-sheet `.xlsx` design and was owner-accepted as DONE November 23, with independent negative checks still noted in its phase log. L6-02 bulk draft creation code is prepared behind a disabled write gate, and is BLOCKED until the six pre-existing Node failures, full checks and live draft review are cleared. L6-03 scheduling remains WAITING; a workbook never publishes directly. Google Business Profile publishing and scheduling are owner-reported working, while `L5-GBP-08 WAITING` retains final review and evidence exceptions. YouTube/LinkedIn manual checkpoints and the six existing Node test failures are also retained. Google and broader Level 5 are not declared closed. This checkpoint supersedes older provider handoffs below.
 
 ### Historical checkpoint: November 10, 2026
 
@@ -2492,10 +2492,10 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Build Level 6 Workflow + Calendar starting with a one-client read-only spreadsheet preview; retain provider and baseline exceptions.
+  goal: Finish Level 6 L6-02 reviewed bulk draft creation acceptance after L6-01 owner approval; retain provider and baseline exceptions.
   task_source: docs/LEVEL_6_WORKFLOW_CALENDAR.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L6-01_MANUAL
+  active_task: L6-02_BLOCKED
   google_access_status: owner_accepted_direct_connection_Local_Posts_approval_MANUAL
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
@@ -2514,7 +2514,7 @@ next_expected_action:
 
 ### November 23 Level 6 handoff
 
-`docs/LEVEL_6_WORKFLOW_CALENDAR.md` is the active phase plan and log. L6-01 is MANUAL after local implementation: selected-client spreadsheet template and read-only row preview await deployed browser verification. L6-02 is WAITING. Google final review, YouTube/LinkedIn live checks and the pre-existing six failing tests remain open; no bulk draft/schedule writes are permitted in L6-01. Do not claim the entire level complete before Nicholas's review.
+`docs/LEVEL_6_WORKFLOW_CALENDAR.md` is the active phase plan and log. L6-01 was accepted by Nicholas on November 23 and is DONE for progression; independent negative-browser/database checks remain unobserved. L6-02 is BLOCKED: reviewed draft-import code and tests are prepared but production writes are disabled by default through `BULK_DRAFT_WRITES_ENABLED=false` until the six pre-existing failing tests, full Node 24 lint/build/suite and deployed acceptance are completed. L6-03 scheduling remains WAITING and no bulk import publishes. Google final review and YouTube/LinkedIn live exceptions remain open. Do not claim the entire level complete before Nicholas's review.
 
 ### Historical November 10 handoff
 
