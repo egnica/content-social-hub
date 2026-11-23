@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  assertSameInstagramAccount,
   buildInstagramConnectionIdentity,
   getInstagramHealth,
   getInstagramProviderAccountId,
@@ -54,6 +55,13 @@ test("Instagram persisted Professional identity does not depend on Meta's OAuth 
       providerAccountId: "17841400123456789",
     },
   );
+});
+
+test("Instagram reconnect refuses a different provider identity", () => {
+  assert.doesNotThrow(() => assertSameInstagramAccount("ig-user-123", "ig-user-123"));
+  assert.doesNotThrow(() => assertSameInstagramAccount(null, "new-user"));
+  assert.throws(() => assertSameInstagramAccount("ig-user-123", "another-user"),
+    /does not match this saved account/);
 });
 
 test("Instagram connection identity stays isolated by client, platform, and provider account", () => {

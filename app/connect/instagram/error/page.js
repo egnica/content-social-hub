@@ -12,6 +12,7 @@ const messages = {
   expired: "This authorization attempt expired. Please start the connection again.",
   invalid: "Instagram returned an incomplete authorization response.",
   identity: "Instagram returned conflicting account identity data. No connection was saved.",
+  account_mismatch: "This is a different Instagram account from the saved connection. Switch to the original Instagram account and retry Reconnect. No connection was changed.",
   request: "This Instagram connection request is no longer available. Ask the sender for a fresh connection link.",
   provider: "Instagram could not complete this connection. Please try again.",
 };

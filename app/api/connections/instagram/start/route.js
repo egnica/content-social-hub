@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api";
 import {
   createInstagramOauthState,
+  createInstagramReconnectState,
   getConnectionRequestByToken,
 } from "@/lib/connections";
 import { isConnectionRequestUsableForPlatform } from "@/lib/connection-request-logic";
@@ -53,10 +54,10 @@ export async function GET(request) {
     }
 
     const clientId = url.searchParams.get("clientId");
-    const state = await createInstagramOauthState({
-      clientId,
-      mode: "owner",
-    });
+    const connectionId = url.searchParams.get("connectionId");
+    const state = connectionId
+      ? await createInstagramReconnectState({ clientId, connectionId })
+      : await createInstagramOauthState({ clientId, mode: "owner" });
     const response = NextResponse.redirect(
       createInstagramAuthorizationUrl(state),
       303,

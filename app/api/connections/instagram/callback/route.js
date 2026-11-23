@@ -52,6 +52,10 @@ export async function GET(request) {
 
     const token = await exchangeInstagramCode(code);
     const profile = await getInstagramProfile(token.accessToken);
+    if (state.expectedProviderAccountId &&
+        String(state.expectedProviderAccountId) !== String(profile.providerAccountId)) {
+      return errorRedirect("account_mismatch");
+    }
 
     // The one-time OAuth state binds this authorization to the selected client.
     // Persist Instagram's authenticated Professional-account identity from /me;
@@ -64,6 +68,9 @@ export async function GET(request) {
       accessToken: token.accessToken,
       permissions: token.permissions,
       tokenExpiresAt: token.expiresAt,
+      expectedConnectionId: state.expectedConnectionId || null,
+      expectedProviderAccountId: state.expectedProviderAccountId || null,
+      expectedAccountName: state.expectedAccountName || null,
     });
     const confirmationUrl = appUrl("/connect/instagram/confirm");
     confirmationUrl.searchParams.set("token", confirmationToken);

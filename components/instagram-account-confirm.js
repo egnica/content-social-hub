@@ -70,11 +70,13 @@ export default function InstagramAccountConfirm({ token, flow }) {
   return (
     <div className={styles.loginCard}>
       <span className={styles.brandMark}>CS</span>
-      <h1>Confirm Instagram account</h1>
+      <h1>{flow.expectedProviderAccountId ? "Reconnect Instagram account" : "Confirm Instagram account"}</h1>
       <p>
         Instagram authorized this Professional account. Confirm that it is the
         destination that belongs to <strong>{flow.clientName}</strong> before it
-        is saved.
+        is saved. {flow.expectedProviderAccountId ? (
+          <>This reconnect must match the existing <strong>{flow.expectedAccountName}</strong> account.</>
+        ) : null}
       </p>
 
       {flow.mode === "request" ? (
@@ -123,7 +125,8 @@ export default function InstagramAccountConfirm({ token, flow }) {
         onClick={confirm}
         disabled={pending}
       >
-        {pending ? "Connecting Account" : "Connect This Instagram Account"}
+        {pending ? "Connecting Account" : flow.expectedProviderAccountId
+          ? "Reconnect This Instagram Account" : "Connect This Instagram Account"}
       </button>
     </div>
   );
