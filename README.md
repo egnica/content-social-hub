@@ -28,7 +28,11 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 
 **Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. Its completed tasks remain closed. On October 2, Nicholas approved continuing Level 5 platform expansion before Workflow + Calendar. The current November 9 checkpoint below and AI / Work Handoff Context supersede older provider handoffs.
 
-### Current checkpoint: November 10, 2026
+### Current checkpoint: November 23, 2026
+
+Google Business Profile publishing and scheduling are owner-reported as tested and working. The active Google phase record marks **L5-GBP-07 DONE for progression with retained verification exceptions** and **L5-GBP-08 READY** for final adapter review. The exact scheduled result, browser-closed execution, cancellation/reentry evidence, post-link navigation and current full Node checks are not all recorded; review them without treating Nicholas's functional report as an unperformed test. Google and broader Level 5 are not declared closed. Nicholas also requested a one-client bulk spreadsheet uploader from Calendar; its two-tab `.xlsx` proposal, review-before-schedule workflow and client-scoping decision are recorded in the phase log as future scope, not an additional READY task. The phase record and this checkpoint supersede older Google task pointers below.
+
+### Historical checkpoint: November 10, 2026
 
 **Level 5 platform expansion remains OPEN. Google direct/emailed connections and draft editing are owner-accepted. Nicholas accepted L5-GBP-05 for progression on November 10 while retaining unverified real text/CTA and exact-link evidence. L5-GBP-06 is now the sole READY task.** Its image changes were prepared in a Git tree and authorized for commit/push November 10; delivery SHA is to be verified separately. The image path is not deployed or live-tested. Google scheduling stays WAITING and Level 6 unopened.
 
@@ -2304,11 +2308,13 @@ social_connections:
     analytics_ui_status: deferred_level_8
   google_business_profile:
     phase_active: true
-    adapter_status: text_publisher_owner_accepted_with_live_exceptions_image_publisher_ready
+    adapter_status: publishing_and_scheduling_owner_reported_working_final_review_ready
     connection_status: direct_and_emailed_owner_accepted_2026_11_09_with_exceptions
     connection_reliability: owner_accepted_same_location_renewal_evidence_2026_10_19
     access_status: owner_reports_connection_current_quota_and_approval_evidence_not_recorded
     can_publish: false
+    can_publish_flag_is_not_local_posts_entitlement: true
+    scheduled_publish_owner_reported_working: true
     live_test_client: Nicholas_Egner
     client_mapping_evidence: owner_screenshot_not_independent_database_audit
     live_test_location: "accounts/117585782904582812392/locations/13178639929087207302"
@@ -2395,11 +2401,11 @@ implementation:
     - level_3_first_publisher
     - level_4_scheduling
     - level_5_instagram
-  current_stage: level_5_google_business_image_publisher
+  current_stage: level_5_google_business_final_review
   active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
-  current_task: L5-GBP-06
+  current_task: L5-GBP-08
   current_task_status: READY
-  previous_completed_task: L5-GBP-05
+  previous_completed_task: L5-GBP-07
   previous_completed_task_status: DONE
   level_5_provider_selected: google_business_profile
   previous_provider_phase_document: docs/LEVEL_5_YOUTUBE.md
@@ -2457,7 +2463,7 @@ implementation:
     level_2: first social provider OAuth credentials plus Resend
     level_4: EventBridge Scheduler and Lambda permissions/configuration; SQS not required by the completed implementation
     level_5_instagram: completed_configuration_and_live_verification
-    level_5_google_business_profile: connection_and_editor_owner_accepted; text_publisher_L5_GBP_05_owner_accepted_with_live_exceptions; image_publisher_L5_GBP_06_READY; Local_Posts_entitlement_L5_GBP_01_MANUAL
+    level_5_google_business_profile: publishing_and_scheduling_owner_reported_working; L5_GBP_08_final_review_READY; Local_Posts_entitlement_L5_GBP_01_MANUAL
 
 architecture_rules:
   application_source_of_truth: MongoDB
@@ -2486,14 +2492,14 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Verify one-image Google STANDARD posts using private S3 and the existing duplicate-safe publisher; code is staged uncommitted, full checks and live image proof pending, scheduling disabled.
+  goal: Complete Google adapter evidence and Work review, including owner-reported scheduling success and retained verification exceptions; do not declare broader Level 5 complete.
   task_source: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-GBP-06
+  active_task: L5-GBP-08
   google_access_status: owner_accepted_direct_connection_Local_Posts_approval_MANUAL
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - L5-GBP-07 or later Google tasks before image_publisher_live_acceptance
+    - declaring L5-GBP-08 or broader Level 5 complete before the final Work review
     - L5-LI-03 Company Page connection until Community Management API access is approved
     - extra LinkedIn live test-only posts
     - claiming Google posting or scheduling from successful OAuth
@@ -2502,7 +2508,11 @@ next_expected_action:
   level_5_platform_expansion_checkpoint: pending
 ```
 
-### November 10 authoritative handoff
+### November 23 authoritative handoff
+
+`L5-GBP-08 READY` is the sole current Google task. Nicholas reports real Google publishing and scheduling tested and working; L5-GBP-07 is DONE for progression with specific unrecorded checks retained in the active phase log. Review the evidence and operational exceptions before closing the adapter. The Calendar client selector is delivered; bulk `.xlsx` import is a user-requested next feature proposal, not a second READY task. No full Level 6 or TikTok work was opened by this handoff.
+
+### Historical November 10 handoff
 
 `L5-GBP-06 READY` is current by Nicholas's November 10 instruction to advance. L5-GBP-05 was accepted for progression only; deployed text/CTA/exact-link evidence remains an unverified exception. Image code has owner authorization for delivery, but is not deployed or fully tested. Retain private S3, revision/attempt barriers, a separate commit/push authorization and Level 5 gates. Earlier task summaries are historical. No broader phase is complete.
 
