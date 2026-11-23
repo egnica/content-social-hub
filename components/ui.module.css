@@ -852,6 +852,26 @@
   gap: 15px;
 }
 
+.calendarClientFilter {
+  max-width: 360px;
+  margin-bottom: 24px;
+}
+
+.calendarClientFilter form {
+  display: grid;
+  gap: 7px;
+}
+
+.calendarClientFilter p {
+  margin-top: 9px;
+}
+
+.calendarClientFilter a {
+  color: var(--brand-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .placeholderCard {
   min-height: 170px;
   padding: 22px;
