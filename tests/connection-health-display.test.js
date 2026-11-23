@@ -42,10 +42,10 @@ test("old checks are explicitly stale without fabricating a revoked connection",
 });
 
 test("reconnect is only offered for identity-safe per-account flows", () => {
-  for (const platform of ["facebook", "instagram", "unknown"]) {
+  for (const platform of ["instagram", "unknown"]) {
     assert.equal(getConnectionReconnectUrl({ _id: "a", clientId: "b", platform }), null);
   }
-  for (const [platform, part] of [["linkedin", "linkedin"], ["youtube", "youtube"], ["google_business_profile", "google-business"]]) {
+  for (const [platform, part] of [["facebook", "facebook"], ["linkedin", "linkedin"], ["youtube", "youtube"], ["google_business_profile", "google-business"]]) {
     assert.equal(getConnectionReconnectUrl({ _id: "abc", clientId: "owner", platform }),
       `/api/connections/${part}/start?clientId=owner&connectionId=abc`);
   }

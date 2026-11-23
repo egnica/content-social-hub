@@ -178,10 +178,15 @@ export default function FacebookAccountPicker({
   return (
     <form className={styles.loginCard} onSubmit={submit}>
       <span className={styles.brandMark}>CS</span>
-      <h1>Choose the correct Page</h1>
+      <h1>{flow.expectedProviderAccountId ? "Reconnect Facebook Page" : "Choose the correct Page"}</h1>
       <p>
-        Facebook returned the Pages available to this account. Select the one
-        that belongs to <strong>{flow.clientName}</strong>.
+        {flow.expectedProviderAccountId ? (
+          <>Reconnect <strong>{flow.expectedAccountName}</strong> for <strong>{flow.clientName}</strong>.
+          Only this saved Page can be reauthorized; other Pages cannot replace it.</>
+        ) : (
+          <>Facebook returned the Pages available to this account. Select the one
+          that belongs to <strong>{flow.clientName}</strong>.</>
+        )}
       </p>
 
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
@@ -232,10 +237,12 @@ export default function FacebookAccountPicker({
         </>
       ) : (
         <div className={styles.errorNotice}>
-          Facebook authorized the connection but did not return an eligible
-          Page. Reconnect and use Facebook&apos;s <strong>Edit settings</strong>
-          option to enable this client&apos;s Page without removing Pages already
-          used by other clients. The diagnostics below show what Meta returned.
+          {flow.expectedProviderAccountId
+            ? "Facebook did not return the specific saved Page for reconnection. "
+            : "Facebook authorized the connection but did not return an eligible Page. "}
+          Restart and use Facebook&apos;s <strong>Edit settings</strong> to
+          enable the correct Page without removing Pages used by other clients.
+          The diagnostics below show what Meta returned.
         </div>
       )}
 

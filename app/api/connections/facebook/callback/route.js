@@ -155,6 +155,9 @@ export async function GET(request) {
       pages,
       permissions,
       diagnostics,
+      expectedConnectionId: state.expectedConnectionId || null,
+      expectedProviderAccountId: state.expectedProviderAccountId || null,
+      expectedAccountName: state.expectedAccountName || null,
     });
     const selectionUrl = appUrl("/connect/facebook/select");
     selectionUrl.searchParams.set("token", selectionToken);

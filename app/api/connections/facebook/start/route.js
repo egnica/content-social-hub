@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api";
 import {
   createFacebookOauthState,
+  createFacebookReconnectState,
   getConnectionRequestByToken,
 } from "@/lib/connections";
 import { isConnectionRequestUsableForPlatform } from "@/lib/connection-request-logic";
@@ -53,10 +54,10 @@ export async function GET(request) {
     }
 
     const clientId = url.searchParams.get("clientId");
-    const state = await createFacebookOauthState({
-      clientId,
-      mode: "owner",
-    });
+    const connectionId = url.searchParams.get("connectionId");
+    const state = connectionId
+      ? await createFacebookReconnectState({ clientId, connectionId })
+      : await createFacebookOauthState({ clientId, mode: "owner" });
     const response = NextResponse.redirect(
       createFacebookAuthorizationUrl(state),
       303,

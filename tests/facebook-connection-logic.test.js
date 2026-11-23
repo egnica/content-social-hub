@@ -2,11 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   annotateFacebookPagesWithPermissions,
+  assertFacebookReconnectPage,
   canFacebookPagePublish,
   getFacebookPagePermissions,
   getFacebookPageTargetIds,
   mergeFacebookManagedPageCapabilities,
 } from "../lib/facebook-connection-logic.js";
+
+test("targeted Facebook reauthorization rejects another Page", () => {
+  assert.doesNotThrow(() => assertFacebookReconnectPage("davis", "davis"));
+  assert.doesNotThrow(() => assertFacebookReconnectPage(null, "new-account"));
+  assert.throws(() => assertFacebookReconnectPage("davis", "another"),
+    /does not match this saved Facebook connection/);
+});
 
 const tokenDetails = {
   scopes: [
