@@ -1,8 +1,10 @@
 import Link from "next/link";
 import PageHeader from "@/components/page-header";
 import CalendarClientSelector from "@/components/calendar-client-selector";
+import CalendarBulkPreview from "@/components/calendar-bulk-preview";
 import styles from "@/components/ui.module.css";
 import { listClients } from "@/lib/data";
+import { listSocialConnections } from "@/lib/connections";
 
 export const metadata = { title: "Calendar" };
 export const dynamic = "force-dynamic";
@@ -11,11 +13,17 @@ export default async function CalendarPage({ searchParams }) {
   const params = await searchParams;
   const clients = await listClients();
   const selectedClient = clients.find((client) => client._id === params?.client) || null;
+  const connections = selectedClient?.status === "active" ? await listSocialConnections({ clientId: selectedClient._id }) : [];
+  const accounts = connections.filter((connection) => connection.clientId === selectedClient?._id).map((connection) => ({
+    id: connection._id,
+    name: connection.accountName,
+    platform: connection.platform,
+  }));
 
   return (
     <>
       <PageHeader
-        eyebrow="Coming later"
+        eyebrow="Workflow + Calendar"
         title="Calendar"
         description="Schedule posts from their account tabs in Content. A shared publishing calendar will be available here later."
         backHref="/"
@@ -31,6 +39,8 @@ export default async function CalendarPage({ searchParams }) {
           </Link> to manage schedules.
         </p>
       </div>
+
+      <CalendarBulkPreview key={selectedClient?._id || "all"} client={selectedClient?.status === "active" ? { id: selectedClient._id, name: selectedClient.name, timezone: selectedClient.timezone } : null} accounts={accounts} />
 
       <div className={styles.placeholderGrid}>
         <article className={styles.placeholderCard}>

@@ -94,13 +94,10 @@ End every implementation session with:
 
 ## Current documentation map
 
-- Product source of truth: README.md, current checkpoint November 10, 2026.
-- Active phase: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md.
-- L5-GBP-04 DONE by owner acceptance November 10, with browser/deployed exceptions retained; its code is on main in c864d0e.
-- Current task L5-GBP-06 READY by November 10 owner instruction. L5-GBP-05 accepted for progression with unverified live text/CTA/exact-link evidence explicitly retained. Private-S3 image publisher code/tests/docs received November 10 owner commit/push approval, with full-suite/live verification outstanding. L5-GBP-07+ WAITING. Confirm exact remote delivery before deployment.
-- Google approval email October 19 confirms project 503771980348 and 300 QPM. Current Local Posts activation/write eligibility and client mapping remain L5-GBP-01 MANUAL. Publisher rechecks access at dispatch; connection health canPublish remains false and is not publishing entitlement.
-- Real text/CTA publication, exact link/history/reopen/duplicate checks and desktop/mobile review remain manual. Managed preview rejected unsupported launcher CLI flags; no successful browser proof. Images and Google scheduling remain blocked.
-- Closed Facebook/Instagram records and all YouTube/LinkedIn manual evidence are preserved; TikTok unopened and Level 6 gated.
-- Add task evidence to the existing phase record. Never commit/push without Nicholas's explicit confirmation.
+- Product source of truth: README.md. Read its latest checkpoint and `active_phase_document` rather than historical handoffs.
+- Active phase from Nicholas's November 23, 2026 direction: `docs/LEVEL_6_WORKFLOW_CALENDAR.md`; L6-01 is MANUAL after local one-client `.xlsx` template and read-only preview implementation, pending deployed UI verification. L6-02 remains WAITING.
+- Google final review L5-GBP-08 is WAITING with evidence exceptions; broader Level 5 remains OPEN. YouTube/LinkedIn manual checkpoints remain documented in their phase records. TikTok is paused by Nicholas.
+- The untouched November 23 baseline has 370 passing / six failing Node tests, and three existing lint warnings. Keep those distinct from new checks and resolve before bulk draft/schedule writes or final Level 6 review.
+- Add task evidence to the active Level 6 phase record. Never commit/push without Nicholas's explicit confirmation.
 
 Always use the active_phase_document in README and its current queue. Older preparation entries are history, not current instructions.

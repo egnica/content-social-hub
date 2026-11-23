@@ -18,7 +18,7 @@ No secrets, credentials, OAuth tokens, API keys, or other sensitive values shoul
 
 ## Implementation Status
 
-Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, and verified in the live application. Instagram remains closed; broader Level 5 platform expansion is now active and must precede Level 6.
+Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, and verified in the live application. Instagram remains closed; broader Level 5 platform expansion remains open with documented exceptions. Nicholas opened Level 6 Workflow + Calendar on November 23, 2026 and paused TikTok.
 
 **Level 2 — First Social Connection was reviewed and closed on September 28, 2026.** Facebook Pages direct Connect and emailed Request Connection are both proven with real accounts. The selected-Page capability cleanup passed production verification, the Resend client setup flow passed end to end, and completed/replaced secure setup links were verified to become unusable as designed.
 
@@ -30,7 +30,7 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 
 ### Current checkpoint: November 23, 2026
 
-Google Business Profile publishing and scheduling are owner-reported as tested and working. The active Google phase record marks **L5-GBP-07 DONE for progression with retained verification exceptions** and **L5-GBP-08 READY** for final adapter review. The exact scheduled result, browser-closed execution, cancellation/reentry evidence, post-link navigation and current full Node checks are not all recorded; review them without treating Nicholas's functional report as an unperformed test. Google and broader Level 5 are not declared closed. Nicholas also requested a one-client bulk spreadsheet uploader from Calendar; its two-tab `.xlsx` proposal, review-before-schedule workflow and client-scoping decision are recorded in the phase log as future scope, not an additional READY task. The phase record and this checkpoint supersede older Google task pointers below.
+Nicholas explicitly opened **Level 6 Workflow + Calendar** and paused TikTok. `docs/LEVEL_6_WORKFLOW_CALENDAR.md` is active; L6-01 now uses Nicholas's one-sheet `.xlsx` design: one Master post per row, X/blank per exact connected account, optional link/media URLs and one client-local release time. Its local read-only preview is MANUAL pending deployed verification. Draft creation, media import and scheduling remain later checkpoints. Google Business Profile publishing and scheduling are owner-reported working, while `L5-GBP-08 WAITING` retains final review and evidence exceptions. YouTube/LinkedIn manual checkpoints and the six existing Node test failures are also retained. Google and broader Level 5 are not declared closed. This checkpoint supersedes older provider handoffs below.
 
 ### Historical checkpoint: November 10, 2026
 
@@ -1928,7 +1928,7 @@ Blog publishing is an explicit later expansion, after required social-platform c
 
 ### Level 6 — Workflow + Calendar
 
-**WAITING — required platform expansion and operational-readiness review must finish first.** A blocked required platform needs Nicholas's explicit deferral decision. Provider-specific publishing forms and previews remain part of Level 5; the full Calendar/Dashboard workflow stays here.
+**OPEN by Nicholas's November 23 direction, with documented Level 5 and operational exceptions.** TikTok is paused. Provider-specific publishing forms and previews remain part of Level 5; the Calendar/Dashboard workflow stays here. `docs/LEVEL_6_WORKFLOW_CALENDAR.md` holds the ordered task queue and acceptance record.
 
 Build:
 
@@ -2109,9 +2109,9 @@ project:
   name: Content Social Hub
   repository: egnica/content-social-hub
   default_branch: main
-  status: level_5_platform_expansion_google_business_editor
+  status: level_6_workflow_calendar_open_with_level_5_exceptions
   source_of_truth: README.md
-  active_phase_document: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  active_phase_document: docs/LEVEL_6_WORKFLOW_CALENDAR.md
   active_phase_document_status: open
 
 current_infrastructure:
@@ -2492,25 +2492,29 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Complete Google adapter evidence and Work review, including owner-reported scheduling success and retained verification exceptions; do not declare broader Level 5 complete.
-  task_source: docs/LEVEL_5_GOOGLE_BUSINESS_PROFILE.md
+  goal: Build Level 6 Workflow + Calendar starting with a one-client read-only spreadsheet preview; retain provider and baseline exceptions.
+  task_source: docs/LEVEL_6_WORKFLOW_CALENDAR.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L5-GBP-08
+  active_task: L6-01_MANUAL
   google_access_status: owner_accepted_direct_connection_Local_Posts_approval_MANUAL
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
-    - declaring L5-GBP-08 or broader Level 5 complete before the final Work review
+    - declaring L5-GBP-08 or broader Level 5 complete without its final Work review
     - L5-LI-03 Company Page connection until Community Management API access is approved
     - extra LinkedIn live test-only posts
     - claiming Google posting or scheduling from successful OAuth
-    - Level 6 before required platform coverage and operational readiness review
+    - bulk draft/schedule writes before review of the existing six test failures and destination validation
     - optional X/Pinterest and blog integration without a separate approved phase
   level_5_platform_expansion_checkpoint: pending
 ```
 
 ### November 23 authoritative handoff
 
-`L5-GBP-08 READY` is the sole current Google task. Nicholas reports real Google publishing and scheduling tested and working; L5-GBP-07 is DONE for progression with specific unrecorded checks retained in the active phase log. Review the evidence and operational exceptions before closing the adapter. The Calendar client selector is delivered; bulk `.xlsx` import is a user-requested next feature proposal, not a second READY task. No full Level 6 or TikTok work was opened by this handoff.
+**Superseded by the Level 6 transition:** `L5-GBP-08` was the next Google review task. It is WAITING while L6-01 is active; its evidence exceptions are retained. TikTok is paused at Nicholas's direction. No Level 5 closure is claimed.
+
+### November 23 Level 6 handoff
+
+`docs/LEVEL_6_WORKFLOW_CALENDAR.md` is the active phase plan and log. L6-01 is MANUAL after local implementation: selected-client spreadsheet template and read-only row preview await deployed browser verification. L6-02 is WAITING. Google final review, YouTube/LinkedIn live checks and the pre-existing six failing tests remain open; no bulk draft/schedule writes are permitted in L6-01. Do not claim the entire level complete before Nicholas's review.
 
 ### Historical November 10 handoff
 
