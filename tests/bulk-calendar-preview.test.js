@@ -57,6 +57,20 @@ test("duplicate post keys, invalid X, unsafe URL and unselected rows are reporte
   assert.match(result.posts[1].errors.join(" "), /at least one social account/);
 });
 
+test("a spreadsheet hyperlink in a URL column uses its destination URL", async () => {
+  const result = await preview([
+    ["p1", "Linked post", "Text", { text: "Open site", hyperlink: "https://example.com/page" }, "", "2026-01-15", "10:30", "X"],
+    ["p2", "Media post", "Text", "", { text: "Image", hyperlink: "https://example.com/photo.jpg" }, "2026-01-16", "10:30", "X"],
+    ["p3", "Bad link", "Text", { text: "Click here", hyperlink: "javascript:alert(1)" }, "", "2026-01-17", "10:30", "X"],
+  ]);
+  assert.equal(result.posts[0].link_url, "https://example.com/page");
+  assert.equal(result.posts[0].destinations[0].mediaChoice, "Link preview (appearance may differ on the platform)");
+  assert.equal(result.posts[0].errors.length, 0);
+  assert.equal(result.posts[1].media_url, "https://example.com/photo.jpg");
+  assert.equal(result.posts[1].errors.length, 0);
+  assert.match(result.posts[2].errors.join(" "), /valid http\(s\) URL/);
+});
+
 test("DST ambiguity, Excel date and formula cells are rejected without shifting the schedule", async () => {
   const result = await preview([
     ["p1", "First", { formula: "1+1", result: 2 }, "", "", "2026-11-01", "01:30", "X"],
