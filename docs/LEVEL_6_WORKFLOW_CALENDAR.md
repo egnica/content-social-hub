@@ -88,3 +88,10 @@ After L6-01 is supported by evidence, mark only L6-02 READY. Its write path must
 - **Task status / next:** L6-02 is BLOCKED pending the six baseline test fixes, complete Node 24 checks and production smoke. L6-03 stays WAITING; it must not be started or treated READY before draft creation is accepted. Level 6 remains OPEN.
 - **Git:** Nicholas explicitly authorized implementation plus commit/push on November 23. Exact delivered SHA and fast-forward result are reported in the commit handoff. No AWS/Amplify environment-variable change or external account action is authorized by that GitHub approval.
 
+### November 23, 2026 — L6-02 post-push database-gate hardening
+
+- **Reason/decision:** A review of commit e5b76f06 found the new unique bulk-import index was being created by the shared collection initializer even when the new bulk-import API was disabled. That was unnecessarily broad for a production deployment. The index creation is now conditional on BULK_DRAFT_WRITES_ENABLED=true, the same explicit gate enforced by the endpoint and UI.
+- **Files changed:** lib/data.js and this phase record. No existing index was dropped and no remote database, AWS or provider operation was executed in this session.
+- **Checks:** Modified data.js passed JavaScript syntax checking after import/export stripping. The previous 16 source-backed isolated checks remain historical evidence for the other staged source blobs, not a new full-suite result. Node 24 npm test/lint/build, existing six failing tests and browser/media/database verification remain pending.
+- **Outcome/status:** L6-02 remains BLOCKED with bulk writes disabled by default. The index is only created after a separately reviewed explicit feature-flag activation; L6-03 stays WAITING.
+
