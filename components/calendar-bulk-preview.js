@@ -18,7 +18,7 @@ export default function CalendarBulkPreview({ client, accounts, draftImportEnabl
     setDraftResults([]);
     setDraftError("");
     setError("");
-    if (!file) return setError("Choose a .xlsx workbook.");
+    if (!file) return setError("Choose a .csv or .xlsx file.");
     const form = new FormData();
     form.set("clientId", client.id);
     form.set("file", file);
@@ -75,13 +75,19 @@ export default function CalendarBulkPreview({ client, accounts, draftImportEnabl
       {!client ? <p>Choose one client above to prepare a bulk upload.</p> : (
         <>
           <p>Prepare posts for <strong>{client.name}</strong> in {client.timezone}. Previewing only reads your workbook. Creating drafts requires a separate confirmation and never schedules or publishes.</p>
-          <a className={styles.bulkTemplateLink} href={`/api/calendar/bulk-preview?client=${encodeURIComponent(client.id)}`}>Download .xlsx template</a>
-          <p>One row per Master post. Add post_key, title, master_text, optional link_url or media_url, and local_date (YYYY-MM-DD) and local_time (HH:mm) as text. Put <strong>X</strong> in a connected account column to include it; leave it blank to skip. All selected accounts use that row’s release time.</p>
+          <div>
+            <a className={styles.bulkTemplateLink} href={`/api/calendar/bulk-preview?client=${encodeURIComponent(client.id)}&format=csv`}>Download CSV template</a>
+            {" · "}
+            <a className={styles.bulkTemplateLink} href={`/api/calendar/bulk-preview?client=${encodeURIComponent(client.id)}`}>Download .xlsx template</a>
+            {" · "}
+            <a className={styles.bulkTemplateLink} href={`/api/calendar/bulk-preview?client=${encodeURIComponent(client.id)}&format=csv&sample=1`}>CSV example</a>
+          </div>
+          <p>One row per Master post. CSV and Excel use identical columns: post_key, title, master_text, optional link_url or media_url, and local_date (YYYY-MM-DD) and local_time (HH:mm) as text. Put <strong>X</strong> in a connected account column to include it; leave it blank to skip. All selected accounts use that row’s release time. In CSV the client/account identity row is visible: leave row 2 unchanged. Replace every placeholder in the CSV example before uploading.</p>
           <p>A link without media gives Facebook and LinkedIn a link preview; Google Business will try its metadata-image fallback at draft import. The file preview does not fetch outside links or media.</p>
           {accounts.length ? <p>Template account columns: {accounts.map((account) => `${account.platform} · ${account.name}`).join(", ")}.</p> : <p>No connected accounts are saved for this client.</p>}
           <form onSubmit={submit} className={styles.bulkPreviewForm}>
-            <label htmlFor="bulk-workbook">Workbook (.xlsx, up to 2 MB)</label>
-            <input id="bulk-workbook" type="file" accept=".xlsx" onChange={(event) => { setFile(event.target.files?.[0] || null); setPreview(null); setError(""); setDraftResults([]); setDraftError(""); }} disabled={creating} />
+            <label htmlFor="bulk-workbook">Bulk posts (.csv or .xlsx, up to 2 MB)</label>
+            <input id="bulk-workbook" type="file" accept=".csv,.xlsx" onChange={(event) => { setFile(event.target.files?.[0] || null); setPreview(null); setError(""); setDraftResults([]); setDraftError(""); }} disabled={creating} />
             <button type="submit" disabled={loading || !accounts.length}>{loading ? "Checking…" : "Preview rows"}</button>
           </form>
           {error && <p className={styles.errorNotice} role="alert">{error}</p>}

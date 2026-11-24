@@ -1,7 +1,7 @@
 import { apiError } from "@/lib/api";
 import { BULK_DRAFT_BATCH_SIZE } from "@/lib/bulk-draft-logic";
 import { importBulkDraftRow } from "@/lib/bulk-draft-import";
-import { MAX_BULK_FILE_BYTES, previewBulkWorkbook } from "@/lib/bulk-calendar-preview";
+import { MAX_BULK_FILE_BYTES, previewBulkFile } from "@/lib/bulk-calendar-preview";
 import { listSocialConnections } from "@/lib/connections";
 import { getClientById } from "@/lib/data";
 import { requireApiSession } from "@/lib/session";
@@ -31,12 +31,12 @@ export async function POST(request) {
       return Response.json({ error: "Choose one active client before creating drafts." }, { status: 400 });
     }
     const file = form.get("file");
-    if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".xlsx") ||
+    if (!(file instanceof File) || !/\.(csv|xlsx)$/i.test(file.name) ||
         !file.size || file.size > MAX_BULK_FILE_BYTES) {
-      return Response.json({ error: "Choose a nonempty .xlsx file up to 2 MB." }, { status: 400 });
+      return Response.json({ error: "Choose a nonempty .csv or .xlsx file up to 2 MB." }, { status: 400 });
     }
     const connections = await listSocialConnections({ clientId: client._id });
-    const preview = await previewBulkWorkbook(Buffer.from(await file.arrayBuffer()), { client, connections });
+    const preview = await previewBulkFile(Buffer.from(await file.arrayBuffer()), { filename: file.name, client, connections });
     if (!preview.valid) {
       return Response.json({
         error: "The workbook or selected accounts changed. Correct every preview error before creating drafts.",
