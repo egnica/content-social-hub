@@ -97,5 +97,8 @@ test("too-small images and unsupported videos still cannot be selected for Googl
   const small = { ...goodImage, _id: "small", width: 240 };
   assert.equal(googleBusinessImageUsable(small), false);
   assert.equal(googleBusinessImageUsable(badVideo), false);
+  const underMinimum = { ...goodImage, _id: "tiny", size: 500 };
+  assert.equal(googleBusinessImageUsable(underMinimum), false);
+  assert.equal(validateGoogleBusinessDraft({ summary: "Hello", mediaIds: ["tiny"] }, [underMinimum]).saveable, false);
   assert.throws(() => normalizeGoogleBusinessDraft({ mediaIds: ["small"] }, [small]), /convertible/);
 });

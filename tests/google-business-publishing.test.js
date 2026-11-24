@@ -3,7 +3,7 @@ import test from "node:test";
 import { fakeCollection } from "./helpers/fake-mongo.js";
 import { loadWithStubs } from "./helpers/load-with-stubs.js";
 import * as logic from "../lib/google-business-publish-logic.js";
-import { googleBusinessParent, googleBusinessImageCompatible } from "../lib/google-business-post-logic.js";
+import { googleBusinessParent, googleBusinessImageCompatible, googleBusinessImageUsable } from "../lib/google-business-post-logic.js";
 
 const parent = "accounts/123/locations/456";
 const result = (state = "LIVE") => ({ name: `${parent}/localPosts/post-1`, state, searchUrl: "https://local.google.com/place?id=456&use=posts&lpsid=123" });
@@ -33,7 +33,9 @@ async function fixture(options = {}) {
   };
   const events = [];
   const server = await loadWithStubs(new URL("../lib/google-business-publishing.js", import.meta.url), {
-    ...logic, googleBusinessParent, googleBusinessImageCompatible,
+    ...logic, googleBusinessParent, googleBusinessImageCompatible, googleBusinessImageUsable,
+    // Compatible JPEG fixtures should never silently use derivative conversion.
+    ensureGoogleJpegAsset: async () => { throw new Error("Unexpected conversion of compatible Google image."); },
     createMediaViewUrl: async key => { events.push("signed-url"); if (options.signError) throw options.signError;
       assert.equal(key, "clients/client/originals/photo.jpg");
       return "https://bucket.s3.us-east-2.amazonaws.com/image.jpg?X-Amz-Signature=TEMP"; },
