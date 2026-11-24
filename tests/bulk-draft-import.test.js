@@ -17,7 +17,7 @@ const post = {
   destinations: [{ account: { id: "account-a", name: "Page A", platform: "facebook" } }],
 };
 
-async function setup({ previous = null, failSyncOnce = false, failDownload = false } = {}) {
+async function setup({ previous = null, failSyncOnce = false, failDownload = false, downloadedMedia = null } = {}) {
   const calls = { masters: [], media: [], sync: [] };
   let imported = previous;
   let syncFailures = failSyncOnce ? 1 : 0;
@@ -31,7 +31,7 @@ async function setup({ previous = null, failSyncOnce = false, failDownload = fal
     downloadBulkMedia: async (url) => {
       calls.media.push({ action: "download", url });
       if (failDownload) throw new TypeError("Media unavailable.");
-      return { contentType: "image/jpeg", extension: "jpg", bytes: Buffer.from("media"), width: 800, height: 600 };
+      return downloadedMedia || { contentType: "image/jpeg", extension: "jpg", bytes: Buffer.from("media"), width: 800, height: 600 };
     },
     saveBulkMedia: async () => {
       calls.media.push({ action: "save" });
@@ -116,4 +116,31 @@ test("an interrupted destination-version write resumes the same Master on retry"
   assert.equal(result.status, "existing");
   assert.equal(calls.masters.length, 1);
   assert.equal(calls.sync.length, 2);
+});
+
+test("undersized Google image stops before private storage, Master creation, or destination sync", async () => {
+  const googleConnection = { ...connection, platform: "google_business_profile" };
+  const googlePost = {
+    ...post, media_url: "https://cdn.example.org/photo.jpg",
+    destinations: [{ account: { id: googleConnection._id, name: googleConnection.accountName, platform: googleConnection.platform } }],
+  };
+  const failed = await setup({ downloadedMedia: {
+    contentType: "image/jpeg", extension: "jpg", bytes: Buffer.alloc(9 * 1024), width: 800, height: 600,
+  } });
+  await assert.rejects(
+    failed.importer.importBulkDraftRow(googlePost, clientId, [googleConnection]),
+    /Google Business requires an image/,
+  );
+  assert.deepEqual(failed.calls.media.map((item) => item.action), ["download"]);
+  assert.equal(failed.calls.masters.length, 0);
+  assert.equal(failed.calls.sync.length, 0);
+
+  const valid = await setup({ downloadedMedia: {
+    contentType: "image/jpeg", extension: "jpg", bytes: Buffer.alloc(12 * 1024), width: 800, height: 600,
+  } });
+  const result = await valid.importer.importBulkDraftRow(googlePost, clientId, [googleConnection]);
+  assert.equal(result.status, "created");
+  assert.deepEqual(valid.calls.media.map((item) => item.action), ["download", "save"]);
+  assert.equal(valid.calls.masters.length, 1);
+  assert.equal(valid.calls.sync.length, 1);
 });

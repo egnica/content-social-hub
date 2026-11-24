@@ -34,7 +34,7 @@ test("bulk draft account binding rejects changed or foreign destinations", () =>
 });
 
 test("bulk media type rules prevent mismatched Google, Instagram and YouTube drafts", () => {
-  const image = { contentType: "image/jpeg", width: 800, height: 600 };
+  const image = { contentType: "image/jpeg", width: 800, height: 600, bytes: Buffer.alloc(12 * 1024) };
   const video = { contentType: "video/mp4", width: null, height: null };
   const googleRow = { ...row, destinations: [{ account: { platform: "google_business_profile" } }] };
   const youtubeRow = { ...row, destinations: [{ account: { platform: "youtube" } }] };
@@ -46,4 +46,26 @@ test("bulk media type rules prevent mismatched Google, Instagram and YouTube dra
   assert.doesNotThrow(() => validateBulkDraftMedia(youtubeRow, video));
   assert.doesNotThrow(() => validateBulkDraftMedia(instagramRow, image));
   assert.throws(() => validateBulkDraftMedia(instagramRow, { contentType: "video/webm" }), /supported image/);
+});
+
+test("Google bulk media validation matches the real editor's minimum image requirements", () => {
+  const googleRow = { ...row, destinations: [{ account: { platform: "google_business_profile" } }] };
+  const image = { contentType: "image/jpeg", bytes: Buffer.alloc(12 * 1024), width: 800, height: 600 };
+  assert.doesNotThrow(() => validateBulkDraftMedia(googleRow, image));
+  assert.doesNotThrow(() => validateBulkDraftMedia(googleRow, { ...image, contentType: "image/webp" }));
+  assert.doesNotThrow(() => validateBulkDraftMedia(googleRow, { ...image, width: 250, height: 250, bytes: Buffer.alloc(10 * 1024) }));
+
+  for (const invalid of [
+    { ...image, bytes: Buffer.alloc(10 * 1024 - 1) },
+    { ...image, bytes: Buffer.alloc(0) },
+    { ...image, bytes: undefined },
+    { ...image, width: 249 },
+    { ...image, width: undefined },
+    { ...image, height: 249 },
+    { ...image, height: null },
+    { ...image, contentType: "image/gif" },
+    { ...image, contentType: "video/mp4" },
+  ]) {
+    assert.throws(() => validateBulkDraftMedia(googleRow, invalid), /Google Business requires an image/);
+  }
 });

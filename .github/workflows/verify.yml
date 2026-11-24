@@ -1,0 +1,49 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# CI can read the checkout but cannot publish code or access deployment secrets.
+permissions:
+  contents: read
+
+jobs:
+  node24:
+    name: Node 24 tests, lint, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # CI must never enable production bulk draft writes.
+      BULK_DRAFT_WRITES_ENABLED: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        id: dependencies
+        run: npm ci
+
+      # Run all verification steps after a successful install even if the
+      # test suite fails, so historical failures and build results are visible.
+      - name: Run all automated tests
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: npm test
+
+      - name: Lint
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: npm run lint
+
+      - name: Production build
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: npm run build
