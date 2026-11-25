@@ -164,10 +164,10 @@ test("rejects cross-client media, unlinked destinations, and renamed location id
   }), /no longer connected/);
 });
 
-test("Google scheduling remains blocked while publisher requires an exact confirmed revision", async () => {
+test("Google scheduling supports location versions while manual publishing remains revision-locked", async () => {
   const scheduling = await readFile(new URL("../lib/scheduling.js", import.meta.url), "utf8");
   const publishRoute = await readFile(new URL("../app/api/platform-versions/[id]/publish/route.js", import.meta.url), "utf8");
-  assert.match(scheduling, /platform: \{ \$in: \["facebook", "instagram", "linkedin", "youtube"\] \}/);
+  assert.match(scheduling, /platform: \{ \$in: \["facebook", "instagram", "linkedin", "youtube", "google_business_profile"\] \}/);
   assert.match(publishRoute, /target\?\.platform === "google_business_profile"/);
   assert.match(publishRoute, /publishGoogleBusinessVersion\(id, body\?\.revision\)/);
 });

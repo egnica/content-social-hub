@@ -57,7 +57,11 @@ test("CSV and XLSX with the same rows produce matching validated posts and desti
   rows.push(exampleRow);
   const csv = previewBulkCsv(bytes(rows), context);
   const workbook = createBulkTemplate({ client, connections });
-  workbook.getWorksheet("Bulk Posts").addRow(exampleRow);
+  // The template preformats rows 3–202. Write into the first post row,
+  // rather than appending after the prepared rows at 203.
+  exampleRow.forEach((value, index) => {
+    workbook.getWorksheet("Bulk Posts").getCell(3, index + 1).value = value;
+  });
   const excel = await previewBulkWorkbook(await workbook.xlsx.writeBuffer(), context);
   assert.deepEqual(csv, excel);
 });
