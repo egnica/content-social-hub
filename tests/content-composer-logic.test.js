@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -87,4 +88,25 @@ test("new drafts carry source assets but no old identity, approval, result or re
     "platformVersions",
   ])
     assert.equal(Object.hasOwn(source, field), false);
+});
+
+test("Google Business tab receives its active schedule state alongside other platforms", () => {
+  const pageSource = readFileSync(
+    new URL("../app/(app)/content/[id]/page.js", import.meta.url),
+    "utf8",
+  );
+  // Every active version should be included in the server-side schedule map.
+  assert.match(pageSource, /\.filter\(\(version\) => version\.active !== false\)/);
+  assert.doesNotMatch(
+    pageSource,
+    /version\.platform\s*!==\s*["']google_business_profile["']/,
+  );
+  assert.match(pageSource, /await getDestinationScheduleState\(version\._id\)/);
+  assert.equal(
+    composerStatus(
+      { platform: "google_business_profile", revision: 1, publishedRevision: 0 },
+      { stateCode: "active_schedule", schedule: { active: true } },
+    ),
+    "Scheduled",
+  );
 });
