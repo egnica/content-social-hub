@@ -15,7 +15,7 @@ Nicholas directed this level to open on November 23, 2026. The Calendar client s
 | ID | Status | Objective | Pass condition |
 | --- | --- | --- | --- |
 | L6-01 | `DONE` | One-client `.xlsx` template and read-only preview | Owner accepted deployed preview November 23; independent client-switch/no-write negatives remain unobserved and documented |
-| L6-02 | `BLOCKED` | Reviewed bulk draft creation | Code prepared behind disabled feature gate; full Node 24 verification, six baseline failures and deployed smoke test remain before writes can be enabled |
+| L6-02 | `BLOCKED` | Reviewed bulk draft creation | Node 24 CI green November 25 (409/409, lint/build passed); live client-bound draft import, media/retry checks and explicit write-gate acceptance remain |
 | L6-03 | `WAITING` | Reviewed bulk scheduling | Schedule eligible destination versions on distinct client-local days/times through existing scheduler, with per-row results and no silent publication |
 | L6-04 | `WAITING` | Visual Calendar | Month, week and list views of real destination releases, All Clients and selected-client scopes, useful detail/navigation |
 | L6-05 | `WAITING` | Derived status and Content views | Source-of-truth status across drafts, scheduled, published, failed and review states; client/platform filters |
