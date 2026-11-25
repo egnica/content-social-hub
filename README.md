@@ -28,10 +28,9 @@ Levels 0 through 4 and the Level 5 Instagram adapter are implemented, deployed, 
 
 **Level 5 — Multi-Platform / Instagram was reviewed and closed on October 2, 2026.** The first additional provider is now proven end to end with the real `@nicholasegner` Professional account under `Nicholas_Egner`: direct and emailed Request Connection, Healthy Account state, Instagram-specific platform versions and validation, real single-image / carousel / Reel publishing, durable Publish History and exact `View Post`, and browser-closed background scheduling through the shared Level 4 EventBridge/Lambda path with duplicate-safe worker re-entry. Detailed evidence is preserved in `docs/LEVEL_5_INSTAGRAM.md`. Its completed tasks remain closed. On October 2, Nicholas approved continuing Level 5 platform expansion before Workflow + Calendar. The current November 9 checkpoint below and AI / Work Handoff Context supersede older provider handoffs.
 
-### Current checkpoint: November 23, 2026
+### Current checkpoint: November 25, 2026
 
-Nicholas explicitly opened **Level 6 Workflow + Calendar** and paused TikTok. `docs/LEVEL_6_WORKFLOW_CALENDAR.md` is active; L6-01 uses the owner-approved one-sheet `.xlsx` design and was owner-accepted as DONE November 23, with independent negative checks still noted in its phase log. L6-02 bulk draft creation code is prepared behind a disabled write gate, and is BLOCKED until the six pre-existing Node failures, full checks and live draft review are cleared. On November 24, owner-requested UTF-8 CSV template/download, upload/preview and draft-route parity were prepared using the exact one-sheet XLSX client/account identity row (visible in CSV), with sample/template options and source-backed checks; these are not committed, deployed or live-tested until separately authorized. The bulk draft write gate remains disabled. L6-03 scheduling remains WAITING; a workbook never publishes directly. Google Business Profile publishing and scheduling are owner-reported working, while `L5-GBP-08 WAITING` retains final review and evidence exceptions. YouTube/LinkedIn manual checkpoints and the six existing Node test failures are also retained. Google and broader Level 5 are not declared closed. This checkpoint supersedes older provider handoffs below.
-
+Level 6 Workflow + Calendar remains **OPEN** with `docs/LEVEL_6_WORKFLOW_CALENDAR.md` as the active plan and completion log; TikTok remains paused. Nicholas accepted L6-01 on November 23 and formally accepted L6-02 bulk draft creation for progression on November 25 after the green 409/409 Node 24 suite, lint/build checks, and one live Andrew Davis CSV import. That import saved exactly one Master Content draft and three destination drafts; Google Business inherited the privately imported Open Graph image, while Facebook and LinkedIn retained metadata link previews. No schedule or publication was created. The production `BULK_DRAFT_WRITES_ENABLED` flag is enabled and the Amplify deployment passed. A second authenticated live duplicate import, independent foreign-client negative and Google editor screenshot remain unobserved manual checks, documented without claiming success. Only **L6-03 bulk scheduling is READY**; the 95-post CSV is not imported/scheduled, and no CSV publishes automatically. Google `L5-GBP-08` final review and YouTube/LinkedIn manual provider checkpoints remain open; broader Level 5 and Level 6 are not declared complete. Earlier historical checkpoints are superseded by this one and the AI handoff below.
 ### Historical checkpoint: November 10, 2026
 
 **Level 5 platform expansion remains OPEN. Google direct/emailed connections and draft editing are owner-accepted. Nicholas accepted L5-GBP-05 for progression on November 10 while retaining unverified real text/CTA and exact-link evidence. L5-GBP-06 is now the sole READY task.** Its image changes were prepared in a Git tree and authorized for commit/push November 10; delivery SHA is to be verified separately. The image path is not deployed or live-tested. Google scheduling stays WAITING and Level 6 unopened.
@@ -2492,10 +2491,10 @@ work_session_rules:
   github_create_edit_delete_commit_push_rename_or_modify: requires_explicit_user_confirmation
 
 next_expected_action:
-  goal: Finish Level 6 L6-02 reviewed bulk draft creation acceptance after L6-01 owner approval; retain provider and baseline exceptions.
+  goal: Implement Level 6 L6-03 reviewed bulk scheduling after L6-02 owner acceptance; retain documented live/provider exceptions.
   task_source: docs/LEVEL_6_WORKFLOW_CALENDAR.md
   selection_rule: select_only_the_first_READY_task_and_preserve_user_GitHub_write_confirmation_rules
-  active_task: L6-02_BLOCKED
+  active_task: L6-03_READY
   google_access_status: owner_accepted_direct_connection_Local_Posts_approval_MANUAL
   google_case_id: "1-5407000042073"
   do_not_jump_ahead_to:
@@ -2503,7 +2502,7 @@ next_expected_action:
     - L5-LI-03 Company Page connection until Community Management API access is approved
     - extra LinkedIn live test-only posts
     - claiming Google posting or scheduling from successful OAuth
-    - bulk draft/schedule writes before review of the existing six test failures and destination validation
+    - bulk scheduling or automatic publication before L6-03 acceptance, destination validation and explicit owner confirmation
     - optional X/Pinterest and blog integration without a separate approved phase
   level_5_platform_expansion_checkpoint: pending
 ```
@@ -2512,9 +2511,13 @@ next_expected_action:
 
 **Superseded by the Level 6 transition:** `L5-GBP-08` was the next Google review task. It is WAITING while L6-01 is active; its evidence exceptions are retained. TikTok is paused at Nicholas's direction. No Level 5 closure is claimed.
 
-### November 23 Level 6 handoff
+### November 23 Level 6 handoff (historical)
 
 `docs/LEVEL_6_WORKFLOW_CALENDAR.md` is the active phase plan and log. L6-01 was accepted by Nicholas on November 23 and is DONE for progression; independent negative-browser/database checks remain unobserved. L6-02 is BLOCKED: reviewed draft-import code and tests are prepared but production writes are disabled by default through `BULK_DRAFT_WRITES_ENABLED=false` until the six pre-existing failing tests, full Node 24 lint/build/suite and deployed acceptance are completed. L6-03 scheduling remains WAITING and no bulk import publishes. Google final review and YouTube/LinkedIn live exceptions remain open. Do not claim the entire level complete before Nicholas's review.
+
+### November 25 Level 6 authoritative handoff
+
+`docs/LEVEL_6_WORKFLOW_CALENDAR.md` remains the active source for ordered tasks, acceptance criteria and dated progress. L6-01 and L6-02 are DONE for roadmap progression by owner acceptance; L6-02 Node 24 CI passed 409/409, lint and build, and its one-row Andrew Davis live draft import was verified in MongoDB and private S3 with no scheduled releases or publishing attempts. The live same-CSV retry and independent negative-browser checks remain documented MANUAL exceptions. Draft creation is enabled in the Amplify deployment and still requires explicit user confirmation; it is not bulk scheduling. **L6-03 is the sole READY task**. Implement it only, follow its acceptance criteria, test with approved drafts and explicit scheduling review, and do not silently publish the 95-row Andrew CSV. Provider-specific pending manual checks and the overall Level 6 OPEN status remain unchanged.
 
 ### Historical November 10 handoff
 
